@@ -1,9 +1,6 @@
 name: Documentation and browser simulator
 
 on:
-  push:
-  pull_request:
-  workflow_dispatch:
   workflow_call:
 
 permissions:
@@ -16,6 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -47,20 +45,26 @@ jobs:
         run: python scripts/generate_docs_screenshots.py --site .cache/pages/site
       - name: Build documentation site
         run: python scripts/build_docs.py --output .cache/pages/site
-      - name: Stage browser installer and published firmware
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: python scripts/build_flash_site.py --site .cache/pages/site --github-release
+      - uses: actions/download-artifact@v4
+        with:
+          name: firmware
+          path: .pio/releases
+      - name: Test installer with this revision's firmware
+        run: python scripts/build_flash_site.py --site .cache/pages/site --release-dir .pio/releases
       - name: Check installer layouts and integrity rules
         run: python tests/flash_artifacts_tests.py
       - name: Test firmware installer page
         run: python tests/flasher_browser_test.py --site .cache/pages/site
       - name: Test actual WebAssembly touchscreen
         run: python tests/simulator_browser_test.py --site .cache/pages/site
+      - name: Test hosted PR preview isolation
+        run: python tests/preview_browser_test.py --site .cache/pages/site
       - name: Package separate CI browser gallery
         run: python scripts/package_browser_results.py --site .cache/pages/site
       - name: Test documentation navigation and responsive layout
         run: python tests/docs_browser_test.py --site .cache/pages/site
+      - name: Record exact preview revision
+        run: python scripts/package_pages_preview.py --site .cache/pages/site
       - name: Upload downloadable site preview
         uses: actions/upload-artifact@v4
         with:
@@ -68,10 +72,6 @@ jobs:
           path: .cache/pages/site
           if-no-files-found: error
           retention-days: 14
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .cache/pages/site
       - name: Upload browser screenshots and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -82,23 +82,6 @@ jobs:
             .cache/pages/docs-browser-tests
             .cache/pages/docs-images
             .cache/pages/flasher-browser-tests
+            .cache/pages/preview-browser-tests
           if-no-files-found: ignore
           retention-days: 14
-
-  deploy:
-    needs: build
-    if: github.event_name != 'pull_request' && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || startsWith(github.ref, 'refs/tags/'))
-    runs-on: ubuntu-24.04
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    concurrency:
-      group: github-pages
-      cancel-in-progress: false
-    steps:
-      - name: Deploy the tested documentation and simulator
-        id: deployment
-        uses: actions/deploy-pages@v4

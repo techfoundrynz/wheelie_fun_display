@@ -53,3 +53,9 @@ Do not claim delivered FPS from a first-frame timing or successful boot. Add rep
 ## License
 
 Project contributions use GPL-3.0-only, subject to the existing third-party notices. See [LICENSE](LICENSE) and [THIRD_PARTY.md](THIRD_PARTY.md). Do not copy images, fonts or code into the repository without retaining their applicable permissions and notices.
+
+## Pull request checks and previews
+
+PR CI checks C++/Python/Rust formatting, sanitizer-backed protocol/transport tests, all four UI viewport layouts and touch rotations, both firmware targets, browser interactions and installer integrity. A successful run publishes an isolated simulator preview and browser-test gallery, linked by one updated bot comment. New commits replace the preview; closed PRs have it removed. Downloadable artifacts remain available from the run.
+
+Production deployment and PR preview publication use trusted default-branch code after the read-only build succeeds. The publisher verifies the run, head revision and current PR state before deploying. Version increases on `main` additionally create an immutable release after every validation stage passes; see [release maintenance](docs/maintenance.md#automatic-releases-and-pr-previews).

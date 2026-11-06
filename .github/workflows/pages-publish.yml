@@ -1,0 +1,73 @@
+name: Publish tested site and PR previews
+on:
+  workflow_run:
+    workflows: ['CI, firmware and previews']
+    types: [completed]
+  pull_request_target:
+    branches: [main]
+    types: [closed]
+permissions:
+  contents: read
+jobs:
+  publish:
+    if: github.event_name == 'pull_request_target' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+      pages: write
+      id-token: write
+      pull-requests: write
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.url }}
+    concurrency:
+      group: wheelie-display-pages
+      cancel-in-progress: false
+      queue: max
+    steps:
+      # Never execute PR publication scripts with the deployment token.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - name: Locate tested artifact
+        id: artifact
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await require('./.github/scripts/preview_publish.cjs').locate({github, context, core});
+      - name: Download and safely extract static payload
+        if: steps.artifact.outputs.available == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.artifact.outputs.artifact_id }}
+        run: python3 scripts/download_preview_artifact.py --artifact-id "$ARTIFACT_ID" --output .cache/incoming-site
+      - name: Verify build and destination
+        id: validated
+        if: github.event_name == 'pull_request_target' || steps.artifact.outputs.available == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await require('./.github/scripts/preview_publish.cjs').validate({github, context, core});
+      - name: Refresh production installer from published releases
+        if: steps.validated.outputs.publish == 'true' && steps.validated.outputs.destination == '' && github.event_name != 'pull_request_target'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/build_flash_site.py --site .cache/incoming-site --github-release --catalog-only
+      - uses: ./.github/actions/publish-pages
+        id: pages
+        if: steps.validated.outputs.publish == 'true'
+        with:
+          source: ${{ steps.validated.outputs.source }}
+          destination: ${{ steps.validated.outputs.destination }}
+          remove: ${{ steps.validated.outputs.remove }}
+      - name: Link preview on the PR and run summary
+        if: steps.validated.outputs.publish == 'true'
+        uses: actions/github-script@v7
+        env:
+          PAGES_URL: ${{ steps.pages.outputs.url }}
+          PREVIEW_DESTINATION: ${{ steps.validated.outputs.destination }}
+        with:
+          script: |
+            await require('./.github/scripts/preview_publish.cjs').report({github, context, core});

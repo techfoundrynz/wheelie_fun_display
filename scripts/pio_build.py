@@ -24,7 +24,7 @@ archive = build / "slint-prebuilt/current/lib/libslint_cpp.a"
 version = os.environ.get(
     "WFD_FIRMWARE_VERSION", env.GetProjectOption("custom_firmware_version")
 ).removeprefix("v")
-if not re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", version):
+if not re.fullmatch(r"\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?(?:\+[A-Za-z0-9.-]+)?", version):
     raise ValueError("Firmware version must be a semantic version")
 args = env.BoardConfig().get("build.cmake_extra_args", "")
 args = re.sub(r"-DPROJECT_VER=\S+", "-DPROJECT_VER=" + version, args)

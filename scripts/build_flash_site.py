@@ -186,7 +186,9 @@ def validate_installer(item, read_asset, destination):
     }
 
 
-def stage_installers(output, release, read_asset, *, channel, release_url=None):
+def stage_installers(
+    output, release, read_asset, *, channel, release_url=None, boards=None
+):
     catalog = {
         "channel": channel,
         "version": release.get("version"),
@@ -194,10 +196,23 @@ def stage_installers(output, release, read_asset, *, channel, release_url=None):
         "boards": [],
     }
     installers = {item["environment"]: item for item in release.get("installers", [])}
-    for environment in environments():
+    if boards is None:
+        boards = [
+            {
+                "environment": environment,
+                "label": option(environment, "custom_hardware_label") or environment,
+            }
+            for environment in environments()
+        ]
+    for target in boards:
+        environment = target["environment"]
+        if not re.fullmatch(r"[a-z0-9_]+", environment) or not isinstance(
+            target["label"], str
+        ):
+            raise ValueError("Invalid tested installer target")
         board = {
             "environment": environment,
-            "label": option(environment, "custom_hardware_label") or environment,
+            "label": target["label"],
             "available": False,
         }
         if environment in installers:
@@ -263,6 +278,11 @@ def main():
     parser.add_argument(
         "--repository", default=os.environ.get("GITHUB_REPOSITORY", REPOSITORY)
     )
+    parser.add_argument(
+        "--catalog-only",
+        action="store_true",
+        help="Refresh release data without replacing tested UI or vendor assets",
+    )
     args = parser.parse_args()
     site = args.site.resolve()
     if site == ROOT or not site.is_relative_to(ROOT):
@@ -271,19 +291,32 @@ def main():
         )
     output = site / "install"
     output.mkdir(parents=True, exist_ok=True)
-    for source in (ROOT / "docs/flasher").iterdir():
-        if source.suffix in {".html", ".css", ".js"}:
-            if source.suffix == ".html":
-                (output / source.name).write_text(
-                    source.read_text(encoding="utf-8").replace(
-                        BIKE_MARKER, bike_icon()
-                    ),
-                    encoding="utf-8",
-                    newline="\n",
-                )
-            else:
-                shutil.copyfile(source, output / source.name)
-    stage_web_tools(output / "vendor/esp-web-tools")
+    boards = None
+    if args.catalog_only:
+        boards = json.loads((output / "catalog.json").read_text(encoding="utf-8"))[
+            "boards"
+        ]
+        firmware = output / "firmware"
+        if firmware.exists():
+            if firmware.is_symlink() or not firmware.resolve().is_relative_to(
+                output.resolve()
+            ):
+                raise ValueError("Unsafe installer firmware directory")
+            shutil.rmtree(firmware)
+    else:
+        for source in (ROOT / "docs/flasher").iterdir():
+            if source.suffix in {".html", ".css", ".js"}:
+                if source.suffix == ".html":
+                    (output / source.name).write_text(
+                        source.read_text(encoding="utf-8").replace(
+                            BIKE_MARKER, bike_icon()
+                        ),
+                        encoding="utf-8",
+                        newline="\n",
+                    )
+                else:
+                    shutil.copyfile(source, output / source.name)
+        stage_web_tools(output / "vendor/esp-web-tools")
     if args.release_dir:
         directory = args.release_dir.resolve()
         release = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
@@ -292,16 +325,24 @@ def main():
             release,
             lambda name: (directory / name).read_bytes(),
             channel="local",
+            boards=boards,
         )
     elif args.github_release:
         release, release_url, reader = github_release(
             args.repository, os.environ.get("GITHUB_TOKEN")
         )
         catalog = stage_installers(
-            output, release, reader, channel="release", release_url=release_url
+            output,
+            release,
+            reader,
+            channel="release",
+            release_url=release_url,
+            boards=boards,
         )
     else:
-        catalog = stage_installers(output, {}, lambda name: b"", channel="release")
+        catalog = stage_installers(
+            output, {}, lambda name: b"", channel="release", boards=boards
+        )
     print(
         f"Installer page: {output}; {sum(board['available'] for board in catalog['boards'])} released/local board images staged"
     )

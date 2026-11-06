@@ -199,5 +199,55 @@ class BrowserManifestTests(unittest.TestCase):
             self.assertIsNone(result["version"])
 
 
+class CatalogRefreshTests(unittest.TestCase):
+    def test_refresh_keeps_tested_ui_vendor_and_target_list(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / "site/install"
+            (output / "vendor").mkdir(parents=True)
+            (output / "firmware").mkdir()
+            (output / "index.html").write_text("tested UI", encoding="utf-8")
+            (output / "vendor/tool.js").write_text("tested vendor", encoding="utf-8")
+            (output / "firmware/old.bin").write_bytes(b"unpublished")
+            (output / "catalog.json").write_text(
+                json.dumps(
+                    {
+                        "boards": [
+                            {"environment": "tested_board", "label": "Tested target"}
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with (
+                patch.object(site, "ROOT", root),
+                patch.object(
+                    sys,
+                    "argv",
+                    [
+                        "build_flash_site.py",
+                        "--site",
+                        str(root / "site"),
+                        "--github-release",
+                        "--catalog-only",
+                    ],
+                ),
+                patch.object(
+                    site, "github_release", return_value=({}, None, lambda _: b"")
+                ),
+                patch.object(site, "stage_web_tools") as vendor,
+            ):
+                site.main()
+            vendor.assert_not_called()
+            self.assertEqual((output / "index.html").read_text(), "tested UI")
+            self.assertEqual((output / "vendor/tool.js").read_text(), "tested vendor")
+            self.assertFalse((output / "firmware/old.bin").exists())
+            catalog = json.loads((output / "catalog.json").read_text())
+            self.assertEqual(
+                [item["environment"] for item in catalog["boards"]], ["tested_board"]
+            )
+            self.assertEqual(catalog["channel"], "release")
+
+
 if __name__ == "__main__":
     unittest.main()

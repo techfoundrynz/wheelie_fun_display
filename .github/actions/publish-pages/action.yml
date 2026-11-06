@@ -1,0 +1,42 @@
+name: Publish combined Pages site
+description: Preserve PR previews while publishing tested static content.
+inputs:
+  source:
+    description: Tested static payload
+    required: false
+  destination:
+    description: PR destination, empty for production
+    required: false
+  remove:
+    description: Remove a closed PR preview
+    default: 'false'
+outputs:
+  url:
+    description: Published Pages URL
+    value: ${{ steps.deploy.outputs.page_url }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/configure-pages@v5
+      with:
+        enablement: true
+    - name: Assemble persistent site
+      id: assemble
+      shell: bash
+      env:
+        SITE_SOURCE: ${{ inputs.source }}
+        SITE_DESTINATION: ${{ inputs.destination }}
+        SITE_REMOVE: ${{ inputs.remove }}
+      run: |
+        args=()
+        if [ -n "$SITE_SOURCE" ]; then args+=(--source "$SITE_SOURCE"); fi
+        if [ -n "$SITE_DESTINATION" ]; then args+=(--destination "$SITE_DESTINATION"); fi
+        if [ "$SITE_REMOVE" = true ]; then args+=(--remove); fi
+        python3 scripts/publish_pages.py "${args[@]}"
+    - uses: actions/upload-pages-artifact@v3
+      if: steps.assemble.outputs.deploy != 'false'
+      with:
+        path: ${{ steps.assemble.outputs.site }}
+    - uses: actions/deploy-pages@v4
+      if: steps.assemble.outputs.deploy != 'false'
+      id: deploy
