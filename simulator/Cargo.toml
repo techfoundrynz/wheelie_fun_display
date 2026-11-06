@@ -1,0 +1,17 @@
+[package]
+name = "wheelie-fun-display-simulator"
+version = "0.1.0"
+edition = "2024"
+publish = false
+default-run = "wheelie-fun-display-simulator"
+
+[[bin]]
+name = "transition-checks"
+path = "checks/transitions.rs"
+
+[dependencies]
+slint = { git = "https://github.com/techfoundrynz/slint", tag = "mcu-v1.19.5", default-features = false, features = ["std", "backend-winit", "renderer-software", "compat-1-2"] }
+
+[build-dependencies]
+slint-build = { git = "https://github.com/techfoundrynz/slint", tag = "mcu-v1.19.5" }
+

@@ -1,0 +1,16 @@
+.pio/
+.cache/
+managed_components/
+sdkconfig.*
+!sdkconfig.defaults
+__pycache__/
+build/
+simulator/target/
+.vscode/settings.json
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/ipch/
+.vscode/.browse.c_cpp.db*
+.slint/
+simulator/web/target/
+!config/sdkconfig.*

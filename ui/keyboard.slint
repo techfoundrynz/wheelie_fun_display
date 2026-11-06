@@ -1,0 +1,247 @@
+import { Theme } from "theme.slint";
+import { SafeArea } from "safe-area.slint";
+component Key inherits Rectangle {
+    in property <string> label;
+    callback pressed();
+    min-width: 0px;
+    preferred-width: 0px;
+    horizontal-stretch: 1;
+    border-radius: 5px;
+    background: touch.pressed ? Theme.control : Theme.raised;
+    Text {
+        text: root.label;
+        color: Theme.text;
+        font-size: 16px;
+        font-weight: 700;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+
+    touch := TouchArea {
+        clicked => { root.pressed(); }
+    }
+}
+
+export component Keyboard inherits Rectangle {
+    in property <length> safe-inset: 0px;
+    in property <string> heading;
+    in property <string> value;
+    in property <string> masked;
+    in property <bool> secret;
+    callback typed(string);
+    callback backspace();
+    callback done();
+    callback cancel();
+    private property <bool> shifted: false;
+    private property <bool> symbols: false;
+    private property <bool> revealed: false;
+    private property <bool> compact: self.height - 2 * max(8px, self.safe-inset) < 370px;
+    private property <[string]> lower: [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "0",
+        "q",
+        "w",
+        "e",
+        "r",
+        "t",
+        "y",
+        "u",
+        "i",
+        "o",
+        "p",
+        "a",
+        "s",
+        "d",
+        "f",
+        "g",
+        "h",
+        "j",
+        "k",
+        "l",
+        "-",
+        "z",
+        "x",
+        "c",
+        "v",
+        "b",
+        "n",
+        "m",
+        ".",
+        "_",
+        "@"
+    ];
+    private property <[string]> upper: [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "0",
+        "Q",
+        "W",
+        "E",
+        "R",
+        "T",
+        "Y",
+        "U",
+        "I",
+        "O",
+        "P",
+        "A",
+        "S",
+        "D",
+        "F",
+        "G",
+        "H",
+        "J",
+        "K",
+        "L",
+        "-",
+        "Z",
+        "X",
+        "C",
+        "V",
+        "B",
+        "N",
+        "M",
+        ".",
+        "_",
+        "@"
+    ];
+    private property <[string]> punctuation: [
+        "!",
+        "@",
+        "#",
+        "$",
+        "%",
+        "^",
+        "&",
+        "*",
+        "(",
+        ")",
+        "[",
+        "]",
+        "{",
+        "}",
+        "<",
+        ">",
+        "/",
+        "\\",
+        "|",
+        "~",
+        "+",
+        ",",
+        "=",
+        "_",
+        ":",
+        ";",
+        "\"",
+        "'",
+        "`",
+        "?",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "0"
+    ];
+    private property <[string]> keys: self.symbols ? self.punctuation : self.shifted ? self.upper : self.lower;
+    background: Theme.bg;
+    SafeArea {
+        safe-inset: root.safe-inset;
+        minimum-padding: 8px;
+        VerticalLayout {
+            padding: 0px;
+            spacing: 5px;
+            alignment: center;
+            Text {
+                text: root.heading;
+                color: Theme.accent;
+                font-size: 18px;
+                height: 24px;
+            }
+
+            Rectangle {
+                height: 36px;
+                background: Theme.surface;
+                border-radius: 5px;
+                Text {
+                    x: 8px;
+                    width: parent.width - 16px;
+                    text: root.secret && !root.revealed ? root.masked : root.value;
+                    color: Theme.text;
+                    font-size: 18px;
+                    overflow: elide;
+                    vertical-alignment: center;
+                }
+            }
+
+            for row in 4: HorizontalLayout {
+                height: root.compact ? 32px : 42px;
+                spacing: 3px;
+                for col in 10: Key {
+                    label: root.keys[row * 10 + col];
+                    pressed => { root.typed(root.keys[row * 10 + col]); }
+                }
+            }
+            HorizontalLayout {
+                height: root.compact ? 36px : 44px;
+                spacing: 4px;
+                Key {
+                    label: root.shifted ? "abc" : "ABC";
+                    pressed => { root.shifted = !root.shifted; }
+                }
+
+                Key {
+                    label: root.symbols ? "abc" : "#+=";
+                    pressed => { root.symbols = !root.symbols; }
+                }
+
+                Key {
+                    label: "Space";
+                    pressed => { root.typed(" "); }
+                }
+
+                Key {
+                    label: "Del";
+                    pressed => { root.backspace(); }
+                }
+            }
+
+            HorizontalLayout {
+                height: root.compact ? 36px : 44px;
+                spacing: 4px;
+                Key {
+                    label: "Cancel";
+                    pressed => { root.cancel(); }
+                }
+
+                if root.secret: Key {
+                    label: root.revealed ? "Hide" : "Show";
+                    pressed => { root.revealed = !root.revealed; }
+                }
+                Key {
+                    label: "Done";
+                    pressed => { root.done(); }
+                }
+            }
+        }
+    }
+}

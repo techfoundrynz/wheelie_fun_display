@@ -1,0 +1,231 @@
+import { Theme } from "theme.slint";
+import { Action } from "controls.slint";
+import { Page } from "page.slint";
+
+export component SectionTitle inherits Text {
+    color: Theme.secondary;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+export component SettingsRow inherits Rectangle {
+    in property <string> label;
+    in property <string> detail;
+    in property <bool> enabled: true;
+    callback activated();
+    min-height: 60px;
+    background: touch.pressed ? Theme.raised : Theme.surface;
+    border-radius: 12px;
+    HorizontalLayout {
+        padding: 12px;
+        spacing: 10px;
+        Text {
+            text: root.label;
+            color: root.enabled ? Theme.text : Theme.dim;
+            font-size: 18px;
+            vertical-alignment: center;
+        }
+
+        Text {
+            text: root.detail;
+            color: Theme.secondary;
+            font-size: 16px;
+            horizontal-alignment: right;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+
+        Rectangle {
+            width: 18px;
+            Image {
+                width: 18px;
+                height: 18px;
+                y: (parent.height - self.height) / 2;
+                source: @image-url("assets/chevron-right.svg");
+                colorize: root.enabled ? Theme.secondary : Theme.dim;
+                image-fit: contain;
+            }
+        }
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.activated(); }
+    }
+}
+
+export component Stepper inherits Rectangle {
+    in property <string> label;
+    in property <string> value;
+    in property <bool> can-decrease: true;
+    in property <bool> can-increase: true;
+    callback decrease();
+    callback increase();
+    min-height: 72px;
+    background: Theme.surface;
+    border-radius: 12px;
+    HorizontalLayout {
+        padding: 10px;
+        spacing: 10px;
+        Action {
+            label: "-";
+            width: 44px;
+            enabled: root.can-decrease;
+            activated => { root.decrease(); }
+        }
+
+        VerticalLayout {
+            Text {
+                text: root.label;
+                color: Theme.secondary;
+                font-size: 14px;
+                horizontal-alignment: center;
+            }
+
+            Text {
+                text: root.value;
+                color: Theme.text;
+                font-size: 18px;
+                horizontal-alignment: center;
+            }
+        }
+
+        Action {
+            label: "+";
+            width: 44px;
+            enabled: root.can-increase;
+            activated => { root.increase(); }
+        }
+    }
+}
+
+export component InfoRow inherits Rectangle {
+    in property <string> label;
+    in property <string> value;
+    min-height: 56px;
+    background: Theme.surface;
+    border-radius: 8px;
+    VerticalLayout {
+        padding: 10px;
+        spacing: 2px;
+        Text {
+            text: root.label;
+            color: Theme.secondary;
+            font-size: 14px;
+        }
+
+        Text {
+            text: root.value;
+            color: Theme.text;
+            font-size: 16px;
+            wrap: word-wrap;
+        }
+    }
+}
+
+export component SettingsPage inherits Page {
+    in property <bool> metric;
+    in property <bool> celsius;
+    in property <int> rotation;
+    in property <int> brightness;
+    in property <int> transport-kind;
+    in property <bool> can-available;
+    in property <bool> uart-available;
+    in property <bool> can-change-transport: true;
+    callback select-transport(int);
+    in property <string> proxy-name;
+    callback edit-proxy-name();
+    in property <bool> ble-proxy-enabled;
+    in property <string> ble-proxy-status;
+    callback toggle-units();
+    callback toggle-temperature();
+    callback toggle-proxy();
+    callback rotate();
+    callback dim();
+    callback brighten();
+    callback wifi();
+    callback updates();
+    callback about();
+    title: "SETTINGS";
+    SectionTitle {
+        text: "DISPLAY";
+    }
+
+    SettingsRow {
+        label: "Orientation";
+        detail: root.rotation + "°";
+        activated => { root.rotate(); }
+    }
+
+    SettingsRow {
+        label: "Speed units";
+        detail: root.metric ? "km/h" : "mph";
+        activated => { root.toggle-units(); }
+    }
+
+    SettingsRow {
+        label: "Temperature units";
+        detail: root.celsius ? "°C" : "°F";
+        activated => { root.toggle-temperature(); }
+    }
+
+    Stepper {
+        label: "Brightness";
+        value: root.brightness + "%";
+        can-decrease: root.brightness > 10;
+        can-increase: root.brightness < 100;
+        decrease => { root.dim(); }
+        increase => { root.brighten(); }
+    }
+
+    SectionTitle {
+        text: "CONNECTIONS & SYSTEM";
+    }
+
+    if root.can-available || root.uart-available: SettingsRow {
+        label: "Vehicle connection";
+        detail: root.transport-kind == 1 ? "CAN" : root.transport-kind == 2 ? "UART" : "BLE";
+        enabled: root.can-change-transport;
+        activated => { root.select-transport(root.transport-kind == 0 ? (root.can-available ? 1 : 2) : root.transport-kind == 1 && root.uart-available ? 2 : 0); }
+    }
+
+    SettingsRow {
+        label: "VESC BLE proxy";
+        detail: root.ble-proxy-enabled ? "On" : "Off";
+        activated => { root.toggle-proxy(); }
+    }
+
+    SettingsRow {
+        label: "BLE name";
+        detail: root.proxy-name;
+        activated => { root.edit-proxy-name(); }
+    }
+
+    Text {
+        text: "The phone connects to this display. While connected, the phone owns the VESC link.";
+        color: Theme.secondary;
+        font-size: 14px;
+        wrap: word-wrap;
+    }
+
+    if root.ble-proxy-enabled && root.ble-proxy-status != "": Text {
+        text: root.ble-proxy-status;
+        color: Theme.accent;
+        font-size: 14px;
+        wrap: word-wrap;
+    }
+    SettingsRow {
+        label: "Wi-Fi";
+        activated => { root.wifi(); }
+    }
+
+    SettingsRow {
+        label: "Firmware updates";
+        activated => { root.updates(); }
+    }
+
+    SettingsRow {
+        label: "About";
+        activated => { root.about(); }
+    }
+}

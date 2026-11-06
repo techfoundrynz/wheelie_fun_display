@@ -1,0 +1,92 @@
+import { Theme } from "theme.slint";
+
+// 222-degree sweep with a slightly heavier stroke for on-device readability.
+export component Speedometer inherits Rectangle {
+    in property <float> progress;
+    in property <string> value;
+    in property <string> unit;
+    in property <bool> live;
+    private property <length> diameter: min(self.width, self.height / 0.78);
+    private property <length> thickness: self.diameter * 16 / 260;
+    private property <length> r: (self.diameter - self.thickness) / 2;
+    private property <length> c: self.diameter / 2;
+    private property <angle> start: 159deg;
+    private property <angle> sweep: 222deg;
+    private property <angle> filled: self.sweep * min(1, max(0, self.progress));
+    Rectangle {
+        y: 0px;
+        width: root.diameter;
+        height: root.diameter;
+        x: (parent.width - self.width) / 2;
+        Path {
+            width: 100%;
+            height: 100%;
+            fit: preserve;
+            arc-center-x: root.diameter / 2;
+            arc-center-y: root.diameter / 2;
+            arc-radius: root.r;
+            arc-start-angle: root.start;
+            arc-sweep-angle: root.sweep;
+            stroke: Theme.track;
+            stroke-width: root.thickness;
+            stroke-line-cap: butt;
+            MoveTo {
+                x: (root.c + root.r * Math.cos(root.start)) / 1px;
+                y: (root.c + root.r * Math.sin(root.start)) / 1px;
+            }
+
+            ArcTo {
+                radius-x: root.r / 1px;
+                radius-y: root.r / 1px;
+                x: (root.c + root.r * Math.cos(root.start + root.sweep)) / 1px;
+                y: (root.c + root.r * Math.sin(root.start + root.sweep)) / 1px;
+                large-arc: true;
+                sweep: true;
+            }
+        }
+
+        if root.filled > 0.5deg: Path {
+            width: 100%;
+            height: 100%;
+            fit: preserve;
+            arc-center-x: root.diameter / 2;
+            arc-center-y: root.diameter / 2;
+            arc-radius: root.r;
+            arc-start-angle: root.start;
+            arc-sweep-angle: root.filled;
+            stroke: Theme.gauge;
+            stroke-width: root.thickness;
+            stroke-line-cap: butt;
+            MoveTo {
+                x: (root.c + root.r * Math.cos(root.start)) / 1px;
+                y: (root.c + root.r * Math.sin(root.start)) / 1px;
+            }
+
+            ArcTo {
+                radius-x: root.r / 1px;
+                radius-y: root.r / 1px;
+                x: (root.c + root.r * Math.cos(root.start + root.filled)) / 1px;
+                y: (root.c + root.r * Math.sin(root.start + root.filled)) / 1px;
+                large-arc: root.filled > 180deg;
+                sweep: true;
+            }
+        }
+        Text {
+            y: root.diameter * 0.23;
+            height: root.diameter * 0.33;
+            text: root.value;
+            color: root.live ? Theme.text : Theme.dim;
+            font-size: root.diameter * 0.28;
+            font-weight: 800;
+            horizontal-alignment: center;
+        }
+
+        Text {
+            y: root.diameter * 0.56;
+            text: root.unit;
+            color: Theme.secondary;
+            font-size: 18px;
+            horizontal-alignment: center;
+        }
+    }
+}

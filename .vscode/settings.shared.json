@@ -1,0 +1,39 @@
+{
+  "C_Cpp.intelliSenseEngine": "default",
+  "files.associations": {
+    "*.h": "c",
+    "*.c": "c",
+    "array": "c",
+    "string": "c",
+    "string_view": "c",
+    "cstdint": "c",
+    "*.cpp": "cpp",
+    "*.hpp": "cpp",
+    "*.tpp": "cpp"
+  },
+  "editor.tabSize": 2,
+  "files.eol": "\n",
+  "[c]": {
+    "editor.autoIndent": "full",
+    "editor.wordBasedSuggestions": "off",
+    "editor.suggest.insertMode": "replace",
+    "editor.semanticHighlighting.enabled": true,
+    "editor.foldingStrategy": "auto",
+    "editor.formatOnSaveMode": "file",
+    "editor.formatOnSave": true,
+    "editor.wrappingStrategy": "advanced",
+    "editor.formatOnPaste": false
+  },
+  "[cpp]": {
+    "editor.formatOnSave": true
+  },
+  "[slint]": {
+    "editor.formatOnSave": true
+  },
+  "C_Cpp.clang_format_style": "file",
+  "cmake.configureOnOpen": false,
+  "files.exclude": {
+    "*.dev.zip": true,
+    "sdkconfig.*.old": true
+  }
+}

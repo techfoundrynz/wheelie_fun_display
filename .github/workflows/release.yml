@@ -1,0 +1,57 @@
+name: Publish Firmware Release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: firmware-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install platformio==6.2.0 -r requirements-release.txt
+      - name: Resolve version from tag or PlatformIO
+        shell: bash
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          VERSION=$(python scripts/project_config.py)
+          if [ "$REF_TYPE" = tag ]; then VERSION=${REF_NAME#v}; fi
+          echo "WFD_FIRMWARE_VERSION=$VERSION" >> "$GITHUB_ENV"
+      - run: cmake -S tests -B .cache/tests -G Ninja -DBIKE_SANITIZERS=ON
+      - run: cmake --build .cache/tests && ctest --test-dir .cache/tests --output-on-failure
+      - run: pio run
+      - run: python scripts/check_sdkconfig.py --all
+      - name: Check release notices and source references
+        run: |
+          python tests/package_release_tests.py
+          python tests/flash_artifacts_tests.py
+      - run: python scripts/package_release.py
+      - name: Publish target images
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          TAG="v${WFD_FIRMWARE_VERSION}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release already exists; refusing to replace published firmware"
+            exit 1
+          fi
+          gh release create "$TAG" .pio/releases/*.bin .pio/releases/manifest.json .pio/releases/licenses.zip .pio/releases/source-references.json --target "$GITHUB_SHA" --title "$TAG" --generate-notes
+
+  pages:
+    needs: release
+    uses: ./.github/workflows/pages.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write

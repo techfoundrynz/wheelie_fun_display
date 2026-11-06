@@ -1,0 +1,16 @@
+# Shared C/C++ style. VS Code's format-on-save reads this file via
+# C_Cpp.clang_format_style in .vscode/settings.shared.json.
+BasedOnStyle: Microsoft
+IndentWidth: 2
+ColumnLimit: 120
+IndentPPDirectives: BeforeHash
+SeparateDefinitionBlocks: Always
+WrapNamespaceBodyWithEmptyLines: Always
+MaxEmptyLinesToKeep: 1
+EmptyLineAfterAccessModifier: Always
+BraceWrapping:
+  AfterControlStatement: false
+  AfterFunction: false
+  AfterClass: false
+  AfterStruct: false
+  AfterEnum: false

@@ -1,0 +1,26 @@
+{
+  "build": {
+    "core": "esp32",
+    "mcu": "esp32p4",
+    "f_cpu": "360000000L",
+    "f_flash": "80000000L",
+    "flash_mode": "qio",
+    "variant": "esp32p4"
+  },
+  "debug": {
+    "openocd_target": "esp32p4.cfg"
+  },
+  "frameworks": [
+    "espidf"
+  ],
+  "name": "GUITION JC4880P443C_I_W (ESP32-P4 + C6)",
+  "upload": {
+    "flash_size": "16MB",
+    "maximum_ram_size": 786432,
+    "maximum_size": 7340032,
+    "require_upload_port": true,
+    "speed": 460800
+  },
+  "url": "https://www.guition.com/",
+  "vendor": "GUITION"
+}

@@ -1,0 +1,110 @@
+import { Theme } from "theme.slint";
+import { Action } from "controls.slint";
+import { SafeArea } from "safe-area.slint";
+
+export component PinPad inherits Rectangle {
+    in property <length> safe-inset;
+    in property <string> heading;
+    in property <string> masked;
+    in property <string> message;
+    in property <bool> ready;
+    in property <bool> show-keypad: true;
+    in property <string> retry-label: "Retry bike lock";
+    in property <bool> locked;
+    in property <bool> retry-available;
+    callback digit(int);
+    callback backspace();
+    callback submit();
+    callback cancel();
+    callback retry();
+    background: Theme.bg;
+    TouchArea { }
+
+    private property <bool> landscape: self.width > self.height;
+    SafeArea {
+        safe-inset: root.safe-inset;
+        minimum-padding: 20px;
+        VerticalLayout {
+            padding: 0px;
+            spacing: 6px;
+            alignment: center;
+            Text {
+                text: root.heading;
+                color: Theme.accent;
+                font-size: 24px;
+                font-weight: 800;
+                horizontal-alignment: center;
+            }
+
+            Text {
+                text: root.masked == "" ? "_ _ _ _ _ _" : root.masked;
+                color: Theme.text;
+                font-size: 24px;
+                horizontal-alignment: center;
+            }
+
+            Text {
+                text: root.message;
+                color: Theme.secondary;
+                font-size: 14px;
+                wrap: word-wrap;
+                horizontal-alignment: center;
+                min-height: 36px;
+            }
+
+            if root.show-keypad: VerticalLayout {
+                spacing: 6px;
+                for row in [0, 1, 2]: HorizontalLayout {
+                    spacing: 6px;
+                    for column in [0, 1, 2]: Action {
+                        label: "" + (row * 3 + column + 1);
+                        enabled: root.ready;
+                        min-height: root.landscape ? 40px : 48px;
+                        max-height: self.min-height;
+                        activated => { root.digit(row * 3 + column + 1); }
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 6px;
+                    Action {
+                        label: "Back";
+                        enabled: root.ready;
+                        min-height: root.landscape ? 40px : 48px;
+                        max-height: self.min-height;
+                        activated => { root.backspace(); }
+                    }
+
+                    Action {
+                        label: "0";
+                        enabled: root.ready;
+                        min-height: root.landscape ? 40px : 48px;
+                        max-height: self.min-height;
+                        activated => { root.digit(0); }
+                    }
+
+                    Action {
+                        label: "OK";
+                        selected: true;
+                        enabled: root.ready && root.masked.character-count == 6;
+                        min-height: root.landscape ? 40px : 48px;
+                        max-height: self.min-height;
+                        activated => { root.submit(); }
+                    }
+                }
+            }
+            if !root.locked: Action {
+                label: "Cancel";
+                min-height: 40px;
+                max-height: 40px;
+                activated => { root.cancel(); }
+            }
+            if root.retry-available: Action {
+                label: root.retry-label;
+                enabled: root.ready;
+                min-height: 40px;
+                max-height: 40px;
+                activated => { root.retry(); }
+            }
+        }
+    }
+}

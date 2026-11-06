@@ -1,0 +1,104 @@
+name: Documentation and browser simulator
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Cache browser simulator toolchain and dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            simulator/web/target
+            .cache/wasm-tools
+            .cache/wasm-cli-target
+            .cache/esp-web-tools
+          key: pages-${{ runner.os }}-${{ hashFiles('simulator/web/Cargo.lock', 'simulator/web/Cargo.toml', 'docs/flasher/vendor-lock.json') }}
+          restore-keys: pages-${{ runner.os }}-
+      - name: Install documentation and browser-test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfontconfig1-dev
+          python -m pip install -r requirements-docs.txt -r simulator/requirements-browser-test.txt
+          python -m playwright install --with-deps chromium
+      - name: Build shared Slint browser simulator
+        run: python scripts/build_web_simulator.py --output .cache/pages/site/simulator
+      - name: Generate documentation screenshots from the current UI
+        run: python scripts/generate_docs_screenshots.py --site .cache/pages/site
+      - name: Build documentation site
+        run: python scripts/build_docs.py --output .cache/pages/site
+      - name: Stage browser installer and published firmware
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/build_flash_site.py --site .cache/pages/site --github-release
+      - name: Check installer layouts and integrity rules
+        run: python tests/flash_artifacts_tests.py
+      - name: Test firmware installer page
+        run: python tests/flasher_browser_test.py --site .cache/pages/site
+      - name: Test actual WebAssembly touchscreen
+        run: python tests/simulator_browser_test.py --site .cache/pages/site
+      - name: Package separate CI browser gallery
+        run: python scripts/package_browser_results.py --site .cache/pages/site
+      - name: Test documentation navigation and responsive layout
+        run: python tests/docs_browser_test.py --site .cache/pages/site
+      - name: Upload downloadable site preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheelie-fun-display-pages
+          path: .cache/pages/site
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .cache/pages/site
+      - name: Upload browser screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pages-browser-results
+          path: |
+            .cache/pages/browser-tests
+            .cache/pages/docs-browser-tests
+            .cache/pages/docs-images
+            .cache/pages/flasher-browser-tests
+          if-no-files-found: ignore
+          retention-days: 14
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request' && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || startsWith(github.ref, 'refs/tags/'))
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    steps:
+      - name: Deploy the tested documentation and simulator
+        id: deployment
+        uses: actions/deploy-pages@v4

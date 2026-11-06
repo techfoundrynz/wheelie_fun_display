@@ -1,0 +1,23 @@
+// The parent recognizer owns axis arbitration. Keep the normal clipped
+// Flickable viewport, but apply vertical drags without competing recognizers.
+export component SwipeScroll inherits Flickable {
+    in property <bool> scroll-active;
+    in property <length> drag-delta;
+    private property <bool> tracking: false;
+    private property <length> start-y: 0px;
+    interactive: false;
+    function apply-drag() {
+        if !self.scroll-active { return; }
+        if !self.tracking {
+            self.start-y = self.content-y;
+            self.tracking = true;
+        }
+        self.content-y = clamp(self.start-y + self.drag-delta,
+            min(0px, self.height - self.content-height), 0px);
+    }
+    changed scroll-active => {
+        if self.scroll-active { self.apply-drag(); } else { self.tracking = false; }
+    }
+    changed drag-delta => { self.apply-drag(); }
+    @children
+}

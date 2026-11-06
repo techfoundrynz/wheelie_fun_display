@@ -1,0 +1,82 @@
+import { Theme } from "theme.slint";
+
+export component IconAction inherits Rectangle {
+    in property <image> icon;
+    in property <string> label;
+    in property <bool> selected;
+    callback activated();
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: touch.pressed ? Theme.control : root.selected ? Theme.surface : Theme.bg;
+    accessible-role: button;
+    accessible-label: root.label;
+    Image {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: 24px;
+        height: 24px;
+        source: root.icon;
+        colorize: root.selected ? Theme.accent : Theme.dim;
+    }
+
+    touch := TouchArea {
+        clicked => { root.activated(); }
+    }
+}
+
+export component Action inherits Rectangle {
+    in property <string> label;
+    in property <bool> enabled: true;
+    in property <bool> selected: false;
+    callback activated();
+    min-height: 48px;
+    max-height: 60px;
+    border-radius: 12px;
+    background: !enabled ? Theme.sunken : selected ? Theme.raised : touch.pressed ? Theme.control : Theme.surface;
+    border-width: Theme.control-border;
+    border-color: !enabled ? Theme.raised : selected ? Theme.accent : Theme.control;
+    Text {
+        text: root.label;
+        color: !root.enabled ? Theme.dim : Theme.text;
+        font-size: 16px;
+        font-weight: 700;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.activated(); }
+    }
+}
+
+export component Metric inherits Rectangle {
+    in property <string> label;
+    in property <string> value;
+    in property <bool> warning: false;
+    in property <bool> compact: false;
+    min-width: 0px;
+    preferred-width: 0px;
+    horizontal-stretch: 1;
+    background: Theme.surface;
+    border-radius: 12px;
+    VerticalLayout {
+        padding: root.compact ? 8px : 12px;
+        spacing: 2px;
+        Text {
+            text: root.label;
+            color: Theme.secondary;
+            font-size: 14px;
+        }
+
+        Text {
+            text: root.value;
+            color: root.warning ? Theme.danger : Theme.text;
+            font-size: root.compact ? 18px : 24px;
+            font-weight: 800;
+            overflow: elide;
+        }
+    }
+}

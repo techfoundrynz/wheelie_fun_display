@@ -1,0 +1,24 @@
+[package]
+name = "wheelie-fun-display-web"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+slint = { git = "https://github.com/techfoundrynz/slint", tag = "mcu-v1.19.5", default-features = false, features = ["std", "renderer-software", "compat-1-2"] }
+wasm-bindgen = "=0.2.129"
+console_error_panic_hook = "0.1"
+web-sys = { version = "=0.3.106", features = ["Window", "Document", "HtmlCanvasElement", "CanvasRenderingContext2d", "ImageData"] }
+
+[build-dependencies]
+slint-build = { git = "https://github.com/techfoundrynz/slint", tag = "mcu-v1.19.5" }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
