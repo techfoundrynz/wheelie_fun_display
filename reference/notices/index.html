@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Third-party notices · Wheelie Fun Display</title><meta name="description" content="Licenses and notices for bundled components and assets."><meta name="theme-color" content="#080b0e">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../../assets/style.css">
+<script defer src="../../assets/search-index.js"></script><script defer src="../../assets/site.js"></script></head>
+<body data-site-root="../../" class="docs-page">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="site-header"><a class="brand" href="../../"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 0 33 35" aria-hidden="true" fill="none" color="#63d9e5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <g id="bike-artwork" transform="translate(16 16) rotate(30) scale(-1 1) translate(-16 -16)">
+    <circle cx="7" cy="24" r="4.5" stroke-width="3"/>
+    <circle cx="25" cy="24" r="4.5" stroke-width="3"/>
+    <rect x="8" y="10" width="13" height="3" rx="0.8" stroke-width="2"/>
+    <path d="M7 24h5l-2-9h13l-1 9H12M10 15v-2h10M23 15l2 9M23 15 21 5h4m-4 0h-2"/>
+    <rect x="13" y="17" width="7" height="6" rx="1" stroke-width="1.5"/>
+    <path d="M15 19h3m-3 2h3M20 23h3" stroke-width="1.2"/>
+  </g>
+</svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
+<div class="header-actions"><a class="installer-link" href="../../install/">Install firmware</a><a class="simulator-link" href="../../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
+<button class="nav-overlay" type="button" aria-label="Close navigation"></button>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../../">Overview</a><div class="nav-group"><span>Start here</span><a href="../../getting-started/">Getting started</a><a href="../../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../../guide/">Using the display</a><a href="../../connections/">Connections &amp; proxy</a><a href="../../pins/">PINs &amp; locking</a><a href="../../maintenance/">Updates &amp; maintenance</a><a href="../../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../../hardware/guition-43/">GUITION P4 4.3-inch</a></div><div class="nav-group"><span>For developers</span><a href="../../building/">Build &amp; install</a><a href="../../contributing/">Contributing</a><a href="../../architecture/">Architecture</a><a href="../../performance/">Performance</a><a href="../../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../../integrations/">Vehicle integrations</a><a href="../../locking/">Locking internals</a><a href="../../bluetooth/">Bluetooth internals</a><a href="../../transports/">Transport internals</a><a href="../wheel-e-protocol/">wheel-e protocol notes</a><a href="../vesc-protocol/">WFB protocol notes</a><a href="../wfb-bike-layer/">WFB bike layer</a><a href="../theme/">Theme guide</a><a href="./" aria-current="page">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">Reference</div><h1>Third-party notices</h1><p>Licenses and notices for bundled components and assets.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/THIRD_PARTY.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><ul>
+<li><strong>Slint</strong> runtime/compiler: <a href="https://github.com/techfoundrynz/slint/releases/tag/mcu-v1.19.5">techfoundrynz/slint mcu-v1.19.5</a>, commit <code>8076b03255964faf155c06a38eac6d797d0d2140</code>. Original notices and license options are preserved in <code>firmware/components/slint_runtime/</code>. Embedded use requires the applicable GPLv3 or commercial Slint terms; the desktop royalty-free option excludes embedded systems. The original project source is GPL-3.0-only; third-party notices and font licenses remain applicable.</li>
+<li><strong>VESC wire verification:</strong> <a href="https://github.com/vedderb/bldc/blob/master/comm/commands.c">upstream commands.c</a>, <code>COMM_GET_VALUES_SETUP</code> speed uses a signed integer scaled by 1000. <a href="https://github.com/vedderb/vesc_tool/blob/master/bleuart.cpp">VESC Tool BLE implementation</a> confirms NUS UUIDs. These were consulted as protocol references; their implementation code is not copied.</li>
+<li><strong>Fonts:</strong> Roboto and Sonsie One from <a href="https://github.com/google/fonts">google/fonts</a>, under SIL Open Font License 1.1. Font files and respective OFL notices are in <code>ui/fonts/</code>.</li>
+<li>
+<p>The <code>docs/wheelie-*.md</code> files contain WFB protocol and visual design references. Entries marked inferred or unconfirmed require device verification.</p>
+</li>
+<li>
+<p>The 2.06-inch CO5300 commands, direct GPIO reset, 22-pixel column offset and FT3168 wiring were checked against the <a href="https://github.com/waveshareteam/ESP32-S3-Touch-AMOLED-2.06">Waveshare reference</a>. Hardware uses 32 MB flash and 8 MB octal PSRAM.</p>
+</li>
+<li>
+<p>The Slint editor setup script stages the pinned language server and maintains shared editor/task conventions. The fork's LSP supplies language support and the live preview runtime.</p>
+</li>
+<li>
+<p>Firmware control icons are from <a href="https://lucide.dev">Lucide</a>, with the <a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/ui/assets/LUCIDE-LICENSE">ISC/MIT license notices</a> preserved. The website minibike in <code>docs/site/bike.svg</code> is original project artwork under this repository's GPL-3.0-only license.</p>
+</li>
+<li>
+<p><strong>ESP Web Tools</strong> 10.4.0 powers the browser firmware installer under Apache-2.0. Its pinned distribution and runtime dependency versions are recorded in <code>docs/flasher/vendor-lock.json</code>. The site hosts the unmodified JavaScript and complete bundled license texts under <code>install/vendor/esp-web-tools/THIRD_PARTY_NOTICES.txt</code>. <a href="https://github.com/esphome/esp-web-tools/tree/fab2ba48253d19fd29a15af57bec771d34978b62">Project source</a>.</p>
+</li>
+<li>
+<p><strong>GUITION ST7701S initialization table:</strong> adapted from <a href="https://github.com/ultramcu/guition-jc4880p4-bsp/tree/324970bade0d1f4e52880fe8016580368bc1e06e">ultramcu/guition-jc4880p4-bsp</a>, under MIT. Original copyright and license are preserved in <code>firmware/main/boards/</code>.</p>
+</li>
+</ul></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="./">Notices</a></span></footer></main>
+<aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
+<ul></ul>
+</div>
+</aside></div>
+<dialog class="search-dialog" aria-label="Search documentation"><form method="dialog"><button class="close-search" aria-label="Close search">×</button></form><label for="docs-search">Search Wheelie Fun Display</label><input id="docs-search" type="search" placeholder="Connection, PIN, build…" autocomplete="off"><div class="search-results" aria-live="polite"></div><p class="search-hint">Search the guides and implementation notes. Press Esc to close.</p></dialog>
+</body></html>

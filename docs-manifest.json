@@ -1,0 +1,31 @@
+{
+  "pages": [
+    "index.html",
+    "404.html",
+    "getting-started/index.html",
+    "guide/index.html",
+    "connections/index.html",
+    "pins/index.html",
+    "maintenance/index.html",
+    "troubleshooting/index.html",
+    "hardware/waveshare-206/index.html",
+    "hardware/guition-43/index.html",
+    "building/index.html",
+    "contributing/index.html",
+    "architecture/index.html",
+    "performance/index.html",
+    "todo/index.html",
+    "integrations/index.html",
+    "locking/index.html",
+    "bluetooth/index.html",
+    "transports/index.html",
+    "reference/wheel-e-protocol/index.html",
+    "reference/vesc-protocol/index.html",
+    "reference/wfb-bike-layer/index.html",
+    "reference/theme/index.html",
+    "reference/notices/index.html"
+  ],
+  "simulator": "simulator/",
+  "installer": "install/",
+  "sources": 22
+}

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Contributing · Wheelie Fun Display</title><meta name="description" content="Make a focused change and show the evidence that it works."><meta name="theme-color" content="#080b0e">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../assets/style.css">
+<script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head>
+<body data-site-root="../" class="docs-page">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="site-header"><a class="brand" href="../"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 0 33 35" aria-hidden="true" fill="none" color="#63d9e5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <g id="bike-artwork" transform="translate(16 16) rotate(30) scale(-1 1) translate(-16 -16)">
+    <circle cx="7" cy="24" r="4.5" stroke-width="3"/>
+    <circle cx="25" cy="24" r="4.5" stroke-width="3"/>
+    <rect x="8" y="10" width="13" height="3" rx="0.8" stroke-width="2"/>
+    <path d="M7 24h5l-2-9h13l-1 9H12M10 15v-2h10M23 15l2 9M23 15 21 5h4m-4 0h-2"/>
+    <rect x="13" y="17" width="7" height="6" rx="1" stroke-width="1.5"/>
+    <path d="M15 19h3m-3 2h3M20 23h3" stroke-width="1.2"/>
+  </g>
+</svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
+<div class="header-actions"><a class="installer-link" href="../install/">Install firmware</a><a class="simulator-link" href="../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
+<button class="nav-overlay" type="button" aria-label="Close navigation"></button>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../">Overview</a><div class="nav-group"><span>Start here</span><a href="../getting-started/">Getting started</a><a href="../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../guide/">Using the display</a><a href="../connections/">Connections &amp; proxy</a><a href="../pins/">PINs &amp; locking</a><a href="../maintenance/">Updates &amp; maintenance</a><a href="../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../hardware/guition-43/">GUITION P4 4.3-inch</a></div><div class="nav-group"><span>For developers</span><a href="../building/">Build &amp; install</a><a href="./" aria-current="page">Contributing</a><a href="../architecture/">Architecture</a><a href="../performance/">Performance</a><a href="../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../integrations/">Vehicle integrations</a><a href="../locking/">Locking internals</a><a href="../bluetooth/">Bluetooth internals</a><a href="../transports/">Transport internals</a><a href="../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../reference/vesc-protocol/">WFB protocol notes</a><a href="../reference/wfb-bike-layer/">WFB bike layer</a><a href="../reference/theme/">Theme guide</a><a href="../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">For developers</div><h1>Contributing</h1><p>Make a focused change and show the evidence that it works.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/CONTRIBUTING.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>Changes should preserve the separation between vehicle integrations, physical transports, local access control and UI rendering. A new board or protocol should not add board-name branches throughout shared code.</p>
+<h2 id="start-with-a-reproducible-change">Start with a reproducible change</h2>
+<p>For a bug, describe the concrete trigger, observed behavior and expected result. Include the board environment, firmware version, integration and transport. For BLE or proxy issues, include controller and phone/app versions. Redact PINs, passwords and other credentials from logs.</p>
+<p>Discuss substantial new hardware/protocol support before assuming undocumented wire formats. The protocol references record compatibility details and uncertainties; keep those distinctions visible.</p>
+<h2 id="repository-map">Repository map</h2>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ui/</code></td>
+<td>Shared Slint components, layout, gestures and dialogs.</td>
+</tr>
+<tr>
+<td><code>firmware/main/</code></td>
+<td>Board drivers, runtime ownership, transports, networking and application projection.</td>
+</tr>
+<tr>
+<td><code>firmware/components/bike/</code></td>
+<td>Portable framing, integrations, telemetry and state policies.</td>
+</tr>
+<tr>
+<td><code>simulator/</code></td>
+<td>Desktop, browser and headless previews of the shared UI.</td>
+</tr>
+<tr>
+<td><code>tests/</code></td>
+<td>Portable C++ checks for protocol, state and renderer-related policies.</td>
+</tr>
+<tr>
+<td><code>scripts/</code></td>
+<td>Reproducible configuration, packaging and documentation helpers.</td>
+</tr>
+<tr>
+<td><code>docs/</code></td>
+<td>Rider guides, architecture and maintenance documentation.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="keep-changes-reviewable">Keep changes reviewable</h2>
+<ul>
+<li>Put target capabilities, resolution and GPIOs in the PlatformIO hardware profile. Share settings through <code>common</code> rather than inheriting one board from another.</li>
+<li>Put package-specific encoding and feature flags in its vehicle integration. Unsupported commands must be gated in both UI and command handling.</li>
+<li>Keep the phone proxy independent of the display's selected main-controller route.</li>
+<li>Invalidate old RX/TX work across connection or transport generations. Do not replay a tuning command after reconnect.</li>
+<li>Keep Slint ownership on the UI task. Communication callbacks should transfer bounded data, not edit UI properties.</li>
+<li>Preserve required third-party notices and source/binary line-ending rules.</li>
+</ul>
+<h2 id="validate-the-change">Validate the change</h2>
+<p>Use the checks that establish the behavior you changed. Firmware changes normally need a build and SDK audit:</p>
+<pre><code class="language-sh">pio run
+python scripts/check_sdkconfig.py --all
+</code></pre>
+<p>Portable protocol/state changes need host tests; see <a href="../building/#host-checks">building</a>. UI changes should be checked at 410 × 502 and 502 × 410 with the headless transition checks and actual rendered fixtures. Exercise touch/drag cancellation, safe corners and orientation as relevant.</p>
+<p>Run <code>cargo fmt --check --manifest-path simulator/Cargo.toml</code> for Rust changes. C/C++ formatting uses the repository <code>.clang-format</code> plus declaration spacing; CI pins clang-format 23.1.0. Run <code>python scripts/format_cpp.py</code> to format, or add <code>--check</code> to verify without changes. Do not write a test that simply restates the implementation without exercising the failure or behavior that matters.</p>
+<p>For docs, build the Pages artifact and inspect desktop and mobile layouts. The browser simulator is a demo: it must never imply that mocked controls operate a real vehicle.</p>
+<h2 id="describe-evidence-precisely">Describe evidence precisely</h2>
+<p>A useful change description states the problem, resulting behavior and relevant validation. Distinguish a compiler check, host/simulator test, startup log and a real-controller acceptance test. If radio, PIN changes or wired behavior could not be tested, say so and leave the acceptance item open.</p>
+<p>Do not claim delivered FPS from a first-frame timing or successful boot. Add reproducible performance measurements to <a href="../performance/">the performance notes</a>.</p>
+<h2 id="license">License</h2>
+<p>Project contributions use GPL-3.0-only, subject to the existing third-party notices. See <a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">LICENSE</a> and <a href="../reference/notices/">THIRD_PARTY.md</a>. Do not copy images, fonts or code into the repository without retaining their applicable permissions and notices.</p>
+<h2 id="pull-request-checks-and-previews">Pull request checks and previews</h2>
+<p>PR CI checks C++/Python/Rust formatting, sanitizer-backed protocol/transport tests, all four UI viewport layouts and touch rotations, both firmware targets, browser interactions and installer integrity. A successful run publishes an isolated simulator preview and browser-test gallery, linked by one updated bot comment. New commits replace the preview; closed PRs have it removed. Downloadable artifacts remain available from the run.</p>
+<p>Production deployment and PR preview publication use trusted default-branch code after the read-only build succeeds. The publisher verifies the run, head revision and current PR state before deploying. Version increases on <code>main</code> additionally create an immutable release after every validation stage passes; see <a href="../maintenance/#automatic-releases-and-pr-previews">release maintenance</a>.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../reference/notices/">Notices</a></span></footer></main>
+<aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
+<ul>
+<li><a href="#start-with-a-reproducible-change">Start with a reproducible change</a></li>
+<li><a href="#repository-map">Repository map</a></li>
+<li><a href="#keep-changes-reviewable">Keep changes reviewable</a></li>
+<li><a href="#validate-the-change">Validate the change</a></li>
+<li><a href="#describe-evidence-precisely">Describe evidence precisely</a></li>
+<li><a href="#license">License</a></li>
+<li><a href="#pull-request-checks-and-previews">Pull request checks and previews</a></li>
+</ul>
+</div>
+</aside></div>
+<dialog class="search-dialog" aria-label="Search documentation"><form method="dialog"><button class="close-search" aria-label="Close search">×</button></form><label for="docs-search">Search Wheelie Fun Display</label><input id="docs-search" type="search" placeholder="Connection, PIN, build…" autocomplete="off"><div class="search-results" aria-live="polite"></div><p class="search-hint">Search the guides and implementation notes. Press Esc to close.</p></dialog>
+</body></html>

@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "checks": [
+    "Root and project-prefix routes",
+    "Shared UI software rendering",
+    "Telemetry controls",
+    "Ride/Tune/Bike swipes",
+    "Four-angle rotation and touch mapping",
+    "Independent speed and temperature units",
+    "Upstream BLE pairing PIN",
+    "Bike PIN setup and screen unlock",
+    "Proxy name keyboard",
+    "Responsive mobile and touch"
+  ],
+  "screenshots": [
+    "desktop-site.png",
+    "ride-portrait.png",
+    "ride-landscape.png",
+    "power-1033.png",
+    "power-12000.png",
+    "power-regen.png",
+    "wheel-e-tune.png",
+    "pairing.png",
+    "mobile-site.png"
+  ]
+}

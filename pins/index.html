@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PINs &amp; locking · Wheelie Fun Display</title><meta name="description" content="Separate upstream pairing from the local bike and proxy PIN."><meta name="theme-color" content="#080b0e">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../assets/style.css">
+<script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head>
+<body data-site-root="../" class="docs-page">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="site-header"><a class="brand" href="../"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 0 33 35" aria-hidden="true" fill="none" color="#63d9e5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <g id="bike-artwork" transform="translate(16 16) rotate(30) scale(-1 1) translate(-16 -16)">
+    <circle cx="7" cy="24" r="4.5" stroke-width="3"/>
+    <circle cx="25" cy="24" r="4.5" stroke-width="3"/>
+    <rect x="8" y="10" width="13" height="3" rx="0.8" stroke-width="2"/>
+    <path d="M7 24h5l-2-9h13l-1 9H12M10 15v-2h10M23 15l2 9M23 15 21 5h4m-4 0h-2"/>
+    <rect x="13" y="17" width="7" height="6" rx="1" stroke-width="1.5"/>
+    <path d="M15 19h3m-3 2h3M20 23h3" stroke-width="1.2"/>
+  </g>
+</svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
+<div class="header-actions"><a class="installer-link" href="../install/">Install firmware</a><a class="simulator-link" href="../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
+<button class="nav-overlay" type="button" aria-label="Close navigation"></button>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../">Overview</a><div class="nav-group"><span>Start here</span><a href="../getting-started/">Getting started</a><a href="../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../guide/">Using the display</a><a href="../connections/">Connections &amp; proxy</a><a href="./" aria-current="page">PINs &amp; locking</a><a href="../maintenance/">Updates &amp; maintenance</a><a href="../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../hardware/guition-43/">GUITION P4 4.3-inch</a></div><div class="nav-group"><span>For developers</span><a href="../building/">Build &amp; install</a><a href="../contributing/">Contributing</a><a href="../architecture/">Architecture</a><a href="../performance/">Performance</a><a href="../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../integrations/">Vehicle integrations</a><a href="../locking/">Locking internals</a><a href="../bluetooth/">Bluetooth internals</a><a href="../transports/">Transport internals</a><a href="../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../reference/vesc-protocol/">WFB protocol notes</a><a href="../reference/wfb-bike-layer/">WFB bike layer</a><a href="../reference/theme/">Theme guide</a><a href="../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">For riders</div><h1>PINs &amp; locking</h1><p>Separate upstream pairing from the local bike and proxy PIN.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/pins-and-locking.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>There are two separate PIN purposes: connecting this display to a secured BLE device, and protecting this display plus its phone proxy.</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>PIN</th>
+<th>Where it comes from</th>
+<th>What it controls</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Upstream BLE pairing PIN</td>
+<td>The VESC Express or other secured bike BLE device</td>
+<td>This display's encrypted connection to that device.</td>
+</tr>
+<tr>
+<td>Bike lock PIN</td>
+<td>Six digits set in the Bike menu</td>
+<td>Local lock screen, supported bike lock requests and the display's phone BLE proxy.</td>
+</tr>
+</tbody>
+</table></div>
+<p>The upstream pairing PIN never becomes the proxy PIN.</p>
+<h2 id="set-or-change-the-bike-pin">Set or change the bike PIN</h2>
+<p>Open <strong>Bike &gt; Set lock PIN</strong>, enter six digits and confirm them. If a PIN already exists, Change PIN and Remove PIN require the current code first. No default PIN or recovery-code screen is provided.</p>
+<p>The persistent record uses a salted PIN digest. The numeric proxy passkey is held in RAM after PIN setup or successful local unlock. Boot with a configured PIN requires local unlock before the secured proxy becomes available; the upstream pairing PIN itself is not saved.</p>
+<h2 id="lock-only-the-screen">Lock only the screen</h2>
+<p><strong>Lock screen</strong> protects the local controls without sending a bike lock command. The locked-screen timeout can be 15, 30, 60 or 120 seconds, with 30 seconds as the default.</p>
+<p>When it times out, the panel becomes black. Tap once to restore your brightness setting, lift your finger, and enter the PIN. That first tap cannot activate a hidden control. Partial PIN input is cleared across sleep and wake.</p>
+<h2 id="lock-the-bike-and-screen">Lock the bike and screen</h2>
+<p>When supported, <strong>Lock bike and screen</strong> requests the package's explicit LOCK command. The bike must have fresh stationary telemetry, no controller fault and a ready exclusive connection. The screen stays locked while the display waits for matching telemetry from the same connection.</p>
+<p>A command being queued is not proof that propulsion is disabled. If the controller does not confirm the state, the interface reports it as unconfirmed. Validate lock behavior on the exact bike firmware before relying on it. The supplied WFB protocol notes do not establish vendor firmware compatibility by themselves.</p>
+<h2 id="pair-the-phone">Pair the phone</h2>
+<p>With no bike PIN, the enabled proxy has no PIN requirement. With a bike PIN, the phone must complete authenticated BLE pairing using that code. Changing or removing the code disconnects old security sessions and removes old phone bonds; pair again when prompted.</p>
+<p>Upstream bike bonds are independent. Changing the local PIN does not change the PIN configured on VESC Express.</p>
+<h2 id="keep-the-security-boundaries-clear">Keep the security boundaries clear</h2>
+<p>The local code protects this display's controls and its proxy. It does not prevent another client from talking directly to the bike's separate interface, and it is not a hardware immobilizer. Physical flash access is outside this local access-control mechanism.</p>
+<p>See <a href="../locking/">locking internals</a> for implementation details and <a href="../todo/">open work</a> for remaining hardware acceptance checks.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../reference/notices/">Notices</a></span></footer></main>
+<aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
+<ul>
+<li><a href="#set-or-change-the-bike-pin">Set or change the bike PIN</a></li>
+<li><a href="#lock-only-the-screen">Lock only the screen</a></li>
+<li><a href="#lock-the-bike-and-screen">Lock the bike and screen</a></li>
+<li><a href="#pair-the-phone">Pair the phone</a></li>
+<li><a href="#keep-the-security-boundaries-clear">Keep the security boundaries clear</a></li>
+</ul>
+</div>
+</aside></div>
+<dialog class="search-dialog" aria-label="Search documentation"><form method="dialog"><button class="close-search" aria-label="Close search">×</button></form><label for="docs-search">Search Wheelie Fun Display</label><input id="docs-search" type="search" placeholder="Connection, PIN, build…" autocomplete="off"><div class="search-results" aria-live="polite"></div><p class="search-hint">Search the guides and implementation notes. Press Esc to close.</p></dialog>
+</body></html>

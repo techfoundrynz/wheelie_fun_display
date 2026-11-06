@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="../assets/favicon.svg" />
+    <title>Install firmware · Wheelie Fun Display</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="flasher-page">
+    <a class="skip-link" href="#content">Skip to content</a>
+    <header class="site-header">
+      <a class="brand" href="../"
+        ><svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 0 33 35" aria-hidden="true" fill="none" color="#63d9e5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <g id="bike-artwork" transform="translate(16 16) rotate(30) scale(-1 1) translate(-16 -16)">
+    <circle cx="7" cy="24" r="4.5" stroke-width="3"/>
+    <circle cx="25" cy="24" r="4.5" stroke-width="3"/>
+    <rect x="8" y="10" width="13" height="3" rx="0.8" stroke-width="2"/>
+    <path d="M7 24h5l-2-9h13l-1 9H12M10 15v-2h10M23 15l2 9M23 15 21 5h4m-4 0h-2"/>
+    <rect x="13" y="17" width="7" height="6" rx="1" stroke-width="1.5"/>
+    <path d="M15 19h3m-3 2h3M20 23h3" stroke-width="1.2"/>
+  </g>
+</svg><span>Wheelie Fun Display</span></a
+      >
+      <nav class="header-actions" aria-label="Site">
+        <a href="../">Documentation</a><a href="../simulator/">Simulator</a
+        ><a class="active" href="./" aria-current="page">Install firmware</a>
+      </nav>
+    </header>
+    <main id="content" class="flasher-main" tabindex="-1">
+      <section class="flasher-intro">
+        <p class="eyebrow">INSTALL FIRMWARE</p>
+        <h1>Ready for your next ride.</h1>
+        <p>
+          Connect your display with a USB data cable, choose its model, and
+          install Wheelie Fun Display from your browser.
+        </p>
+      </section>
+      <div class="flasher-grid">
+        <section class="install-card" aria-labelledby="install-title">
+          <div class="install-card-heading">
+            <span class="status-dot"></span
+            ><span id="release-label">Loading firmware…</span>
+          </div>
+          <h2 id="install-title">Choose your display</h2>
+          <label for="board-select">Display model</label>
+          <select id="board-select" disabled>
+            <option>Loading supported displays…</option>
+          </select>
+          <p id="firmware-status" class="firmware-status" role="status">
+            Checking available installation images.
+          </p>
+          <p id="compatibility" class="compatibility" hidden></p>
+          <div id="install-available" hidden>
+            <dl class="firmware-summary">
+              <div>
+                <dt>Display</dt>
+                <dd id="firmware-model"></dd>
+              </div>
+              <div>
+                <dt>Firmware</dt>
+                <dd id="firmware-version"></dd>
+              </div>
+              <div>
+                <dt>Chip</dt>
+                <dd id="firmware-chip"></dd>
+              </div>
+            </dl>
+            <esp-web-install-button id="installer">
+              <button
+                id="install-action"
+                class="button primary install-action"
+                slot="activate"
+                disabled
+              >
+                Connect &amp; install
+              </button>
+              <span class="capability-message" slot="unsupported"
+                >This browser does not provide Web Serial. Open this page in a
+                supported desktop browser, such as Chrome or Edge.</span
+              >
+              <span class="capability-message" slot="not-allowed"
+                >USB installation needs HTTPS or localhost. Open the published
+                site using HTTPS.</span
+              >
+            </esp-web-install-button>
+            <details class="download-details">
+              <summary>Download and integrity</summary>
+              <p>
+                <a id="firmware-download" download
+                  >Download the complete USB image</a
+                >
+              </p>
+              <span class="hash-label">SHA256</span
+              ><code id="firmware-sha"></code>
+            </details>
+          </div>
+          <a
+            id="release-link"
+            class="release-link"
+            href="https://github.com/techfoundrynz/wheelie_fun_display/releases"
+            >View releases on GitHub <span aria-hidden="true">↗</span></a
+          >
+        </section>
+        <section class="install-guide" aria-labelledby="before-title">
+          <p class="eyebrow">BEFORE YOU CONNECT</p>
+          <h2 id="before-title">A few simple steps.</h2>
+          <ol class="install-steps">
+            <li>
+              <span>1</span>
+              <div>
+                <h3>Choose the exact model</h3>
+                <p>
+                  Use the display name printed on your board. The installer
+                  checks the connected chip family.
+                </p>
+              </div>
+            </li>
+            <li>
+              <span>2</span>
+              <div>
+                <h3>Connect over USB</h3>
+                <p>
+                  Use a data cable and close any serial monitor. Select the
+                  display’s USB port when your browser asks.
+                </p>
+              </div>
+            </li>
+            <li>
+              <span>3</span>
+              <div>
+                <h3>Install, then restart</h3>
+                <p>
+                  Keep the display powered until installation finishes. Use its
+                  touchscreen to connect Wi-Fi and your bike afterward.
+                </p>
+              </div>
+            </li>
+          </ol>
+          <aside class="install-note">
+            <strong>Already running Wheelie Fun Display?</strong>
+            <p>
+              Use <b>Settings → Firmware updates</b> for normal updates. A
+              complete USB installation replaces the flash layout and can reset
+              saved settings.
+            </p>
+          </aside>
+          <p class="setup-help">
+            Port missing? Hold <b>BOOT</b>, tap <b>RESET</b>, then release
+            <b>BOOT</b>. See
+            <a href="../building/#first-usb-installation"
+              >USB installation instructions</a
+            >
+            for board setup and terminal flashing.
+          </p>
+        </section>
+      </div>
+    </main>
+    <footer class="flasher-footer">
+      <span>Wheelie Fun Display · GPL-3.0-only</span
+      ><span
+        >Installer powered by
+        <a href="https://github.com/esphome/esp-web-tools">ESP Web Tools</a> ·
+        <a href="vendor/esp-web-tools/THIRD_PARTY_NOTICES.txt">Notices</a></span
+      >
+    </footer>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

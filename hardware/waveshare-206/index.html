@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Waveshare S3 2.06-inch · Wheelie Fun Display</title><meta name="description" content="AMOLED setup, board wiring, orientation and USB recovery."><meta name="theme-color" content="#080b0e">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../../assets/style.css">
+<script defer src="../../assets/search-index.js"></script><script defer src="../../assets/site.js"></script></head>
+<body data-site-root="../../" class="docs-page">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="site-header"><a class="brand" href="../../"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 0 33 35" aria-hidden="true" fill="none" color="#63d9e5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <g id="bike-artwork" transform="translate(16 16) rotate(30) scale(-1 1) translate(-16 -16)">
+    <circle cx="7" cy="24" r="4.5" stroke-width="3"/>
+    <circle cx="25" cy="24" r="4.5" stroke-width="3"/>
+    <rect x="8" y="10" width="13" height="3" rx="0.8" stroke-width="2"/>
+    <path d="M7 24h5l-2-9h13l-1 9H12M10 15v-2h10M23 15l2 9M23 15 21 5h4m-4 0h-2"/>
+    <rect x="13" y="17" width="7" height="6" rx="1" stroke-width="1.5"/>
+    <path d="M15 19h3m-3 2h3M20 23h3" stroke-width="1.2"/>
+  </g>
+</svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
+<div class="header-actions"><a class="installer-link" href="../../install/">Install firmware</a><a class="simulator-link" href="../../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
+<button class="nav-overlay" type="button" aria-label="Close navigation"></button>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../../">Overview</a><div class="nav-group"><span>Start here</span><a href="../../getting-started/">Getting started</a><a href="../../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../../guide/">Using the display</a><a href="../../connections/">Connections &amp; proxy</a><a href="../../pins/">PINs &amp; locking</a><a href="../../maintenance/">Updates &amp; maintenance</a><a href="../../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="./" aria-current="page">Waveshare S3 2.06-inch</a><a href="../guition-43/">GUITION P4 4.3-inch</a></div><div class="nav-group"><span>For developers</span><a href="../../building/">Build &amp; install</a><a href="../../contributing/">Contributing</a><a href="../../architecture/">Architecture</a><a href="../../performance/">Performance</a><a href="../../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../../integrations/">Vehicle integrations</a><a href="../../locking/">Locking internals</a><a href="../../bluetooth/">Bluetooth internals</a><a href="../../transports/">Transport internals</a><a href="../../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../../reference/vesc-protocol/">WFB protocol notes</a><a href="../../reference/wfb-bike-layer/">WFB bike layer</a><a href="../../reference/theme/">Theme guide</a><a href="../../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">Hardware</div><h1>Waveshare S3 2.06-inch</h1><p>AMOLED setup, board wiring, orientation and USB recovery.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/hardware-waveshare-206.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>Use the <code>waveshare_esp32s3_206</code> target for the <strong>Waveshare ESP32-S3 Touch AMOLED 2.06</strong>. Its native resolution is 410 × 502, with a CO5300 AMOLED panel, FT3168 touch, 32 MB flash and 8 MB octal PSRAM. Wi-Fi and Bluetooth are built into the ESP32-S3; no radio companion needs provisioning.</p>
+<p><img alt="Software preview of the portrait Ride dashboard" src="../../assets/images/ride-portrait.png" /></p>
+<p>The picture is generated from the current shared UI during the documentation build. Its connected values are illustrative.</p>
+<h2 id="install-and-build">Install and build</h2>
+<p>Choose <strong>Waveshare ESP32-S3 AMOLED 2.06</strong> in the <a href="../../install/">browser firmware installer</a>, using a USB data cable. Select the exact board model rather than another Waveshare display size.</p>
+<p>To build this target locally:</p>
+<pre><code class="language-sh">pio run -e waveshare_esp32s3_206
+</code></pre>
+<p>The application is <code>.pio/build/waveshare_esp32s3_206/firmware.bin</code>. Release packaging produces <code>waveshare_esp32s3_206.bin</code> for OTA and <code>waveshare_esp32s3_206-factory.bin</code> for a complete USB installation. The complete image can reset saved settings; prefer the display's Wi-Fi/OTA flow for an ordinary update.</p>
+<p>Both supported boards use the common PlatformIO and ESP-IDF pins and the matching, checksum-verified Slint release. Shared settings are in <code>sdkconfig.defaults</code>, S3 settings in <code>config/sdkconfig.s3</code>, and board capabilities in <a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/platformio.ini">platformio.ini</a>. No Rust toolchain is needed for firmware builds.</p>
+<h2 id="display-touch-and-orientation">Display, touch and orientation</h2>
+<p>The profile runs the CPU at 240 MHz, flash and octal PSRAM at 80 MHz, and the panel's QSPI interface at 80 MHz. It uses internal DMA scanline buffers for rendering, with immutable font metadata kept in flash.</p>
+<p>CO5300 uses the managed SH8601-compatible QSPI transport with a 22-pixel column offset. FT3168 uses the compatible FT5x06 touch driver. Display and touch resets use direct GPIO control; there is no I/O expander.</p>
+<p>The rounded panel uses a 32-pixel safe inset. <strong>Settings &gt; Orientation</strong> cycles through 0°, 90°, 180° and 270° and saves the preference. The layout and touch transform follow the selected orientation; the native panel dimensions remain 410 × 502.</p>
+<h2 id="board-wiring">Board wiring</h2>
+<p>These are the shipped profile's internal connections, not suggested pins for external accessories.</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Function</th>
+<th>GPIO / value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>I2C SDA / SCL</td>
+<td>15 / 14</td>
+</tr>
+<tr>
+<td>QSPI clock / chip select</td>
+<td>11 / 12</td>
+</tr>
+<tr>
+<td>QSPI data 0–3</td>
+<td>4 / 5 / 6 / 7</td>
+</tr>
+<tr>
+<td>Display reset / enable</td>
+<td>8 / 13</td>
+</tr>
+<tr>
+<td>Touch reset / interrupt</td>
+<td>9 / 38</td>
+</tr>
+<tr>
+<td>Panel column offset</td>
+<td>22 pixels</td>
+</tr>
+</tbody>
+</table></div>
+<p>BLE is the default vehicle transport. CAN and UART appear in Settings only after their pin pairs are configured in the target profile. Choose available pins and provide the required external CAN transceiver or UART wiring; see <a href="../../transports/">vehicle transports</a>.</p>
+<h2 id="usb-recovery-and-checks">USB recovery and checks</h2>
+<p>If the serial device is missing, hold <strong>BOOT</strong>, tap <strong>RESET</strong>, then release <strong>BOOT</strong>. Check the USB data cable and run <code>pio device list</code> to identify the board's current port.</p>
+<p>After installation, confirm the dashboard, cog, Settings scrolling and touch at all four orientations. The connected S3 board has passed SDK 6.1 startup and rendering checks; real-bike, phone-proxy and OTA acceptance remain listed in <a href="../../todo/">TODO</a>. Occasional touch I2C read errors are also tracked there; save the serial log when diagnosing a touch issue.</p>
+<p>See <a href="../../troubleshooting/">troubleshooting</a>, <a href="../../performance/">performance configuration</a>, the <a href="https://www.waveshare.com/esp32-s3-touch-amoled-2.06.htm">Waveshare product page</a> and <a href="https://github.com/waveshareteam/ESP32-S3-Touch-AMOLED-2.06">vendor examples</a>.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../../reference/notices/">Notices</a></span></footer></main>
+<aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
+<ul>
+<li><a href="#install-and-build">Install and build</a></li>
+<li><a href="#display-touch-and-orientation">Display, touch and orientation</a></li>
+<li><a href="#board-wiring">Board wiring</a></li>
+<li><a href="#usb-recovery-and-checks">USB recovery and checks</a></li>
+</ul>
+</div>
+</aside></div>
+<dialog class="search-dialog" aria-label="Search documentation"><form method="dialog"><button class="close-search" aria-label="Close search">×</button></form><label for="docs-search">Search Wheelie Fun Display</label><input id="docs-search" type="search" placeholder="Connection, PIN, build…" autocomplete="off"><div class="search-results" aria-live="polite"></div><p class="search-hint">Search the guides and implementation notes. Press Esc to close.</p></dialog>
+</body></html>

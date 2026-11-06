@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Theme guide · Wheelie Fun Display</title><meta name="description" content="Colours, typography and component styling for the display."><meta name="theme-color" content="#080b0e">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../../assets/style.css">
+<script defer src="../../assets/search-index.js"></script><script defer src="../../assets/site.js"></script></head>
+<body data-site-root="../../" class="docs-page">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="site-header"><a class="brand" href="../../"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 0 33 35" aria-hidden="true" fill="none" color="#63d9e5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <g id="bike-artwork" transform="translate(16 16) rotate(30) scale(-1 1) translate(-16 -16)">
+    <circle cx="7" cy="24" r="4.5" stroke-width="3"/>
+    <circle cx="25" cy="24" r="4.5" stroke-width="3"/>
+    <rect x="8" y="10" width="13" height="3" rx="0.8" stroke-width="2"/>
+    <path d="M7 24h5l-2-9h13l-1 9H12M10 15v-2h10M23 15l2 9M23 15 21 5h4m-4 0h-2"/>
+    <rect x="13" y="17" width="7" height="6" rx="1" stroke-width="1.5"/>
+    <path d="M15 19h3m-3 2h3M20 23h3" stroke-width="1.2"/>
+  </g>
+</svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
+<div class="header-actions"><a class="installer-link" href="../../install/">Install firmware</a><a class="simulator-link" href="../../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
+<button class="nav-overlay" type="button" aria-label="Close navigation"></button>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../../">Overview</a><div class="nav-group"><span>Start here</span><a href="../../getting-started/">Getting started</a><a href="../../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../../guide/">Using the display</a><a href="../../connections/">Connections &amp; proxy</a><a href="../../pins/">PINs &amp; locking</a><a href="../../maintenance/">Updates &amp; maintenance</a><a href="../../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../../hardware/guition-43/">GUITION P4 4.3-inch</a></div><div class="nav-group"><span>For developers</span><a href="../../building/">Build &amp; install</a><a href="../../contributing/">Contributing</a><a href="../../architecture/">Architecture</a><a href="../../performance/">Performance</a><a href="../../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../../integrations/">Vehicle integrations</a><a href="../../locking/">Locking internals</a><a href="../../bluetooth/">Bluetooth internals</a><a href="../../transports/">Transport internals</a><a href="../wheel-e-protocol/">wheel-e protocol notes</a><a href="../vesc-protocol/">WFB protocol notes</a><a href="../wfb-bike-layer/">WFB bike layer</a><a href="./" aria-current="page">Theme guide</a><a href="../notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">Reference</div><h1>Theme guide</h1><p>Colours, typography and component styling for the display.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/wheelie-theming-guide.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>This guide describes the styles used by the Slint firmware and shared simulator. The implementation lives in <code>ui/theme.slint</code> and the reusable components in <code>ui/</code>.</p>
+<h2 id="colour">Colour</h2>
+<p>Use a black background with raised dark cards. Reserve colour for live state, selection, warnings and the speed gauge.</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Theme token</th>
+<th>Colour</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bg</code></td>
+<td><code>#000000</code></td>
+<td>Screen and page backgrounds</td>
+</tr>
+<tr>
+<td><code>surface</code></td>
+<td><code>#1D1D1D</code></td>
+<td>Cards, rows and panels</td>
+</tr>
+<tr>
+<td><code>raised</code></td>
+<td><code>#2A2A2A</code></td>
+<td>Raised controls and selected surfaces</td>
+</tr>
+<tr>
+<td><code>sunken</code></td>
+<td><code>#141414</code></td>
+<td>Recessed or disabled surfaces</td>
+</tr>
+<tr>
+<td><code>control</code></td>
+<td><code>#444444</code></td>
+<td>Control borders and value fields</td>
+</tr>
+<tr>
+<td><code>track</code></td>
+<td><code>#555555</code></td>
+<td>Gauge and progress tracks</td>
+</tr>
+<tr>
+<td><code>accent</code></td>
+<td><code>#69D2DF</code></td>
+<td>Selection, active icons and battery fill</td>
+</tr>
+<tr>
+<td><code>text</code></td>
+<td><code>#FFFFFF</code></td>
+<td>Main text and values</td>
+</tr>
+<tr>
+<td><code>secondary</code></td>
+<td><code>#BBBBBB</code></td>
+<td>Secondary labels and units</td>
+</tr>
+<tr>
+<td><code>muted</code></td>
+<td><code>#AAAAAA</code></td>
+<td>Inactive labels</td>
+</tr>
+<tr>
+<td><code>dim</code></td>
+<td><code>#808080</code></td>
+<td>Unselected settings cog and subdued details</td>
+</tr>
+<tr>
+<td><code>danger</code></td>
+<td><code>#FF4444</code></td>
+<td>Faults and overheating</td>
+</tr>
+<tr>
+<td><code>warning</code></td>
+<td><code>#FFC300</code></td>
+<td>Pending or cautionary state</td>
+</tr>
+<tr>
+<td><code>gauge</code></td>
+<td><code>#FFD700</code></td>
+<td>Speed arc</td>
+</tr>
+<tr>
+<td><code>eco</code></td>
+<td><code>#198E13</code></td>
+<td>Eco preset</td>
+</tr>
+<tr>
+<td><code>cruise</code></td>
+<td><code>#0E77AC</code></td>
+<td>Standard preset</td>
+</tr>
+<tr>
+<td><code>sport</code></td>
+<td><code>#AC0E0E</code></td>
+<td>Sport preset</td>
+</tr>
+</tbody>
+</table></div>
+<p>The battery bar uses dark text on cyan. Other cards keep light text on dark surfaces. Never use colour alone to communicate a fault or unavailable action.</p>
+<h2 id="typography">Typography</h2>
+<p>Use the bundled Roboto font with a clear weight hierarchy:</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Weight</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>500</td>
+<td>Body text, supporting values and units</td>
+</tr>
+<tr>
+<td>700</td>
+<td>Buttons, section labels and the connection header</td>
+</tr>
+<tr>
+<td>800</td>
+<td>Page headings and prominent numeric values</td>
+</tr>
+</tbody>
+</table></div>
+<p>Keep literal font weights in Slint so the embedded compiler includes the required faces. The firmware font plan includes 14, 16, 18, 20, 24, 28, 36, 48, 60, 72 and 84 px bitmaps. Large sizes use numeric glyph coverage for the speed readout. The browser simulator reads the same font plan.</p>
+<p>The connection header uses an 18 px label with a 10 px state dot. A fresh controller fault or temperature warning takes priority over the connection label and uses the danger colour. Otherwise show the most specific connection/probe/telemetry state; a phone reserving the link is an expected operational state. Ignore expired fault text, and keep an unpaired display labelled Disconnected rather than replacing it with a generic telemetry message. Long header text may wrap within the fixed 48 px row, while the Settings cog keeps its own hit area. Prominent page titles use 24 or 28 px. Metric values reduce to 18 px in compact landscape layouts so large readings retain their units. The speed readout scales with the gauge diameter, with units beneath it.</p>
+<p>Use <code>°</code> for angles and <code>°C</code> / <code>°F</code> for temperatures. Speed and temperature units have independent preferences.</p>
+<h2 id="header-and-navigation">Header and navigation</h2>
+<p>The top row contains connection state on the left and the settings cog on the right. Vertically centre both controls. Bound long status text to the available width and elide it before it overlaps the cog.</p>
+<p>The header has no vehicle wordmark or fallback brand heading. Integration identity remains available on the Bike page; its verified capabilities determine the available controls.</p>
+<p>The bottom navigation contains Ride, Tune and Bike. Use cyan for the active item and a quieter surface for inactive items. Primary-page swipes keep the header and navigation stationary.</p>
+<h2 id="cards-and-controls">Cards and controls</h2>
+<p>Use shared <code>Action</code>, <code>IconAction</code>, <code>Metric</code>, <code>SettingsRow</code> and <code>InfoRow</code> components. Prefer consistent padding and spacing over per-page approximations.</p>
+<ul>
+<li>Button outlines are 2 px, using <code>Theme.control-border</code>.</li>
+<li>Compact metric cards use 8 px padding; larger cards retain their standard padding.</li>
+<li>A settings row has a clear label, current value and a chevron icon.</li>
+<li>Disabled controls use subdued text and borders and reject pointer input.</li>
+<li>Ride presets, limit steppers and Apply actions are unavailable without a connected bike. Sending changes also requires fresh, stationary telemetry and the normal access checks.</li>
+</ul>
+<h2 id="speed-gauge">Speed gauge</h2>
+<p>Use the gold speed arc over a dark grey track. The stroke scales from a 16 px reference at a 260 px diameter. The speed digits scale to 28% of the diameter and stay centred above the unit label.</p>
+<p>Portrait layouts use the space recovered from the single-row connection header for a larger gauge, with the battery meter below it. Anchor metric cards above the bottom navigation. Keep status messages in the header; do not add a second status line to the Ride body. Do not solve a clipped power value by removing its unit or shortening it to an ellipsis.</p>
+<h2 id="responsive-layout-and-touch">Responsive layout and touch</h2>
+<p>The supported rotations are 0°, 90°, 180° and 270°. Portrait and landscape layouts share components and theme tokens. A rotation cancels the current gesture and requires a new contact.</p>
+<p>Read the panel resolution and safe inset from the hardware profile. Keep header controls, cards, dialogs, keyboard keys and PIN entry inside <code>SafeArea</code>. Rounded panels need additional corner clearance; rectangular panels can use the smaller inset defined by their profile.</p>
+<p>Check both supported display sizes in both aspect ratios: 410 × 502, 502 × 410, 480 × 800 and 800 × 480. Include long connection text, large power values, independent units, scrolling, PIN entry and keyboard editing.</p>
+<h2 id="motion-and-overlays">Motion and overlays</h2>
+<p>Primary page transitions use the shared page deck and a 250 ms easing curve. Swipes follow the finger, snap back when cancelled and stop at the first and last page. Vertical scrolling must remain distinct from horizontal navigation.</p>
+<p>Dialogs and PIN entry block the controls underneath. A sleeping locked screen is black. The wake contact restores the configured brightness and is consumed before another action is accepted.</p>
+<h2 id="documentation-and-web-tools">Documentation and web tools</h2>
+<p>The documentation site, simulator shell and firmware installer share the stylesheet, Roboto font, navigation and design tokens in <code>docs/site/</code>. Their app branding is <strong>Wheelie Fun Display</strong>. The shared bike artwork in <code>docs/site/bike.svg</code> depicts a 1970s-style minibike. Its orientation flips the bike horizontally, then rotates it 30° clockwise; headers and the favicon use the same oriented geometry.</p>
+<p>Documentation screenshots use deterministic, connected-looking values generated during the Pages build. They are illustrative previews; the interactive simulator identifies its hardware and services as simulated outside the display canvas.</p>
+<p>Keep third-party font, icon and artwork notices with the relevant assets. This guide does not change their licenses.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../notices/">Notices</a></span></footer></main>
+<aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
+<ul>
+<li><a href="#colour">Colour</a></li>
+<li><a href="#typography">Typography</a></li>
+<li><a href="#header-and-navigation">Header and navigation</a></li>
+<li><a href="#cards-and-controls">Cards and controls</a></li>
+<li><a href="#speed-gauge">Speed gauge</a></li>
+<li><a href="#responsive-layout-and-touch">Responsive layout and touch</a></li>
+<li><a href="#motion-and-overlays">Motion and overlays</a></li>
+<li><a href="#documentation-and-web-tools">Documentation and web tools</a></li>
+</ul>
+</div>
+</aside></div>
+<dialog class="search-dialog" aria-label="Search documentation"><form method="dialog"><button class="close-search" aria-label="Close search">×</button></form><label for="docs-search">Search Wheelie Fun Display</label><input id="docs-search" type="search" placeholder="Connection, PIN, build…" autocomplete="off"><div class="search-results" aria-live="polite"></div><p class="search-hint">Search the guides and implementation notes. Press Esc to close.</p></dialog>
+</body></html>

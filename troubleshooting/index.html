@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Troubleshooting · Wheelie Fun Display</title><meta name="description" content="Find the right next check for connection, touch or update issues."><meta name="theme-color" content="#080b0e">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../assets/style.css">
+<script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head>
+<body data-site-root="../" class="docs-page">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="site-header"><a class="brand" href="../"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 0 33 35" aria-hidden="true" fill="none" color="#63d9e5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <g id="bike-artwork" transform="translate(16 16) rotate(30) scale(-1 1) translate(-16 -16)">
+    <circle cx="7" cy="24" r="4.5" stroke-width="3"/>
+    <circle cx="25" cy="24" r="4.5" stroke-width="3"/>
+    <rect x="8" y="10" width="13" height="3" rx="0.8" stroke-width="2"/>
+    <path d="M7 24h5l-2-9h13l-1 9H12M10 15v-2h10M23 15l2 9M23 15 21 5h4m-4 0h-2"/>
+    <rect x="13" y="17" width="7" height="6" rx="1" stroke-width="1.5"/>
+    <path d="M15 19h3m-3 2h3M20 23h3" stroke-width="1.2"/>
+  </g>
+</svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
+<div class="header-actions"><a class="installer-link" href="../install/">Install firmware</a><a class="simulator-link" href="../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
+<button class="nav-overlay" type="button" aria-label="Close navigation"></button>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../">Overview</a><div class="nav-group"><span>Start here</span><a href="../getting-started/">Getting started</a><a href="../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../guide/">Using the display</a><a href="../connections/">Connections &amp; proxy</a><a href="../pins/">PINs &amp; locking</a><a href="../maintenance/">Updates &amp; maintenance</a><a href="./" aria-current="page">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../hardware/guition-43/">GUITION P4 4.3-inch</a></div><div class="nav-group"><span>For developers</span><a href="../building/">Build &amp; install</a><a href="../contributing/">Contributing</a><a href="../architecture/">Architecture</a><a href="../performance/">Performance</a><a href="../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../integrations/">Vehicle integrations</a><a href="../locking/">Locking internals</a><a href="../bluetooth/">Bluetooth internals</a><a href="../transports/">Transport internals</a><a href="../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../reference/vesc-protocol/">WFB protocol notes</a><a href="../reference/wfb-bike-layer/">WFB bike layer</a><a href="../reference/theme/">Theme guide</a><a href="../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">For riders</div><h1>Troubleshooting</h1><p>Find the right next check for connection, touch or update issues.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/troubleshooting.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>Start with what the display reports, then check the part of the connection it describes. Keep the bike stopped while investigating configuration or locking.</p>
+<h2 id="the-screen-is-black">The screen is black</h2>
+<p>If the display was locked, tap once, lift your finger and wait for the PIN screen. The timeout intentionally sets brightness to zero; waking restores your saved brightness.</p>
+<p>For a first installation, confirm the exact board target and that the full USB upload completed. A 1.8-inch or 2.41-inch image is not supported by this repository. Capture the boot log if the correct 2.06-inch build never shows the interface.</p>
+<h2 id="the-usb-port-is-missing">The USB port is missing</h2>
+<p>Use a USB data cable and try another direct port. Check <code>pio device list</code>. Follow the manufacturer's BOOT/RESET download-mode procedure if the board is not enumerating. Do not assume the port number is the same as a previous session.</p>
+<h2 id="no-bike-appears-over-ble">No bike appears over BLE</h2>
+<p>Power the bike and open its BLE interface. Make sure another client has not occupied a single-connection module. Recognizable bike names sort first, but other VESC UART devices can still appear. Leave the integration at <strong>Auto</strong> to probe supported packages regardless of the BLE name. If selecting a package explicitly, check that it is installed on the intended motor controller.</p>
+<h2 id="the-link-connects-but-values-stay-unavailable">The link connects but values stay unavailable</h2>
+<p>Transport connection, main-controller discovery and telemetry freshness are separate. Check the main-controller status on the Bike page. The package must match WFB or wheel-e when that integration is selected; generic VESC does not expose package-specific controls.</p>
+<p>If a phone owns the proxy, the display pauses its own queries. Disconnect the phone and let discovery/polling resume. If needed, choose <strong>Find main controller again</strong>. <code>--</code> is an unavailable reading, not zero.</p>
+<h2 id="the-ble-pin-is-rejected">The BLE PIN is rejected</h2>
+<p>Use the PIN configured on the upstream BLE device when pairing the display to it. Use the local bike lock PIN when pairing the phone to this display. They are separate codes.</p>
+<p>If credentials changed, retry pairing with the new upstream PIN. Changing or removing the bike PIN invalidates the phone's old security sessions/bonds. The phone may also need to forget its cached pairing before pairing again.</p>
+<h2 id="can-or-uart-is-absent-from-settings">CAN or UART is absent from Settings</h2>
+<p>The target must define both pins for that interface. The stock profile leaves optional wired pins unset. Check the build flags, actual board wiring, CAN transceiver, bus bit rate, unique display CAN ID or UART baud as applicable. Rebuild after changing target configuration.</p>
+<h2 id="a-tuning-or-lock-action-is-unavailable">A tuning or lock action is unavailable</h2>
+<p>The selected integration may not support it. Otherwise, wait for fresh stationary telemetry, a ready connection and no controller fault. A phone proxy lease also reserves the conversation. Draft values are not readbacks.</p>
+<p>For a lock request, an unconfirmed state means the display has not received the required matching telemetry. Do not assume the motor is disabled merely because the request was queued.</p>
+<h2 id="no-update-is-offered">No update is offered</h2>
+<p>Confirm Wi-Fi and the release feed, and look for a public release containing the exact board asset plus its digest. No release, a missing asset or a validation failure leaves the installed firmware in place. See <a href="../maintenance/">maintenance</a>.</p>
+<h2 id="report-a-reproducible-problem">Report a reproducible problem</h2>
+<p>Include the board target, firmware version, integration, transport, controller/phone/app versions, the last working behavior, exact steps and a serial log. Never include Wi-Fi passwords or PINs. See <a href="../contributing/">contributing</a>.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../reference/notices/">Notices</a></span></footer></main>
+<aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
+<ul>
+<li><a href="#the-screen-is-black">The screen is black</a></li>
+<li><a href="#the-usb-port-is-missing">The USB port is missing</a></li>
+<li><a href="#no-bike-appears-over-ble">No bike appears over BLE</a></li>
+<li><a href="#the-link-connects-but-values-stay-unavailable">The link connects but values stay unavailable</a></li>
+<li><a href="#the-ble-pin-is-rejected">The BLE PIN is rejected</a></li>
+<li><a href="#can-or-uart-is-absent-from-settings">CAN or UART is absent from Settings</a></li>
+<li><a href="#a-tuning-or-lock-action-is-unavailable">A tuning or lock action is unavailable</a></li>
+<li><a href="#no-update-is-offered">No update is offered</a></li>
+<li><a href="#report-a-reproducible-problem">Report a reproducible problem</a></li>
+</ul>
+</div>
+</aside></div>
+<dialog class="search-dialog" aria-label="Search documentation"><form method="dialog"><button class="close-search" aria-label="Close search">×</button></form><label for="docs-search">Search Wheelie Fun Display</label><input id="docs-search" type="search" placeholder="Connection, PIN, build…" autocomplete="off"><div class="search-results" aria-live="polite"></div><p class="search-hint">Search the guides and implementation notes. Press Esc to close.</p></dialog>
+</body></html>

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Build &amp; install · Wheelie Fun Display</title><meta name="description" content="Set up PlatformIO, install firmware and run the shared simulators."><meta name="theme-color" content="#080b0e">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../assets/style.css">
+<script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head>
+<body data-site-root="../" class="docs-page">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="site-header"><a class="brand" href="../"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 0 33 35" aria-hidden="true" fill="none" color="#63d9e5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <g id="bike-artwork" transform="translate(16 16) rotate(30) scale(-1 1) translate(-16 -16)">
+    <circle cx="7" cy="24" r="4.5" stroke-width="3"/>
+    <circle cx="25" cy="24" r="4.5" stroke-width="3"/>
+    <rect x="8" y="10" width="13" height="3" rx="0.8" stroke-width="2"/>
+    <path d="M7 24h5l-2-9h13l-1 9H12M10 15v-2h10M23 15l2 9M23 15 21 5h4m-4 0h-2"/>
+    <rect x="13" y="17" width="7" height="6" rx="1" stroke-width="1.5"/>
+    <path d="M15 19h3m-3 2h3M20 23h3" stroke-width="1.2"/>
+  </g>
+</svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
+<div class="header-actions"><a class="installer-link" href="../install/">Install firmware</a><a class="simulator-link" href="../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
+<button class="nav-overlay" type="button" aria-label="Close navigation"></button>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../">Overview</a><div class="nav-group"><span>Start here</span><a href="../getting-started/">Getting started</a><a href="../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../guide/">Using the display</a><a href="../connections/">Connections &amp; proxy</a><a href="../pins/">PINs &amp; locking</a><a href="../maintenance/">Updates &amp; maintenance</a><a href="../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../hardware/guition-43/">GUITION P4 4.3-inch</a></div><div class="nav-group"><span>For developers</span><a href="./" aria-current="page">Build &amp; install</a><a href="../contributing/">Contributing</a><a href="../architecture/">Architecture</a><a href="../performance/">Performance</a><a href="../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../integrations/">Vehicle integrations</a><a href="../locking/">Locking internals</a><a href="../bluetooth/">Bluetooth internals</a><a href="../transports/">Transport internals</a><a href="../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../reference/vesc-protocol/">WFB protocol notes</a><a href="../reference/wfb-bike-layer/">WFB bike layer</a><a href="../reference/theme/">Theme guide</a><a href="../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">For developers</div><h1>Build &amp; install</h1><p>Set up PlatformIO, install firmware and run the shared simulators.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/building.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>The firmware uses ESP-IDF through PlatformIO and a pinned Slint compiler/runtime pair. Firmware builds use matching prebuilt MCU compiler/runtime assets. Desktop/browser simulators need Rust. Both supported targets share the pinned platform and SDK in the common PlatformIO configuration.</p>
+<h2 id="supported-hardware">Supported hardware</h2>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Native resolution</th>
+<th>Hardware</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>waveshare_esp32s3_206</code></td>
+<td>410 × 502</td>
+<td>Waveshare ESP32-S3 Touch AMOLED 2.06, CO5300 / FT3168, 32 MB flash</td>
+</tr>
+<tr>
+<td><code>guition_jc4880p443c</code></td>
+<td>480 × 800</td>
+<td>GUITION JC4880P443C, ST7701S / GT911, 16 MB flash, P4 + C6</td>
+</tr>
+</tbody>
+</table></div>
+<p>See the <a href="../hardware/waveshare-206/">Waveshare S3 2.06-inch setup guide</a> for its board wiring and USB recovery. The <a href="../hardware/guition-43/">GUITION P4 4.3-inch target</a> requires an ESP32-P4 below revision 3.0 and compatible C6 companion firmware. Both targets are included in <code>default_envs</code>.</p>
+<p><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/platformio.ini">PlatformIO configuration</a> is the source of truth. Do not flash a different Waveshare size or revision with this target merely because it also uses an ESP32-S3.</p>
+<h2 id="prepare-the-tools">Prepare the tools</h2>
+<p>Install Python and PlatformIO Core, then use a terminal at the repository root. CI pins PlatformIO Core 6.2.0.</p>
+<pre><code class="language-sh">python -m pip install platformio==6.2.0
+pio run
+python scripts/check_sdkconfig.py --all
+</code></pre>
+<p><code>pio run</code> builds all supported <code>default_envs</code>. The project pins Espressif platform 8.0.0 / ESP-IDF 6.1 in the common environment and a matching pinned Slint compiler/runtime pair. The Slint compiler and runtime are downloaded together with checksum verification.</p>
+<p>Each application image is <code>.pio/build/&lt;environment&gt;/firmware.bin</code>. The ESP project identity is derived as <code>wfd_&lt;hardware-id&gt;</code>; release filenames use the PlatformIO environment name.</p>
+<h2 id="first-usb-installation">First USB installation</h2>
+<p>For a published release, open the <a href="../install/">browser installer</a>, choose the exact display and connect with a USB data cable. The installer checks the chip family and flashes a complete matching image. It can reset saved settings; use OTA for normal updates. The P4 installer does not provision the C6 companion.</p>
+<p>When uploading a local build with PlatformIO, discover the port rather than copying someone else's COM number:</p>
+<pre><code class="language-sh">pio device list
+pio run -e waveshare_esp32s3_206 -t upload --upload-port YOUR_PORT
+pio device monitor --port YOUR_PORT
+</code></pre>
+<p>Replace <code>YOUR_PORT</code> with the detected port, such as <code>COM9</code> on Windows or <code>/dev/ttyACM0</code> on Linux. If the board is not detected, use a known USB data cable and enter the board's download mode with BOOT/RESET as described by its manufacturer.</p>
+<p>The first installation must include the matching bootloader, partition table, OTA initialization data and application. PlatformIO upload uses the configured target layout. Do not upload only an application image to a factory partition layout. After installation, verify the dashboard, touch, all four orientations and the boot log before connecting a bike.</p>
+<h2 id="configure-an-optional-wired-interface">Configure an optional wired interface</h2>
+<p>BLE is the default. CAN and UART are available only when their pin pairs are defined in the target's <code>build_flags</code>. Choose unused, exposed GPIOs from the actual board schematic; the repository does not guess wiring.</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Build flag</th>
+<th>Default / requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CAN_TX</code>, <code>CAN_RX</code></td>
+<td>Both required to enable CAN. Connect through an external transceiver.</td>
+</tr>
+<tr>
+<td><code>CAN_BITRATE</code></td>
+<td><code>500000</code>; supported values 125000, 250000, 500000 and 1000000.</td>
+</tr>
+<tr>
+<td><code>CAN_LOCAL_ID</code></td>
+<td><code>254</code>; must be unique on the vehicle CAN bus.</td>
+</tr>
+<tr>
+<td><code>UART_TX</code>, <code>UART_RX</code></td>
+<td>Both required to enable UART.</td>
+</tr>
+<tr>
+<td><code>UART_BAUD</code></td>
+<td><code>115200</code>; must match the vehicle.</td>
+</tr>
+<tr>
+<td><code>BIKE_UART_PORT</code></td>
+<td><code>1</code>; ports 1 and 2 are supported, not the console port 0.</td>
+</tr>
+</tbody>
+</table></div>
+<p>Add the chosen <code>-D</code> definitions to the hardware profile and rebuild. The interfaces then appear in Settings. If a saved interface is unavailable in the current build, the display falls back to BLE. The main motor controller is found through discovery rather than a target CAN-ID build flag.</p>
+<h2 id="editor-and-live-preview">Editor and live preview</h2>
+<pre><code class="language-sh">python scripts/sync_slint_lsp.py
+</code></pre>
+<p>This downloads the pinned language server/live preview and writes the machine-specific path to ignored VS Code settings. Reload the editor after initial setup. The tracked shared settings remain portable; do not commit generated absolute tool paths.</p>
+<h2 id="desktop-simulator">Desktop simulator</h2>
+<p>Install a Rust toolchain, then run:</p>
+<pre><code class="language-sh">cargo run --locked --manifest-path simulator/Cargo.toml
+cargo run --locked --manifest-path simulator/Cargo.toml -- 502 410
+cargo run --locked --manifest-path simulator/Cargo.toml -- --wired
+cargo run --locked --manifest-path simulator/Cargo.toml -- --smoke-test
+</code></pre>
+<p>The <code>--wired</code> demo exposes simulated CAN/UART settings. Simulators use fake bike/Wi-Fi data and never drive hardware or download firmware. The <a href="../simulator/">browser simulator</a> runs the actual shared Slint UI and software renderer in WebAssembly. Application services remain browser-only mocks: connections, Wi-Fi, OTA, PIN validation and pairing do not reach hardware. Demo PINs/preferences reset on reload; the demo upstream pairing PIN is <code>123456</code>. Serve the generated site over HTTP rather than opening it with <code>file://</code>.</p>
+<h2 id="host-checks">Host checks</h2>
+<p>On Linux, or in WSL with a C++ compiler, CMake and Ninja:</p>
+<pre><code class="language-sh">cmake -S tests -B .cache/host-tests -G Ninja -DBIKE_SANITIZERS=ON
+cmake --build .cache/host-tests
+ctest --test-dir .cache/host-tests --output-on-failure
+</code></pre>
+<p>On Windows, use an installed compiler generator and omit sanitizer flags if unsupported. Headless UI checks use the shared Slint screens:</p>
+<pre><code class="language-sh">cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 410 502
+cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 502 410
+</code></pre>
+<p>See <a href="../contributing/">contributing</a> for choosing checks appropriate to a change and <a href="../maintenance/">maintenance</a> for release packaging.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../reference/notices/">Notices</a></span></footer></main>
+<aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
+<ul>
+<li><a href="#supported-hardware">Supported hardware</a></li>
+<li><a href="#prepare-the-tools">Prepare the tools</a></li>
+<li><a href="#first-usb-installation">First USB installation</a></li>
+<li><a href="#configure-an-optional-wired-interface">Configure an optional wired interface</a></li>
+<li><a href="#editor-and-live-preview">Editor and live preview</a></li>
+<li><a href="#desktop-simulator">Desktop simulator</a></li>
+<li><a href="#host-checks">Host checks</a></li>
+</ul>
+</div>
+</aside></div>
+<dialog class="search-dialog" aria-label="Search documentation"><form method="dialog"><button class="close-search" aria-label="Close search">×</button></form><label for="docs-search">Search Wheelie Fun Display</label><input id="docs-search" type="search" placeholder="Connection, PIN, build…" autocomplete="off"><div class="search-results" aria-live="polite"></div><p class="search-hint">Search the guides and implementation notes. Press Esc to close.</p></dialog>
+</body></html>

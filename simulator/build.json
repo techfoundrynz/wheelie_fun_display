@@ -1,0 +1,5 @@
+{
+  "renderer": "Slint software renderer",
+  "ui": "ui/dashboard.slint",
+  "simulated_hardware": true
+}

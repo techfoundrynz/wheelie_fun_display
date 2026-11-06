@@ -1,0 +1,17 @@
+{
+  "channel": "release",
+  "version": null,
+  "release_url": null,
+  "boards": [
+    {
+      "environment": "waveshare_esp32s3_206",
+      "label": "Waveshare ESP32-S3 AMOLED 2.06",
+      "available": false
+    },
+    {
+      "environment": "guition_jc4880p443c",
+      "label": "GUITION JC4880P443C 4.3",
+      "available": false
+    }
+  ]
+}

@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>wheel-e protocol notes · Wheelie Fun Display</title><meta name="description" content="Package identity, modern telemetry, locking and compatibility for wheel-e."><meta name="theme-color" content="#080b0e">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../../assets/style.css">
+<script defer src="../../assets/search-index.js"></script><script defer src="../../assets/site.js"></script></head>
+<body data-site-root="../../" class="docs-page">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="site-header"><a class="brand" href="../../"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 0 33 35" aria-hidden="true" fill="none" color="#63d9e5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <g id="bike-artwork" transform="translate(16 16) rotate(30) scale(-1 1) translate(-16 -16)">
+    <circle cx="7" cy="24" r="4.5" stroke-width="3"/>
+    <circle cx="25" cy="24" r="4.5" stroke-width="3"/>
+    <rect x="8" y="10" width="13" height="3" rx="0.8" stroke-width="2"/>
+    <path d="M7 24h5l-2-9h13l-1 9H12M10 15v-2h10M23 15l2 9M23 15 21 5h4m-4 0h-2"/>
+    <rect x="13" y="17" width="7" height="6" rx="1" stroke-width="1.5"/>
+    <path d="M15 19h3m-3 2h3M20 23h3" stroke-width="1.2"/>
+  </g>
+</svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
+<div class="header-actions"><a class="installer-link" href="../../install/">Install firmware</a><a class="simulator-link" href="../../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
+<button class="nav-overlay" type="button" aria-label="Close navigation"></button>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../../">Overview</a><div class="nav-group"><span>Start here</span><a href="../../getting-started/">Getting started</a><a href="../../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../../guide/">Using the display</a><a href="../../connections/">Connections &amp; proxy</a><a href="../../pins/">PINs &amp; locking</a><a href="../../maintenance/">Updates &amp; maintenance</a><a href="../../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../../hardware/guition-43/">GUITION P4 4.3-inch</a></div><div class="nav-group"><span>For developers</span><a href="../../building/">Build &amp; install</a><a href="../../contributing/">Contributing</a><a href="../../architecture/">Architecture</a><a href="../../performance/">Performance</a><a href="../../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../../integrations/">Vehicle integrations</a><a href="../../locking/">Locking internals</a><a href="../../bluetooth/">Bluetooth internals</a><a href="../../transports/">Transport internals</a><a href="./" aria-current="page">wheel-e protocol notes</a><a href="../vesc-protocol/">WFB protocol notes</a><a href="../wfb-bike-layer/">WFB bike layer</a><a href="../theme/">Theme guide</a><a href="../notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">Reference</div><h1>wheel-e protocol notes</h1><p>Package identity, modern telemetry, locking and compatibility for wheel-e.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/wheel-e-protocol.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>This document describes the wheel-e contract implemented by Wheelie Fun Display. The reference is <a href="https://github.com/buestad/wheel-e/tree/69382e619bb696ffe54ef899df90fd2115039ba2">buestad/wheel-e commit <code>69382e6</code></a>, whose package name is <code>Wheel-E</code>. Protocol compatibility is established with replies from the connected controller, independently of its Bluetooth name.</p>
+<h2 id="supported-contract">Supported contract</h2>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>VESC/application command</th>
+<th>Display behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Motor-controller identification</td>
+<td><code>COMM_FW_VERSION</code> (<code>0</code>)</td>
+<td>Requires a valid controller firmware identity; cached routes must also match the saved UUID.</td>
+</tr>
+<tr>
+<td>Package identification</td>
+<td><code>COMM_CUSTOM_APP_DATA</code> (<code>36</code>), interface <code>101</code>, <code>INFO</code> (<code>0</code>), version <code>2</code></td>
+<td>Requires a complete reply identifying <code>Wheel-E</code>.</td>
+</tr>
+<tr>
+<td>Standard motor telemetry</td>
+<td><code>COMM_GET_VALUES_SETUP</code> (<code>47</code>)</td>
+<td>Supplies speed, battery, voltage, currents, temperatures and controller fault.</td>
+</tr>
+<tr>
+<td>Package telemetry</td>
+<td>Interface <code>101</code>, <code>REALTIME_DATA</code> (<code>33</code>)</td>
+<td>Requires the exact float32/state/pitch/roll request described below.</td>
+</tr>
+<tr>
+<td>Bike lock/unlock</td>
+<td>Interface <code>101</code>, <code>LOCK</code> (<code>12</code>)</td>
+<td>Sends an explicit boolean and confirms the resulting state through fresh telemetry.</td>
+</tr>
+<tr>
+<td>Tuning, configuration, lights and remote throttle</td>
+<td>Other wheel-e commands</td>
+<td>Not exposed or transmitted by this display. Use VESC Tool for those features.</td>
+</tr>
+</tbody>
+</table></div>
+<p>The implementation lives in <a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/firmware/components/bike/integration.cpp">the integration</a>, <a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/firmware/components/bike/include/bike/controller_discovery.hpp">controller discovery</a> and <a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/firmware/components/bike/include/bike/lock_policy.hpp">lock policy</a>. These notes distinguish the upstream protocol from the display's deliberately smaller feature set.</p>
+<h2 id="transport-and-envelope">Transport and envelope</h2>
+<p>The byte sequences below are complete <strong>VESC payloads</strong>, before serial length/CRC framing or native CAN fragmentation. They can travel through the shared BLE, UART or CAN transport. See <a href="../../transports/">transport internals</a> for framing, CAN forwarding and controller routing.</p>
+<p>A wheel-e application payload begins:</p>
+<pre><code class="language-text">24 65 CC ...
+│  │  └─ wheel-e command, hexadecimal
+│  └──── interface 101 (0x65)
+└─────── COMM_CUSTOM_APP_DATA, 36 (0x24)
+</code></pre>
+<p>The upstream command pages omit this three-byte prefix when describing command-specific offsets. Every offset in this document includes it. Multi-byte integers use big-endian byte order. Float32 telemetry uses the upstream <code>buffer_append_float32_auto</code> format: IEEE 754 binary32 in big-endian order, with subnormal values flushed to zero by the encoder. <a href="https://github.com/buestad/wheel-e/blob/69382e619bb696ffe54ef899df90fd2115039ba2/doc/commands/index.md">Command envelope</a>, <a href="https://github.com/buestad/wheel-e/blob/69382e619bb696ffe54ef899df90fd2115039ba2/src/conf/buffer.c">numeric encoders</a>.</p>
+<p>Interface <code>101</code> is shared with Float/Refloat-family packages. Its presence, or a compatible telemetry response alone, is not a unique wheel-e identity. The display therefore requires the package-name check below before enabling wheel-e branding and features.</p>
+<h2 id="discovery-and-package-identity">Discovery and package identity</h2>
+<p><strong>Auto</strong> checks supported packages on discovered motor controllers. A manual <strong>wheel-e</strong> selection still performs verification. The relevant sequence is:</p>
+<ol>
+<li>Obtain a valid motor-controller firmware response, excluding non-motor adapters.</li>
+<li>Request <code>INFO</code> version 2 and verify the package name.</li>
+<li>Request modern <code>REALTIME_DATA</code> and validate the exact response format.</li>
+<li>Enable the wheel-e integration only after both package checks succeed.</li>
+</ol>
+<p>The standard firmware request <code>[0]</code> and the wheel-e application request <code>[36, 101, 0, 2, 0]</code> are different messages. The first identifies VESC firmware; the second identifies the installed package.</p>
+<p>The display stores bounded NVS route hints to accelerate later connections. A hint changes query order only: firmware UUID, package identity and telemetry are checked again. A missing controller, mismatched identity, removed package or failed probe returns to full discovery. See <a href="../../integrations/">vehicle integrations</a> for Auto and manual selection behavior.</p>
+<h3 id="info-version-2">INFO version 2</h3>
+<p>Request:</p>
+<pre><code class="language-text">24 65 00 02 00
+         │  └─ flags = 0
+         └──── INFO response version requested = 2
+</code></pre>
+<p>The referenced handler returns this <strong>61-byte</strong> VESC payload:</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Offset</th>
+<th>Bytes</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>1</td>
+<td><code>36</code>: VESC custom application data</td>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+<td><code>101</code>: package interface</td>
+</tr>
+<tr>
+<td>2</td>
+<td>1</td>
+<td><code>0</code>: INFO command</td>
+</tr>
+<tr>
+<td>3</td>
+<td>1</td>
+<td><code>2</code>: actual INFO response version</td>
+</tr>
+<tr>
+<td>4</td>
+<td>1</td>
+<td>Request flags echoed; <code>0</code> for the display's request</td>
+</tr>
+<tr>
+<td>5</td>
+<td>20</td>
+<td>Package name, zero-padded fixed-width string</td>
+</tr>
+<tr>
+<td>25</td>
+<td>3</td>
+<td>Package major, minor and patch version, one byte each</td>
+</tr>
+<tr>
+<td>28</td>
+<td>20</td>
+<td>Version suffix, zero-padded fixed-width string</td>
+</tr>
+<tr>
+<td>48</td>
+<td>4</td>
+<td>Build Git hash prefix</td>
+</tr>
+<tr>
+<td>52</td>
+<td>4</td>
+<td>System tick rate in Hz</td>
+</tr>
+<tr>
+<td>56</td>
+<td>4</td>
+<td>Package capability flags</td>
+</tr>
+<tr>
+<td>60</td>
+<td>1</td>
+<td>Extra flags</td>
+</tr>
+</tbody>
+</table></div>
+<p>The display accepts a case-insensitive exact <code>Wheel-E</code> name with zero padding, version <code>2</code>, echoed flags <code>0</code>, a nonzero tick rate and the complete layout. <code>Float</code>, <code>Refloat</code>, longer names with a <code>Wheel-E</code> prefix, legacy version-1 replies and truncated replies do not establish wheel-e identity. INFO capability bits are not used to expose additional controls.</p>
+<p>The reference build's tick rate is 10,000 Hz. Package version strings are diagnostic information; successful version-2 identity and modern telemetry replies are the compatibility requirements. <a href="https://github.com/buestad/wheel-e/blob/69382e619bb696ffe54ef899df90fd2115039ba2/doc/commands/INFO.md">INFO specification</a>, <a href="https://github.com/buestad/wheel-e/blob/69382e619bb696ffe54ef899df90fd2115039ba2/src/main.c#L2652">handler</a>, <a href="https://github.com/buestad/wheel-e/blob/69382e619bb696ffe54ef899df90fd2115039ba2/package_name">package name</a>.</p>
+<h2 id="realtime_data-command-33">REALTIME_DATA, command 33</h2>
+<p>The display requests float32 encoding and three fields from mask1: state flags at bit 1, pitch at bit 17 and roll at bit 19. Their combined mask is <code>0x000A0002</code>. Mask2 is zero.</p>
+<p>Request, <strong>12 bytes</strong>:</p>
+<pre><code class="language-text">24 65 21 01 00 0A 00 02 00 00 00 00
+         │  └─────────┘ └─────────┘
+         │     mask1       mask2
+         └─ control_flags = 1: float32
+</code></pre>
+<p>Response, <strong>28 bytes</strong>:</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Offset</th>
+<th>Bytes</th>
+<th>Field</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>3</td>
+<td>Command prefix</td>
+<td><code>[36, 101, 33]</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>1</td>
+<td>Control flags</td>
+<td>Exactly <code>1</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>4</td>
+<td>Mask1</td>
+<td>Exactly <code>0x000A0002</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>4</td>
+<td>Mask2</td>
+<td>Exactly <code>0</code></td>
+</tr>
+<tr>
+<td>12</td>
+<td>4</td>
+<td>Package time</td>
+<td>Unsigned ticks; divide by INFO tick rate for seconds</td>
+</tr>
+<tr>
+<td>16</td>
+<td>4</td>
+<td>State flags</td>
+<td>Packed unsigned integer described below</td>
+</tr>
+<tr>
+<td>20</td>
+<td>4</td>
+<td>Pitch</td>
+<td>Float32 degrees</td>
+</tr>
+<tr>
+<td>24</td>
+<td>4</td>
+<td>Roll</td>
+<td>Float32 degrees</td>
+</tr>
+</tbody>
+</table></div>
+<p>Selected fields follow mask-bit order. No float16 variant, additional mask fields or legacy compact telemetry layout is accepted by this decoder. The display rejects incorrect headers, flags or masks, incomplete/extended bodies, unknown run states, non-finite angles and angles outside ±180°. Rejected packets leave the last valid sample unchanged. <a href="https://github.com/buestad/wheel-e/blob/69382e619bb696ffe54ef899df90fd2115039ba2/doc/commands/REALTIME_DATA.md">REALTIME_DATA specification</a>, <a href="https://github.com/buestad/wheel-e/blob/69382e619bb696ffe54ef899df90fd2115039ba2/src/main.c#L2404">response encoder</a>.</p>
+<h3 id="state-flags">State flags</h3>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Bits</th>
+<th>Field</th>
+<th>Display use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>29–28</td>
+<td>Package mode</td>
+<td>Not currently projected into the UI</td>
+</tr>
+<tr>
+<td>26–24</td>
+<td>Run state</td>
+<td>Normalized using the table below</td>
+</tr>
+<tr>
+<td>23–22</td>
+<td>Footpad state</td>
+<td>Not currently projected into the UI</td>
+</tr>
+<tr>
+<td>21</td>
+<td>Charging</td>
+<td>Overrides the normalized state to <code>14</code>; blocks locking</td>
+</tr>
+<tr>
+<td>20</td>
+<td>Fatal error</td>
+<td>Overrides the normalized state to <code>255</code>; blocks locking</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Darkride</td>
+<td>Not currently projected into the UI</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Wheelslip</td>
+<td>Not currently projected into the UI</td>
+</tr>
+<tr>
+<td>15–12</td>
+<td>Setpoint adjustment type</td>
+<td>Not currently projected into the UI</td>
+</tr>
+<tr>
+<td>11–8</td>
+<td>Stop condition</td>
+<td>Not currently projected into the UI</td>
+</tr>
+<tr>
+<td>7–0</td>
+<td>Beep reason</td>
+<td>Not currently projected into the UI</td>
+</tr>
+</tbody>
+</table></div>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Raw run state</th>
+<th>Upstream name</th>
+<th>Display's internal state</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>DISABLED</td>
+<td>15</td>
+</tr>
+<tr>
+<td>1</td>
+<td>STARTUP</td>
+<td>11</td>
+</tr>
+<tr>
+<td>2</td>
+<td>READY</td>
+<td>0</td>
+</tr>
+<tr>
+<td>3</td>
+<td>RUNNING</td>
+<td>1</td>
+</tr>
+<tr>
+<td>4</td>
+<td>THROTTLE</td>
+<td>16</td>
+</tr>
+<tr>
+<td>5</td>
+<td>CRUISE</td>
+<td>17</td>
+</tr>
+</tbody>
+</table></div>
+<p>These are modern wheel-e states, not the four-bit legacy Float compatibility states. Keeping THROTTLE and CRUISE distinct allows the lock policy to reject cruise while considering stationary throttle mode. If charging and fatal error are both set, fatal error takes precedence. <a href="https://github.com/buestad/wheel-e/blob/69382e619bb696ffe54ef899df90fd2115039ba2/src/state.h">State definitions</a>, <a href="https://github.com/buestad/wheel-e/blob/69382e619bb696ffe54ef899df90fd2115039ba2/src/main.c#L2278">flag encoder</a>.</p>
+<h2 id="standard-telemetry-and-freshness">Standard telemetry and freshness</h2>
+<p>After verification, the display polls standard VESC setup telemetry (<code>47</code>) together with wheel-e realtime data (<code>33</code>) at 5 Hz. Standard telemetry supplies signed speed in m/s, voltage, battery percentage, motor/battery current, Celsius temperatures and controller fault. The UI converts speed and temperature into the independently selected display units.</p>
+<p>Package data supplies pitch, roll and run state. Standard telemetry is not a substitute for a missing package-identity or package-telemetry reply. Auto may instead select generic VESC when no supported package verifies; that integration has standard read-only telemetry and no wheel-e lock or tuning features.</p>
+<p>Setup and package freshness expire independently after 1,500 ms, measured from local receive time. The package timestamp is not used to schedule polling or establish freshness. A connection/route change clears prior telemetry and pending commands. Details are in <a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/firmware/components/bike/telemetry.cpp">telemetry parsing</a> and <a href="../../architecture/">architecture</a>.</p>
+<h2 id="lock-command-12">LOCK, command 12</h2>
+<p>The request contains one boolean byte, with no PIN or acknowledgement field:</p>
+<pre><code class="language-text">24 65 0C 01    lock:   disabled = true
+24 65 0C 00    unlock: disabled = false
+</code></pre>
+<p>The upstream handler acts only when the run state is not RUNNING. It reloads the persisted configuration, updates its disabled flag, changes the package state and writes configuration back to EEPROM. Unlocking from DISABLED enters STARTUP. The handler does not send a dedicated success response. This persistence also means temporary controller-side tuning is not retained by the lock handler. <a href="https://github.com/buestad/wheel-e/blob/69382e619bb696ffe54ef899df90fd2115039ba2/src/main.c#L1754">LOCK handler</a>, <a href="https://github.com/buestad/wheel-e/blob/69382e619bb696ffe54ef899df90fd2115039ba2/src/state.c#L63">state transition</a>.</p>
+<p>The display applies stricter write guards: current-session setup and package telemetry must both be fresh, speed magnitude below 0.2 m/s, motor-current magnitude below 2 A and controller fault zero. RUNNING, CRUISE, charging and fatal-error states are rejected. Stationary THROTTLE can pass these guards.</p>
+<p>A queued write is not confirmation. The display requires fresh telemetry from the same session, received more than 400 ms after the request: DISABLED confirms locking; a permitted stopped non-disabled state confirms unlocking. A five-second timeout, disconnect or stale data leaves the operation unconfirmed. Commands are not automatically replayed after reconnect. The six-digit <a href="../../pins/">display PIN</a> is local access control, separate from this wheel-e boolean command.</p>
+<h2 id="compatibility-limits">Compatibility limits</h2>
+<p>The supported contract requires INFO version 2 identifying <code>Wheel-E</code> and modern REALTIME_DATA command 33 with the exact format above. Older wheel-e releases without this identity response remain unsupported by the wheel-e integration. Other interface-101 packages remain eligible for generic read-only VESC telemetry through Auto, but do not receive wheel-e branding or write capabilities.</p>
+<p>Upstream marks <code>GET_RTDATA</code> (<code>1</code>) and <code>GET_ALLDATA</code> (<code>10</code>) deprecated. Internal realtime commands <code>31</code>/<code>32</code> do not provide the compatibility contract used here. This display does not send WFB-specific ride commands <code>100</code>/<code>103</code> to interface 101, and does not implement wheel-e configuration or throttle commands. <a href="https://github.com/buestad/wheel-e/blob/69382e619bb696ffe54ef899df90fd2115039ba2/doc/commands/index.md">Upstream command index</a>, <a href="https://github.com/buestad/wheel-e/blob/69382e619bb696ffe54ef899df90fd2115039ba2/src/main.c#L1581">command IDs and dispatch</a>.</p>
+<p>Portable tests cover identity validation, probe order, cached-hint re-verification, response sizes and masks, state normalization and lock confirmation. Actual controller firmware, phone interoperability and physical lock behavior still need hardware acceptance; source compatibility and simulator checks do not establish those results. See <a href="../../todo/">planned work</a>.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../notices/">Notices</a></span></footer></main>
+<aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
+<ul>
+<li><a href="#supported-contract">Supported contract</a></li>
+<li><a href="#transport-and-envelope">Transport and envelope</a></li>
+<li><a href="#discovery-and-package-identity">Discovery and package identity</a><ul>
+<li><a href="#info-version-2">INFO version 2</a></li>
+</ul>
+</li>
+<li><a href="#realtime_data-command-33">REALTIME_DATA, command 33</a><ul>
+<li><a href="#state-flags">State flags</a></li>
+</ul>
+</li>
+<li><a href="#standard-telemetry-and-freshness">Standard telemetry and freshness</a></li>
+<li><a href="#lock-command-12">LOCK, command 12</a></li>
+<li><a href="#compatibility-limits">Compatibility limits</a></li>
+</ul>
+</div>
+</aside></div>
+<dialog class="search-dialog" aria-label="Search documentation"><form method="dialog"><button class="close-search" aria-label="Close search">×</button></form><label for="docs-search">Search Wheelie Fun Display</label><input id="docs-search" type="search" placeholder="Connection, PIN, build…" autocomplete="off"><div class="search-results" aria-live="polite"></div><p class="search-hint">Search the guides and implementation notes. Press Esc to close.</p></dialog>
+</body></html>

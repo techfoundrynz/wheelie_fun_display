@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Using the display · Wheelie Fun Display</title><meta name="description" content="Ride, Tune, Bike, gestures and everyday settings."><meta name="theme-color" content="#080b0e">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../assets/style.css">
+<script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head>
+<body data-site-root="../" class="docs-page">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="site-header"><a class="brand" href="../"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 0 33 35" aria-hidden="true" fill="none" color="#63d9e5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <g id="bike-artwork" transform="translate(16 16) rotate(30) scale(-1 1) translate(-16 -16)">
+    <circle cx="7" cy="24" r="4.5" stroke-width="3"/>
+    <circle cx="25" cy="24" r="4.5" stroke-width="3"/>
+    <rect x="8" y="10" width="13" height="3" rx="0.8" stroke-width="2"/>
+    <path d="M7 24h5l-2-9h13l-1 9H12M10 15v-2h10M23 15l2 9M23 15 21 5h4m-4 0h-2"/>
+    <rect x="13" y="17" width="7" height="6" rx="1" stroke-width="1.5"/>
+    <path d="M15 19h3m-3 2h3M20 23h3" stroke-width="1.2"/>
+  </g>
+</svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
+<div class="header-actions"><a class="installer-link" href="../install/">Install firmware</a><a class="simulator-link" href="../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
+<button class="nav-overlay" type="button" aria-label="Close navigation"></button>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../">Overview</a><div class="nav-group"><span>Start here</span><a href="../getting-started/">Getting started</a><a href="../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="./" aria-current="page">Using the display</a><a href="../connections/">Connections &amp; proxy</a><a href="../pins/">PINs &amp; locking</a><a href="../maintenance/">Updates &amp; maintenance</a><a href="../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../hardware/guition-43/">GUITION P4 4.3-inch</a></div><div class="nav-group"><span>For developers</span><a href="../building/">Build &amp; install</a><a href="../contributing/">Contributing</a><a href="../architecture/">Architecture</a><a href="../performance/">Performance</a><a href="../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../integrations/">Vehicle integrations</a><a href="../locking/">Locking internals</a><a href="../bluetooth/">Bluetooth internals</a><a href="../transports/">Transport internals</a><a href="../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../reference/vesc-protocol/">WFB protocol notes</a><a href="../reference/wfb-bike-layer/">WFB bike layer</a><a href="../reference/theme/">Theme guide</a><a href="../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">For riders</div><h1>Using the display</h1><p>Ride, Tune, Bike, gestures and everyday settings.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/user-guide.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>The main screens keep the ride information close and the configuration controls deliberate. The same interface works at 0°, 90°, 180° and 270°. Tap <strong>Settings &gt; Orientation</strong> to advance through those angles; the selection is saved across restarts.</p>
+<p><img alt="Landscape ride dashboard" src="../assets/images/ride-landscape.png" /></p>
+<h2 id="ride">Ride</h2>
+<p>Speed uses your saved km/h or mph preference. Temperature units are configured separately. Pitch is shown with the degree symbol. The dashboard uses the selected integration's live VESC data; it does not calculate a substitute speed when messages are missing.</p>
+<p>Connection setup and data freshness are separate. A Bluetooth or wired link can be established before valid telemetry arrives. Readings become <code>--</code> when they expire, and configuration controls stay unavailable until their requirements are met.</p>
+<h2 id="tune">Tune</h2>
+<p>WFB offers Eco, Cruise and Sport ride-response presets plus speed-limit controls. Select a draft, tap Apply, review the confirmation and apply the change while the bike is stopped. The firmware checks connection identity, freshness, speed and controller fault again before enqueueing the command.</p>
+<p>A queued tuning command is not a readback. The current protocol does not document an acknowledgement for these writes. Selecting a preset in the UI does not prove it is the bike's stored preset.</p>
+<p>Wheel-e and generic VESC do not show WFB-only tuning controls. Use VESC Tool for configuration that this display does not expose.</p>
+<h2 id="bike">Bike</h2>
+<p>Leave the integration at <strong>Auto</strong> (the default) to detect a supported package through controller probes. Choose a specific integration to require that package. Disconnect or forget the bike to change the selection. The main-controller discovery status explains which controller the display is using; <strong>Find main controller again</strong> reruns the read-only discovery process when the link is available.</p>
+<p>Lock controls and the locked-screen timeout also live here. Unsupported package features are not enabled by selecting a different page.</p>
+<p><img alt="PIN entry screen" src="../assets/images/pin-entry.png" /></p>
+<h2 id="settings">Settings</h2>
+<p>The cog is always in the upper-right header. The Settings list scrolls vertically.</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Orientation</td>
+<td>Rotates the interface and touch mapping together.</td>
+</tr>
+<tr>
+<td>Speed units</td>
+<td>Switches km/h and mph.</td>
+</tr>
+<tr>
+<td>Temperature units</td>
+<td>Switches °C and °F independently of speed units.</td>
+</tr>
+<tr>
+<td>Brightness</td>
+<td>Sets the brightness restored after waking the locked display.</td>
+</tr>
+<tr>
+<td>Vehicle connection</td>
+<td>Selects BLE, CAN or UART when wired interfaces are configured for the target.</td>
+</tr>
+<tr>
+<td>BLE name</td>
+<td>Changes this display's own advertised name; default <code>WB Disp</code>.</td>
+</tr>
+<tr>
+<td>VESC BLE proxy</td>
+<td>Enables the phone connection; off by default.</td>
+</tr>
+<tr>
+<td>Wi-Fi</td>
+<td>Scans, connects, forgets a network or enters a hidden SSID.</td>
+</tr>
+<tr>
+<td>Firmware updates</td>
+<td>Checks and installs a matching GitHub release image.</td>
+</tr>
+<tr>
+<td>About</td>
+<td>Shows version, board identity and live diagnostics.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="touch-and-gestures">Touch and gestures</h2>
+<p>Horizontal swipes change the three primary pages and follow your finger. Short or reversed drags snap back. Vertical motion scrolls Tune and Bike content rather than changing pages. Moving pages do not accept accidental Apply or device-selection taps.</p>
+<p>The layout keeps content inside the panel's rounded corners. Changing orientation cancels a held gesture; lift your finger before starting another touch. The keyboard and PIN entry also respect the safe area.</p>
+<h2 id="when-a-phone-is-connected">When a phone is connected</h2>
+<p>The phone owns the VESC conversation while it is connected to the proxy. The display suspends its own queries, configuration writes and firmware maintenance. Recognized replies may update the dashboard passively; other readings become stale. Disconnect the phone to return the conversation to the display.</p>
+<p>The phone chooses its own CAN controller. The proxy never substitutes the display's selected main controller. See <a href="../connections/">connections</a>.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../reference/notices/">Notices</a></span></footer></main>
+<aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
+<ul>
+<li><a href="#ride">Ride</a></li>
+<li><a href="#tune">Tune</a></li>
+<li><a href="#bike">Bike</a></li>
+<li><a href="#settings">Settings</a></li>
+<li><a href="#touch-and-gestures">Touch and gestures</a></li>
+<li><a href="#when-a-phone-is-connected">When a phone is connected</a></li>
+</ul>
+</div>
+</aside></div>
+<dialog class="search-dialog" aria-label="Search documentation"><form method="dialog"><button class="close-search" aria-label="Close search">×</button></form><label for="docs-search">Search Wheelie Fun Display</label><input id="docs-search" type="search" placeholder="Connection, PIN, build…" autocomplete="off"><div class="search-results" aria-live="polite"></div><p class="search-hint">Search the guides and implementation notes. Press Esc to close.</p></dialog>
+</body></html>

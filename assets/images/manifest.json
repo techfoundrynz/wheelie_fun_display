@@ -1,0 +1,18 @@
+{
+  "renderer": "shared Slint software renderer",
+  "fixture": "illustrative connected values; no physical device connected",
+  "images": [
+    "ride-portrait.png",
+    "ride-landscape.png",
+    "wheel-e-portrait.png",
+    "tune.png",
+    "bike.png",
+    "settings-410x502.png",
+    "connections-settings.png",
+    "wifi-keyboard.png",
+    "updates.png",
+    "about.png",
+    "ble-pairing.png",
+    "pin-entry.png"
+  ]
+}

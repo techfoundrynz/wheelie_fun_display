@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vehicle integrations · Wheelie Fun Display</title><meta name="description" content="Capabilities and packet formats for WFB, wheel-e and VESC."><meta name="theme-color" content="#080b0e">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../assets/style.css">
+<script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head>
+<body data-site-root="../" class="docs-page">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="site-header"><a class="brand" href="../"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 0 33 35" aria-hidden="true" fill="none" color="#63d9e5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <g id="bike-artwork" transform="translate(16 16) rotate(30) scale(-1 1) translate(-16 -16)">
+    <circle cx="7" cy="24" r="4.5" stroke-width="3"/>
+    <circle cx="25" cy="24" r="4.5" stroke-width="3"/>
+    <rect x="8" y="10" width="13" height="3" rx="0.8" stroke-width="2"/>
+    <path d="M7 24h5l-2-9h13l-1 9H12M10 15v-2h10M23 15l2 9M23 15 21 5h4m-4 0h-2"/>
+    <rect x="13" y="17" width="7" height="6" rx="1" stroke-width="1.5"/>
+    <path d="M15 19h3m-3 2h3M20 23h3" stroke-width="1.2"/>
+  </g>
+</svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
+<div class="header-actions"><a class="installer-link" href="../install/">Install firmware</a><a class="simulator-link" href="../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
+<button class="nav-overlay" type="button" aria-label="Close navigation"></button>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../">Overview</a><div class="nav-group"><span>Start here</span><a href="../getting-started/">Getting started</a><a href="../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../guide/">Using the display</a><a href="../connections/">Connections &amp; proxy</a><a href="../pins/">PINs &amp; locking</a><a href="../maintenance/">Updates &amp; maintenance</a><a href="../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../hardware/guition-43/">GUITION P4 4.3-inch</a></div><div class="nav-group"><span>For developers</span><a href="../building/">Build &amp; install</a><a href="../contributing/">Contributing</a><a href="../architecture/">Architecture</a><a href="../performance/">Performance</a><a href="../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="./" aria-current="page">Vehicle integrations</a><a href="../locking/">Locking internals</a><a href="../bluetooth/">Bluetooth internals</a><a href="../transports/">Transport internals</a><a href="../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../reference/vesc-protocol/">WFB protocol notes</a><a href="../reference/wfb-bike-layer/">WFB bike layer</a><a href="../reference/theme/">Theme guide</a><a href="../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">Reference</div><h1>Vehicle integrations</h1><p>Capabilities and packet formats for WFB, wheel-e and VESC.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/integrations.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p><code>VehicleIntegration</code> is a portable interface with separate implementations for WFB, wheel-e and generic VESC. It owns package polling, telemetry decoding, command encoding, the brand name and supported-feature flags. BLE framing, transport, preferences and display rendering remain shared. The UI and command callbacks both gate unsupported features.</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Integration</th>
+<th>Package</th>
+<th>Dashboard</th>
+<th>Ride presets / speed limit</th>
+<th>Bike lock</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Wheelie Fun Bike</td>
+<td>102</td>
+<td>VESC setup plus WFB compact telemetry</td>
+<td>Supported</td>
+<td>LOCK 12; firmware compatibility needs hardware verification</td>
+</tr>
+<tr>
+<td>wheel-e</td>
+<td>101</td>
+<td>VESC setup plus REALTIME_DATA 33</td>
+<td>Not exposed; use VESC Tool</td>
+<td>LOCK 12</td>
+</tr>
+<tr>
+<td>VESC</td>
+<td>None</td>
+<td>Standard VESC setup telemetry</td>
+<td>Not exposed</td>
+<td>Not exposed; local screen PIN still works</td>
+</tr>
+</tbody>
+</table></div>
+<p>Choose <strong>Bike &gt; Vehicle integration</strong> before selecting a device. <strong>Auto</strong> is the default and probes for both WFB and wheel-e packages on discovered motor controllers. A valid package reply determines the integration; BLE names only affect discovery ranking. Auto falls back to read-only generic VESC only after the supported package probes find no match. Explicit WFB or wheel-e selections still require a matching package reply.</p>
+<p>Forget the connected bike to select another integration; the decoder and pending writes are invalidated with the session. The BLE peer and selected policy are persisted together after UART notification subscription succeeds. Auto remains Auto after discovery and probes again on reconnect; the detected integration does not silently replace the selected policy. A saved BLE association proves the UART link, not package compatibility; failed package probes cannot enable custom features. Matching BLE names rank ahead of other UART candidates, rather than excluding them.</p>
+<p>The header, window title and About page use the selected vehicle brand. WFB retains its supplied artwork; wheel-e and generic VESC use text wordmarks. Wheel-e does not display or send WFB's proprietary commands 100/103.</p>
+<h2 id="wheel-e-protocol-reference">wheel-e protocol reference</h2>
+<p>See the dedicated <a href="../reference/wheel-e-protocol/">wheel-e protocol notes</a> for identity verification, byte layouts, state flags, locking and compatibility limits.</p>
+<p>Implemented against <a href="https://github.com/buestad/wheel-e/tree/69382e619bb696ffe54ef899df90fd2115039ba2">buestad/wheel-e at 69382e6</a>, specifically <a href="https://github.com/buestad/wheel-e/blob/69382e619bb696ffe54ef899df90fd2115039ba2/src/main.c">command handlers</a>, <a href="https://github.com/buestad/wheel-e/blob/69382e619bb696ffe54ef899df90fd2115039ba2/doc/commands/REALTIME_DATA.md">REALTIME_DATA</a> and <a href="https://github.com/buestad/wheel-e/blob/69382e619bb696ffe54ef899df90fd2115039ba2/src/state.h">state definitions</a>.</p>
+<p>The application payload is <code>[36, 101, command, ...]</code> inside the ordinary VESC frame. Interface 101 is shared with Float/Refloat-family packages, so discovery first requires a complete INFO version-2 reply naming <code>Wheel-E</code> before verifying realtime telemetry. Other interface-101 packages do not receive wheel-e branding or write features. Poll 33 requests float32 values with mask1 <code>0x000a0002</code> (state flags, pitch, roll), mask2 zero. Responses must echo the exact requested format and masks and contain the complete body; invalid or truncated packets leave telemetry unchanged. Standard command 47 supplies speed, current, battery, temperatures and controller fault.</p>
+<p>Raw wheel-e states differ from the WFB compatibility states. DISABLED maps to display state 15, STARTUP to 11, READY to 0, RUNNING to 1, THROTTLE to 16 and CRUISE to 17. Charging and fatal-error flags prevent locking. THROTTLE may be locked only with fresh stationary telemetry, zero controller fault and motor current below 2 A; RUNNING and CRUISE are rejected. LOCK uses <code>[36, 101, 12, 1/0]</code>. No WFB configuration is sent to package 101.</p>
+<p>Protocol fixtures cover both package IDs, masks, endianness, state normalization, truncated replies and unsupported command rejection. A real wheel-e vehicle and phone are still required to verify radio interoperability, telemetry values and lock behavior.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../reference/notices/">Notices</a></span></footer></main>
+<aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
+<ul>
+<li><a href="#wheel-e-protocol-reference">wheel-e protocol reference</a></li>
+</ul>
+</div>
+</aside></div>
+<dialog class="search-dialog" aria-label="Search documentation"><form method="dialog"><button class="close-search" aria-label="Close search">×</button></form><label for="docs-search">Search Wheelie Fun Display</label><input id="docs-search" type="search" placeholder="Connection, PIN, build…" autocomplete="off"><div class="search-results" aria-live="polite"></div><p class="search-hint">Search the guides and implementation notes. Press Esc to close.</p></dialog>
+</body></html>
