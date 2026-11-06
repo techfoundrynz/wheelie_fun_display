@@ -4767,6 +4767,7 @@ dependencies = [
 name = "wheelie-fun-display-simulator"
 version = "0.1.0"
 dependencies = [
+ "i-slint-backend-testing",
  "slint",
  "slint-build",
 ]

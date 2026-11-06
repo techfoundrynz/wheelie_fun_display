@@ -12,6 +12,8 @@ path = "checks/transitions.rs"
 [dependencies]
 slint = { git = "https://github.com/techfoundrynz/slint", tag = "mcu-v1.19.5", default-features = false, features = ["std", "backend-winit", "renderer-software", "compat-1-2"] }
 
+i-slint-backend-testing = { git = "https://github.com/techfoundrynz/slint", tag = "mcu-v1.19.5" }
+
 [build-dependencies]
 slint-build = { git = "https://github.com/techfoundrynz/slint", tag = "mcu-v1.19.5" }
 

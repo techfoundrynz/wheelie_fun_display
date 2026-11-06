@@ -72,11 +72,30 @@ The first USB installation must include the new two-slot partition table and OTA
 
 ## Shared UI components
 
+`ui/dashboard.slint` is the window and application-facing API: it owns shared state, responsive breakpoints, navigation transitions and modal ordering. Page components receive explicit properties and callbacks; mutable drafts and selections use two-way bindings. Firmware, native and browser simulators all use this same window.
+
+| UI source | Responsibility |
+|---|---|
+| `ui/pages/ride.slint` | Portrait and landscape telemetry layouts |
+| `ui/pages/tune.slint` | Ride presets and speed-limit drafts |
+| `ui/pages/bike.slint` | Vehicle discovery, integration selection and locking actions |
+| `ui/pages/settings.slint` | Display, units, transport and proxy preferences |
+| `ui/pages/wifi.slint` | Network discovery and saved connections |
+| `ui/pages/updates.slint` | Release checks, downloads and restart actions |
+| `ui/pages/about.slint` | Version information and diagnostic rows |
+| `ui/models.slint` | Shared peer, network and diagnostic row types, re-exported by the window |
+| `ui/header.slint`, `ui/navigation.slint` | Connection status, Settings access and primary tabs |
+| `ui/battery-meter.slint`, `ui/speedometer.slint` | Reusable telemetry indicators |
+| `ui/settings.slint`, `ui/controls.slint` | Shared rows, steppers, actions and metric cards |
+| `ui/dialogs/` | Bike-change and firmware-install confirmations |
+
+Ride, Tune, Bike, Wi-Fi, Updates and About inherit `TransitionPage`, retaining the same incoming/outgoing-page lifecycle without adding a layout wrapper. Settings uses its scrolling `Page` inside a `TransitionPage`. Gesture offsets remain owned by `PageDeck` and are forwarded to scrolling content. New Slint files are included automatically by the recursive firmware UI dependency scan.
+
 Page provides a vertically scrolling content layout. Action, Metric, SettingsRow, Stepper, SectionTitle and InfoRow are reusable themed components. Keyboard provides case/symbol modes, password masking/reveal, space and delete, with bounded SSID/password editors in the application. Settings links to Wi-Fi, Updates and About; About has separate version and live-diagnostics views. Speed and temperature preferences are independent, while fault/overheat decisions use native protocol units.
 
 The header Settings cog uses a Lucide SVG and a reusable 48-pixel IconAction touch target. Ride, Tune and Bike remain in the bottom navigation; Settings and its subpages highlight the header cog.
 
-Rounded-panel layout uses the profile-supplied DISPLAY_SAFE_INSET (32 pixels on the 2.06 board) through a reusable SafeArea component. This conservative symmetric inset is rotation invariant; it is not a claimed measurement of the panel corner radius. WFB uses its complete official wordmark as one image; other integrations use their text brand.
+Rounded-panel layout uses the profile-supplied DISPLAY_SAFE_INSET (32 pixels on the 2.06 board) through a reusable SafeArea component. This conservative symmetric inset is rotation invariant; it is not a claimed measurement of the panel corner radius. The fixed header shows the connection state or a more specific alert; vehicle branding remains separate from the status controls.
 
 PageDeck and TransitionPage implement opaque 250 ms ease-out navigation with a retained outgoing page. Only the active and previous page exist during a slide; the previous page is released at completion. A clipped content viewport keeps the header, status and bottom navigation fixed inside the safe area. A pointer blocker prevents controls on moving pages from receiving clicks. Programmatic changes coalesce to the latest requested page; resize/rotation and modal input snap to the requested page. No screen capture or additional display framebuffer is used.
 

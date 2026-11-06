@@ -50,8 +50,6 @@ jobs:
       - run: pip install clang-format==23.1.0 ruff==0.17.1
       - run: python scripts/format_cpp.py --check
       - run: python -m ruff format --check scripts tests
-      - run: python tests/format_cpp_tests.py
-      - run: python tests/prepare_slint_fonts_tests.py
 
   tests:
     runs-on: ubuntu-latest
@@ -65,14 +63,10 @@ jobs:
           python-version: '3.11'
       - run: cmake -S tests -B .cache/host-tests -G Ninja -DBIKE_SANITIZERS=ON
       - run: cmake --build .cache/host-tests && ctest --test-dir .cache/host-tests --output-on-failure
-      - name: Check release and preview publication policies
-        run: |
-          python tests/release_version_tests.py
-          python tests/package_release_tests.py
-          python tests/flash_artifacts_tests.py
-          python tests/publish_pages_tests.py
-          python tests/preview_archive_tests.py
-          node --test tests/preview_publish_tests.cjs
+      - name: Discover Python unit tests
+        run: python -m unittest discover -s tests -p '*_tests.py' -v
+      - name: Discover Node tests
+        run: node --test tests/*_tests.cjs
 
   native-simulator:
     runs-on: ubuntu-latest
@@ -98,28 +92,10 @@ jobs:
         run: |
           cargo fmt --check --manifest-path simulator/Cargo.toml
           cargo fmt --check --manifest-path simulator/web/Cargo.toml
-      - name: Check navigation, gestures and settings at all target layouts
-        run: |
-          cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 410 502
-          cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 502 410
-          cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 480 800
-          cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 800 480
-      - name: Check layouts and disconnected controls on both displays
-        run: |
-          cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 410 502 --tuning-fixtures
-          cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 502 410 --tuning-fixtures
-          cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 480 800 --tuning-fixtures
-          cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 800 480 --tuning-fixtures
-      - name: Check Ride status priority and responsive cards
-        run: |
-          cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 410 502 --ride-fixtures
-          cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 502 410 --ride-fixtures
-          cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 480 800 --ride-fixtures
-          cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 800 480 --ride-fixtures
+      - name: Discover native simulator tests
+        run: cargo test --locked --manifest-path simulator/Cargo.toml
       - name: Verify all four touch transforms against rendered pixels
         run: |
-          cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 410 502 --rotation-fixtures
-          cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 480 800 --rotation-fixtures
           cmake -S tests -B .cache/host-tests -G Ninja -DBIKE_SANITIZERS=ON -DBIKE_RENDERER_FIXTURES=${{ github.workspace }}/.cache/transition-checks
           cmake --build .cache/host-tests
           ctest --test-dir .cache/host-tests --output-on-failure -R orientation_renderer

@@ -70,6 +70,35 @@ fn click(window: &MinimalSoftwareWindow, x: f32, y: f32) {
         button: PointerEventButton::Left,
     });
 }
+// Resolve real layout geometry, then dispatch pointer input through the normal
+// hit-testing path. Accessible actions alone would bypass disabled/modal checks.
+fn control_center(ui: &Dashboard, label: &str) -> (f32, f32) {
+    let controls: Vec<_> =
+        i_slint_backend_testing::ElementHandle::find_by_accessible_label(ui, label)
+            .filter(|control| {
+                control.accessible_role() == Some(i_slint_backend_testing::AccessibleRole::Button)
+            })
+            .collect();
+    assert_eq!(controls.len(), 1, "Expected one control labelled {label:?}");
+    let position = controls[0].absolute_position();
+    let size = controls[0].size();
+    assert!(
+        size.width > 0. && size.height > 0.,
+        "Empty control: {label}"
+    );
+    (position.x + size.width / 2., position.y + size.height / 2.)
+}
+
+fn click_control(window: &MinimalSoftwareWindow, ui: &Dashboard, label: &str) {
+    let (x, y) = control_center(ui, label);
+    let size = window.window().size();
+    assert!(
+        x >= 0. && x < size.width as f32 && y >= 0. && y < size.height as f32,
+        "Control {label:?} is outside the viewport at ({x}, {y})"
+    );
+    click(window, x, y);
+}
+
 fn pointer(window: &MinimalSoftwareWindow, kind: &str, x: f32, y: f32) {
     let position = slint::LogicalPosition::new(x, y);
     window.dispatch_event(match kind {
@@ -269,23 +298,11 @@ fn main() {
         click(&window, width as f32 - 54., 56.);
         click(&window, 40., height as f32 - 56.);
         assert_eq!(ui.get_page(), 2);
-        let first_y = if width < height { 203. } else { 169. };
-        let step_y = if width < height { 54. } else { 46. };
-        let cell_width = (width as f32 - 76.) / 3.;
-        let first_x = 32. + cell_width / 2.;
-        for digit in 0..6 {
-            click(
-                &window,
-                first_x + (digit % 3) as f32 * (cell_width + 6.),
-                first_y + (digit / 3) as f32 * step_y,
-            );
+        for digit in 1..=6 {
+            click_control(&window, &ui, &digit.to_string());
         }
         assert_eq!(&*entered.borrow(), "123456");
-        click(
-            &window,
-            first_x + 2. * (cell_width + 6.),
-            first_y + 3. * step_y,
-        );
+        click_control(&window, &ui, "OK");
         assert_eq!(submitted.get(), 1);
         ui.set_pairing_failed(true);
         frame(&window, &clock, 20, &mut pixels, width);
@@ -310,34 +327,33 @@ fn main() {
         });
         frame(&window, &clock, 20, &mut pixels, width);
         capture("transport-settings", &pixels, width, height);
-        let row_y = if width < height { 263. } else { 162. };
         for (step, kind) in [(1, 1), (2, 2), (3, 0)] {
-            click(&window, width as f32 / 2., row_y);
+            click_control(&window, &ui, "Vehicle connection");
             assert_eq!(ui.get_transport_kind(), kind);
             frame(&window, &clock, 20 + step * 20, &mut pixels, width);
             capture(&format!("transport-kind-{kind}"), &pixels, width, height);
         }
         ui.set_can_change_transport(false);
-        click(&window, width as f32 / 2., row_y);
+        click_control(&window, &ui, "Vehicle connection");
         assert_eq!(ui.get_transport_kind(), 0);
         ui.set_can_change_transport(true);
         ui.set_can_available(false);
-        click(&window, width as f32 / 2., row_y);
+        click_control(&window, &ui, "Vehicle connection");
         assert_eq!(ui.get_transport_kind(), 2); // Absent CAN is skipped.
-        click(&window, width as f32 / 2., row_y);
+        click_control(&window, &ui, "Vehicle connection");
         assert_eq!(ui.get_transport_kind(), 0);
         ui.set_can_available(true);
         ui.set_uart_available(false);
-        click(&window, width as f32 / 2., row_y);
+        click_control(&window, &ui, "Vehicle connection");
         assert_eq!(ui.get_transport_kind(), 1); // Absent UART is skipped.
         let proxy_calls = Rc::new(Cell::new(0));
         let called = proxy_calls.clone();
         ui.on_ble_proxy_changed(move |_| called.set(called.get() + 1));
-        click(&window, width as f32 / 2., row_y + 72.);
+        click_control(&window, &ui, "BLE proxy");
         assert_eq!(proxy_calls.get(), 1);
-        click(&window, width as f32 / 2., row_y);
+        click_control(&window, &ui, "Vehicle connection");
         assert_eq!(ui.get_transport_kind(), 0);
-        click(&window, width as f32 / 2., row_y + 72.);
+        click_control(&window, &ui, "BLE proxy");
         assert_eq!(proxy_calls.get(), 2);
         println!(
             "{width}x{height}: transport cycling, pin availability, disabled changes and proxy availability on wired transports passed"
@@ -424,27 +440,15 @@ fn main() {
         click(&window, 40., height as f32 - 56.);
         assert_eq!(ui.get_page(), 2);
         // Exercise the actual keypad in both layouts, including its disabled state.
-        let first_y = if width < height { 203. } else { 169. };
-        let step_y = if width < height { 54. } else { 46. };
-        let cell_width = (width as f32 - 76.) / 3.;
-        let first_x = 32. + cell_width / 2.;
         ui.set_pin_ready(false);
-        click(&window, first_x, first_y);
+        click_control(&window, &ui, "1");
         assert!(entered.borrow().is_empty());
         ui.set_pin_ready(true);
-        for digit in 0..6 {
-            click(
-                &window,
-                first_x + (digit % 3) as f32 * (cell_width + 6.),
-                first_y + (digit / 3) as f32 * step_y,
-            );
+        for digit in 1..=6 {
+            click_control(&window, &ui, &digit.to_string());
         }
         assert_eq!(&*entered.borrow(), "123456");
-        click(
-            &window,
-            first_x + 2. * (cell_width + 6.),
-            first_y + 3. * step_y,
-        );
+        click_control(&window, &ui, "OK");
         assert_eq!(submissions.get(), 1);
         ui.set_screen_asleep(true);
         frame(&window, &clock, 20, &mut pixels, width);

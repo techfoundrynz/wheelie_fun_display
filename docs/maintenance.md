@@ -85,3 +85,18 @@ The [browser installer](https://techfoundrynz.github.io/wheelie_fun_display/inst
 The [interactive simulator](../simulator/) is the clean end-user preview. The separate [CI browser evidence gallery](../ci/) contains touchscreen checks and their captured images. Browser checks cover root and project-subpath hosting, navigation, search, touch, rotation, PIN entry, telemetry and responsive layout. Screenshots support visual review; they are not pixel-baseline comparisons or real-device acceptance.
 
 Preview the generated site through a local HTTP server. Both the downloadable site artifact and GitHub Pages include the simulator and separate CI gallery. Generated HTML and screenshots are build outputs, not a second hand-edited copy of the source.
+
+## Test discovery
+
+CI runs the same framework entry points used locally:
+
+```sh
+python -m unittest discover -s tests -p '*_tests.py' -v
+node --test tests/*_tests.cjs
+cargo test --locked --manifest-path simulator/Cargo.toml
+ctest --test-dir .cache/host-tests --output-on-failure
+```
+
+Add Python unit tests as `tests/*_tests.py` and Node suites as `tests/*_tests.cjs`. Cargo automatically discovers `#[test]` cases under `simulator/tests/`; display scenarios share the supported viewport list and launch isolated fixture processes to avoid sharing Slint platform state. Register C++ suites with CTest in `tests/CMakeLists.txt`. New test cases do not require workflow edits. Browser acceptance checks run in the Pages build after its simulator and installer artifacts exist.
+
+The P4 board profile explicitly selects `build.toolchain = riscv32-esp`. A pre-build hook applies it immediately before framework build environments are created, and the matching compiler package is pinned in the common configuration. This compensates for espressif32 8.0.0's incomplete MCU architecture table; do not patch the locally installed platform builder.

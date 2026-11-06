@@ -25,6 +25,10 @@ fn main() -> Result<(), slint::PlatformError> {
                 .max(320.0),
         );
     }
+    ui.window().set_size(slint::LogicalSize::new(
+        ui.get_initial_width(),
+        ui.get_initial_height(),
+    ));
     ui.set_rotation(if ui.get_initial_width() > ui.get_initial_height() {
         90
     } else {
@@ -126,6 +130,7 @@ fn main() -> Result<(), slint::PlatformError> {
         if (degrees == 90 || degrees == 270) != (w > h) {
             ui.set_initial_width(h);
             ui.set_initial_height(w);
+            ui.window().set_size(slint::LogicalSize::new(h, w));
         }
     });
     ui.set_wifi_networks(ModelRc::from(Rc::new(VecModel::from(vec![WifiItem {
