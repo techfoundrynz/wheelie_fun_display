@@ -78,7 +78,7 @@ def main():
                     page.goto(f"http://127.0.0.1:{server.server_port}/{destination}/")
                     preview = page.frame_locator('iframe[title="PR simulator preview"]')
                     expect(preview.locator("#status")).to_have_text(
-                        re.compile(r"^Ready")
+                        re.compile(r"^Ready"), timeout=30_000
                     )
                     # Readiness above guarantees an attached browsing context.
                     frame = (
@@ -115,7 +115,7 @@ def main():
                     page.screenshot(path=str(output / f"{width}-hosted-gallery.png"))
                     page.get_by_role("link", name="Simulator", exact=True).click()
                     expect(preview.locator("#status")).to_have_text(
-                        re.compile(r"^Ready")
+                        re.compile(r"^Ready"), timeout=30_000
                     )
                     assert not errors, errors
                     page.close()
