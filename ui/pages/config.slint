@@ -1,0 +1,156 @@
+import { TransitionPage } from "../page-transition.slint";
+import { SwipeScroll } from "../swipe-scroll.slint";
+import { SettingsRow } from "../settings.slint";
+import { Action } from "../controls.slint";
+import { Theme } from "../theme.slint";
+import { Peer } from "../models.slint";
+
+export component ConfigPage inherits TransitionPage {
+    page-index: 2;
+    in property <string> bike-lock-status;
+    in property <bool> can-configure;
+    in property <bool> connected;
+    in property <string> controller-status;
+    in property <length> drag-delta;
+    in-out property <int> integration-choice;
+    in property <bool> link-present;
+    in property <int> lock-timeout;
+    in property <[Peer]> peers;
+    in property <bool> pin-configured;
+    in property <bool> scroll-active;
+    in property <bool> supports-lock;
+    in property <int> transport-kind;
+
+    callback bike-lock();
+    callback connect-peer(int);
+    callback connect-wired();
+    callback discover-controller();
+    callback forget-peer();
+    callback lock-timeout-changed(int);
+    callback pin-remove();
+    callback pin-setup();
+    callback screen-lock();
+
+    SwipeScroll {
+        scroll-active: root.scroll-active;
+        drag-delta: root.drag-delta;
+        content-width: self.width;
+        VerticalLayout {
+            spacing: 10px;
+            Text {
+                text: "YOUR BIKE";
+                color: Theme.text;
+                font-size: 20px;
+                font-weight: 800;
+            }
+
+            if root.controller-status != "": Text {
+                text: root.controller-status;
+                color: Theme.secondary;
+                font-size: 14px;
+                wrap: word-wrap;
+            }
+            if root.link-present: Action {
+                label: "Find main controller again";
+                activated => { root.discover-controller(); }
+            }
+            if !root.link-present && root.transport-kind != 0: Action {
+                label: root.transport-kind == 1 ? "Connect via CAN" : "Connect via UART";
+                activated => { root.connect-wired(); }
+            }
+
+            SettingsRow {
+                label: "Vehicle integration";
+                detail: root.integration-choice == -1 ? "Auto" : root.integration-choice == 1 ? "Wheelie Fun Bike" : root.integration-choice == 2 ? "wheel-e" : "VESC";
+                enabled: !root.link-present;
+                activated => { root.integration-choice = root.integration-choice == -1 ? 1 : root.integration-choice == 1 ? 2 : root.integration-choice == 2 ? 0 : -1; }
+            }
+
+            if root.link-present: Text {
+                text: "Disconnect the bike to choose another integration.";
+                color: Theme.secondary;
+                font-size: 14px;
+                wrap: word-wrap;
+            }
+            if root.pin-configured: Action {
+                label: "Lock screen";
+                activated => { root.screen-lock(); }
+            }
+
+            SettingsRow {
+                label: root.pin-configured ? "Change PIN" : "Set lock PIN";
+                activated => { root.pin-setup(); }
+            }
+
+            if root.pin-configured && root.supports-lock: Action {
+                label: "Lock bike and screen";
+                enabled: root.connected && root.can-configure;
+                activated => { root.bike-lock(); }
+            }
+            if root.pin-configured: SettingsRow {
+                label: "Locked screen timeout";
+                detail: root.lock-timeout + " s";
+                activated => { root.lock-timeout-changed(root.lock-timeout == 15 ? 30 : root.lock-timeout == 30 ? 60 : root.lock-timeout == 60 ? 120 : 15); }
+            }
+            if root.pin-configured: SettingsRow {
+                label: "Remove PIN";
+                activated => { root.pin-remove(); }
+            }
+            Text {
+                text: root.bike-lock-status;
+                color: Theme.secondary;
+                wrap: word-wrap;
+                font-size: 14px;
+            }
+
+            if root.link-present: Action {
+                label: root.transport-kind == 0 ? "Forget bike and scan" : "Disconnect bike";
+                activated => { root.forget-peer(); }
+            }
+            if !root.link-present && root.transport-kind == 0: Rectangle {
+                VerticalLayout {
+                    spacing: 8px;
+                    for peer[i] in root.peers: Rectangle {
+                        height: 72px;
+                        background: Theme.surface;
+                        border-radius: 12px;
+                        VerticalLayout {
+                            padding: 12px;
+                            Text {
+                                text: peer.name + "   " + peer.signal;
+                                color: Theme.text;
+                                font-size: 18px;
+                                overflow: elide;
+                            }
+
+                            Text {
+                                text: peer.address;
+                                color: Theme.secondary;
+                                font-size: 14px;
+                            }
+                        }
+
+                        TouchArea {
+                            clicked => { root.connect-peer(i); }
+                        }
+                    }
+                }
+            }
+            if !root.link-present && root.transport-kind == 0 && root.peers.length == 0: Text {
+                text: "Power on your bike. Nearby VESC Bluetooth devices will appear here.";
+                color: Theme.secondary;
+                wrap: word-wrap;
+                font-size: 16px;
+            }
+            if !root.link-present && root.transport-kind == 0: Action {
+                label: "Clear saved bike";
+                activated => { root.forget-peer(); }
+            }
+            Text {
+                text: root.transport-kind == 0 ? "VESC Bluetooth UART" : root.transport-kind == 1 ? "VESC CAN packet transport" : "VESC serial UART";
+                color: Theme.secondary;
+                font-size: 14px;
+            }
+        }
+    }
+}

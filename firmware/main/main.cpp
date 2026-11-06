@@ -478,10 +478,12 @@ extern "C" void app_main() {
       ui->set_active_integration(int(vehicle->id()));
       if (link.link_present)
         ui->set_integration_choice(link.selection == bike::IntegrationId::Auto ? -1 : int(link.selection));
-      ui->set_vehicle_brand(vehicle->name());
-      ui->set_supports_presets(vehicle->features().ride_presets);
-      ui->set_supports_limit(vehicle->features().speed_limit);
-      ui->set_supports_lock(vehicle->features().lock);
+      const auto &presentation =
+          bike::presentation_integration(link.integration, bike::integration_id(ui->get_integration_choice()), ready);
+      ui->set_vehicle_brand(presentation.name());
+      ui->set_supports_presets(presentation.features().ride_presets);
+      ui->set_supports_limit(presentation.features().speed_limit);
+      ui->set_supports_lock(presentation.features().lock);
       ui->set_fresh(fresh);
       const auto wifi = network::snapshot();
       ui->set_wifi_status(wifi.status.c_str());

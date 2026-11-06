@@ -1,0 +1,111 @@
+import { TransitionPage } from "../page-transition.slint";
+import { SwipeScroll } from "../swipe-scroll.slint";
+import { Action } from "../controls.slint";
+import { Theme } from "../theme.slint";
+
+export component TunePage inherits TransitionPage {
+    page-index: 1;
+    in property <bool> can-configure;
+    in property <bool> connected;
+    in property <bool> integration-pending;
+    in-out property <int> draft-limit;
+    in-out property <int> draft-mode;
+    in property <length> drag-delta;
+    in property <string> feedback;
+    in property <bool> metric;
+    in property <bool> scroll-active;
+    in property <bool> supports-limit;
+    in property <bool> supports-presets;
+    in property <string> vehicle-brand;
+
+    callback apply-limit(int);
+    callback apply-mode(int);
+
+    SwipeScroll {
+        scroll-active: root.scroll-active;
+        drag-delta: root.drag-delta;
+        content-width: self.width;
+        VerticalLayout {
+            spacing: 12px;
+            alignment: start;
+            Text {
+                text: "RIDE TUNING";
+                color: Theme.text;
+                font-size: 20px;
+                font-weight: 800;
+            }
+
+            if !root.supports-presets && !root.supports-limit: Text {
+                text: root.integration-pending ? "Connect to your bike to discover its available tuning options." : "Ride presets and speed-limit tuning are not available for " + root.vehicle-brand + ". Use VESC Tool for vehicle configuration.";
+                color: Theme.secondary;
+                font-size: 16px;
+                wrap: word-wrap;
+            }
+
+            if root.supports-presets: VerticalLayout {
+                spacing: 12px;
+                Text {
+                    text: "Ride response";
+                    color: Theme.secondary;
+                    font-size: 14px;
+                }
+
+                HorizontalLayout {
+                    spacing: 8px;
+                    for name[i] in ["Eco", "Cruise", "Sport"]: Action {
+                        label: name;
+                        selected: root.draft-mode == i;
+                        enabled: root.connected;
+                        border-color: !root.connected ? Theme.raised : i == 0 ? Theme.eco : i == 1 ? Theme.cruise : Theme.sport;
+                        activated => { root.draft-mode = i; }
+                    }
+                }
+
+                Action {
+                    label: "Apply ride response";
+                    enabled: root.connected && root.can-configure;
+                    activated => { root.apply-mode(root.draft-mode); }
+                }
+            }
+            if root.supports-limit: VerticalLayout {
+                spacing: 12px;
+                HorizontalLayout {
+                    spacing: 10px;
+                    Action {
+                        label: "-";
+                        width: 52px;
+                        enabled: root.connected && root.draft-limit > 5;
+                        activated => { root.draft-limit -= 1; }
+                    }
+
+                    Text {
+                        text: "Limit: " + (root.metric ? round(root.draft-limit * 1.609344) : root.draft-limit) + (root.metric ? " km/h" : " mph");
+                        color: Theme.text;
+                        font-size: 20px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    Action {
+                        label: "+";
+                        width: 52px;
+                        enabled: root.connected && root.draft-limit < 35;
+                        activated => { root.draft-limit += 1; }
+                    }
+                }
+
+                Action {
+                    label: "Apply speed limit";
+                    enabled: root.connected && root.can-configure;
+                    activated => { root.apply-limit(root.draft-limit); }
+                }
+            }
+            if root.supports-presets || root.supports-limit: Text {
+                text: !root.connected ? "Connect to your bike to adjust ride tuning." : root.can-configure ? root.feedback : "Stop the bike and wait for live telemetry to apply changes.";
+                color: Theme.secondary;
+                font-size: 14px;
+                wrap: word-wrap;
+            }
+        }
+    }
+}

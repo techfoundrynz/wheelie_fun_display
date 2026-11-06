@@ -1,6 +1,5 @@
 import { Theme } from "theme.slint";
 import { Action } from "controls.slint";
-import { Page } from "page.slint";
 
 export component SectionTitle inherits Text {
     color: Theme.secondary;
@@ -9,6 +8,8 @@ export component SectionTitle inherits Text {
 }
 
 export component SettingsRow inherits Rectangle {
+    accessible-role: button;
+    accessible-label: root.label;
     in property <string> label;
     in property <string> detail;
     in property <bool> enabled: true;
@@ -120,112 +121,5 @@ export component InfoRow inherits Rectangle {
             font-size: 16px;
             wrap: word-wrap;
         }
-    }
-}
-
-export component SettingsPage inherits Page {
-    in property <bool> metric;
-    in property <bool> celsius;
-    in property <int> rotation;
-    in property <int> brightness;
-    in property <int> transport-kind;
-    in property <bool> can-available;
-    in property <bool> uart-available;
-    in property <bool> can-change-transport: true;
-    callback select-transport(int);
-    in property <string> proxy-name;
-    callback edit-proxy-name();
-    in property <bool> ble-proxy-enabled;
-    in property <string> ble-proxy-status;
-    callback toggle-units();
-    callback toggle-temperature();
-    callback toggle-proxy();
-    callback rotate();
-    callback dim();
-    callback brighten();
-    callback wifi();
-    callback updates();
-    callback about();
-    title: "SETTINGS";
-    SectionTitle {
-        text: "DISPLAY";
-    }
-
-    SettingsRow {
-        label: "Orientation";
-        detail: root.rotation + "°";
-        activated => { root.rotate(); }
-    }
-
-    SettingsRow {
-        label: "Speed units";
-        detail: root.metric ? "km/h" : "mph";
-        activated => { root.toggle-units(); }
-    }
-
-    SettingsRow {
-        label: "Temperature units";
-        detail: root.celsius ? "°C" : "°F";
-        activated => { root.toggle-temperature(); }
-    }
-
-    Stepper {
-        label: "Brightness";
-        value: root.brightness + "%";
-        can-decrease: root.brightness > 10;
-        can-increase: root.brightness < 100;
-        decrease => { root.dim(); }
-        increase => { root.brighten(); }
-    }
-
-    SectionTitle {
-        text: "CONNECTIONS & SYSTEM";
-    }
-
-    if root.can-available || root.uart-available: SettingsRow {
-        label: "Vehicle connection";
-        detail: root.transport-kind == 1 ? "CAN" : root.transport-kind == 2 ? "UART" : "BLE";
-        enabled: root.can-change-transport;
-        activated => { root.select-transport(root.transport-kind == 0 ? (root.can-available ? 1 : 2) : root.transport-kind == 1 && root.uart-available ? 2 : 0); }
-    }
-
-    SettingsRow {
-        label: "VESC BLE proxy";
-        detail: root.ble-proxy-enabled ? "On" : "Off";
-        activated => { root.toggle-proxy(); }
-    }
-
-    SettingsRow {
-        label: "BLE name";
-        detail: root.proxy-name;
-        activated => { root.edit-proxy-name(); }
-    }
-
-    Text {
-        text: "The phone connects to this display. While connected, the phone owns the VESC link.";
-        color: Theme.secondary;
-        font-size: 14px;
-        wrap: word-wrap;
-    }
-
-    if root.ble-proxy-enabled && root.ble-proxy-status != "": Text {
-        text: root.ble-proxy-status;
-        color: Theme.accent;
-        font-size: 14px;
-        wrap: word-wrap;
-    }
-    SettingsRow {
-        label: "Wi-Fi";
-        activated => { root.wifi(); }
-    }
-
-    SettingsRow {
-        label: "Firmware updates";
-        activated => { root.updates(); }
-    }
-
-    SettingsRow {
-        label: "About";
-        activated => { root.about(); }
     }
 }

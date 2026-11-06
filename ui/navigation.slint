@@ -1,0 +1,14 @@
+import { Action } from "controls.slint";
+
+export component Navigation inherits HorizontalLayout {
+    in property <int> page;
+    callback page-requested(int);
+
+    height: 50px;
+    spacing: 6px;
+    for label[i] in ["Ride", "Tune", "Config"]: Action {
+        label: label;
+        selected: root.page == i;
+        activated => { root.page-requested(i); }
+    }
+}

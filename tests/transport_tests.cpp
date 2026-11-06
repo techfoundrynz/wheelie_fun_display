@@ -539,7 +539,21 @@ void wheel_e_identity_tests() {
   CHECK(discovery.complete() && discovery.controller(discovery.chosen()).integration == bike::IntegrationId::Vesc);
 }
 
+void presentation_integration_tests() {
+  using Id = bike::IntegrationId;
+  const auto &selected = bike::presentation_integration(Id::Vesc, Id::Wfb, false);
+  CHECK(selected.id() == Id::Wfb);
+  CHECK(selected.features().ride_presets && selected.features().speed_limit);
+  CHECK(bike::presentation_integration(Id::Vesc, Id::Auto, false).id() == Id::Vesc);
+  CHECK(bike::presentation_integration(Id::Wfb, Id::WheelE, false).id() == Id::WheelE);
+  // A verified session always wins, including explicit generic VESC sessions.
+  CHECK(bike::presentation_integration(Id::WheelE, Id::Wfb, true).id() == Id::WheelE);
+  CHECK(!bike::presentation_integration(Id::Vesc, Id::Wfb, true).features().ride_presets);
+  CHECK(bike::presentation_integration(Id::Wfb, Id::Auto, true).features().ride_presets);
+}
+
 int main() {
+  presentation_integration_tests();
   codec_tests();
   bridge_tests();
   discovery_tests();

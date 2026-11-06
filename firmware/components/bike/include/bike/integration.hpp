@@ -58,6 +58,9 @@ public:
 
 const VehicleIntegration &integration(IntegrationId id);
 
+// UI preview only: command dispatch must keep using the verified integration.
+const VehicleIntegration &presentation_integration(IntegrationId verified, IntegrationId selected, bool ready);
+
 IntegrationId integration_id(int value);
 
 } // namespace bike

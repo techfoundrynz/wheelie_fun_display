@@ -1,0 +1,48 @@
+import { Theme } from "theme.slint";
+import { IconAction } from "controls.slint";
+
+export component Header inherits HorizontalLayout {
+    in property <bool> alert;
+    in property <string> status;
+    in property <bool> fresh;
+    in property <bool> connected;
+    in property <bool> settings-selected;
+    callback open-settings();
+
+    height: 48px;
+    spacing: 12px;
+    Rectangle {
+        min-width: 0px;
+        preferred-width: 0px;
+        horizontal-stretch: 1;
+        height: 48px;
+        Rectangle {
+            x: 0px;
+            width: 10px;
+            height: 10px;
+            y: (parent.height - self.height) / 2;
+            border-radius: 5px;
+            background: root.alert ? Theme.danger : root.fresh ? Theme.accent : root.connected ? Theme.warning : Theme.danger;
+        }
+
+        Text {
+            x: 20px;
+            width: max(0px, parent.width - self.x);
+            height: parent.height;
+            text: root.status;
+            color: root.alert ? Theme.danger : Theme.secondary;
+            font-size: 18px;
+            font-weight: 700;
+            wrap: word-wrap;
+            overflow: elide;
+            vertical-alignment: center;
+        }
+    }
+
+    IconAction {
+        icon: @image-url("assets/settings.svg");
+        label: "Settings";
+        selected: root.settings-selected;
+        activated => { root.open-settings(); }
+    }
+}

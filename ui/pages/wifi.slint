@@ -1,0 +1,60 @@
+import { Page } from "../page.slint";
+import { TransitionPage } from "../page-transition.slint";
+import { Action } from "../controls.slint";
+import { Theme } from "../theme.slint";
+import { WifiItem } from "../models.slint";
+
+export component WifiPage inherits TransitionPage {
+    page-index: 4;
+    in property <bool> network-busy;
+    in property <[WifiItem]> wifi-networks;
+    in property <string> wifi-saved;
+    in property <string> wifi-status;
+
+    callback wifi-connect-saved();
+    callback wifi-forget();
+    callback wifi-manual();
+    callback wifi-scan();
+    callback wifi-select(int);
+
+    Page {
+        title: "WI-FI";
+        Text {
+            text: root.wifi-status;
+            color: Theme.secondary;
+            font-size: 14px;
+            wrap: word-wrap;
+        }
+
+        HorizontalLayout {
+            spacing: 6px;
+            Action {
+                label: "Scan";
+                enabled: !root.network-busy;
+                activated => { root.wifi-scan(); }
+            }
+
+            Action {
+                label: "Hidden SSID";
+                enabled: !root.network-busy;
+                activated => { root.wifi-manual(); }
+            }
+        }
+
+        if root.wifi-saved != "": Action {
+            label: "Connect: " + root.wifi-saved;
+            enabled: !root.network-busy;
+            activated => { root.wifi-connect-saved(); }
+        }
+        if root.wifi-saved != "": Action {
+            label: "Forget saved network";
+            enabled: !root.network-busy;
+            activated => { root.wifi-forget(); }
+        }
+        for wifi[i] in root.wifi-networks: Action {
+            label: wifi.ssid + " / " + wifi.detail;
+            enabled: !root.network-busy;
+            activated => { root.wifi-select(i); }
+        }
+    }
+}

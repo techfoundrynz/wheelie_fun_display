@@ -1,0 +1,72 @@
+import { Page } from "../page.slint";
+import { TransitionPage } from "../page-transition.slint";
+import { Action } from "../controls.slint";
+import { Theme } from "../theme.slint";
+
+export component UpdatesPage inherits TransitionPage {
+    page-index: 5;
+    in property <bool> can-maintain;
+    in property <string> firmware-version;
+    in property <bool> network-busy;
+    in-out property <bool> ota-confirming;
+    in-out property <int> page;
+    in property <bool> reboot-ready;
+    in property <string> release-version;
+    in property <bool> update-available;
+    in property <int> update-progress;
+    in property <bool> updating;
+    in property <bool> wifi-connected;
+    in property <string> wifi-status;
+
+    callback update-cancel();
+    callback update-check();
+    callback update-reboot();
+    callback wifi-scan();
+
+    Page {
+        title: "FIRMWARE UPDATE";
+        Text {
+            text: "techfoundrynz/wheelie_fun_display\nInstalled: " + root.firmware-version;
+            color: Theme.secondary;
+            font-size: 14px;
+            wrap: word-wrap;
+        }
+
+        Text {
+            text: root.wifi-status;
+            color: Theme.text;
+            font-size: 16px;
+            wrap: word-wrap;
+        }
+
+        if !root.wifi-connected: Action {
+            label: "Connect to Wi-Fi";
+            activated => { root.page = 4; root.wifi-scan(); }
+        }
+        Action {
+            label: "Check GitHub Releases";
+            enabled: root.wifi-connected && !root.network-busy && !root.reboot-ready;
+            activated => { root.update-check(); }
+        }
+
+        if root.update-available && !root.reboot-ready: Action {
+            label: "Install " + root.release-version;
+            enabled: !root.network-busy && root.can-maintain;
+            activated => { root.ota-confirming = true; }
+        }
+        if root.updating: Text {
+            text: root.update-progress + "% downloaded";
+            color: Theme.accent;
+            font-size: 18px;
+        }
+        if root.updating: Action {
+            label: "Cancel update";
+            activated => { root.update-cancel(); }
+        }
+        if root.reboot-ready: Action {
+            label: "Restart into update";
+            enabled: root.can-maintain;
+            activated => { root.update-reboot(); }
+        }
+    }
+}

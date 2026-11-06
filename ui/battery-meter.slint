@@ -1,0 +1,38 @@
+import { Theme } from "theme.slint";
+
+export component BatteryMeter inherits Rectangle {
+    in property <float> level;
+    in property <string> charge;
+    in property <string> voltage;
+    in property <color> charge-color: root.level <= 20 ? Theme.danger : root.level <= 30 ? Theme.warning : Theme.accent;
+    height: 35px;
+    background: Theme.track;
+    border-radius: 10px;
+    Rectangle {
+        x: 0;
+        width: parent.width * min(100, max(0, root.level)) / 100;
+        background: root.charge-color;
+        border-radius: 10px;
+    }
+
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        Text {
+            text: root.charge;
+            color: Theme.bg;
+            font-size: 18px;
+            font-weight: 800;
+            vertical-alignment: center;
+        }
+
+        Text {
+            text: root.voltage;
+            color: Theme.bg;
+            font-size: 18px;
+            font-weight: 800;
+            horizontal-alignment: right;
+            vertical-alignment: center;
+        }
+    }
+}

@@ -1,0 +1,56 @@
+import { Action } from "../controls.slint";
+import { Theme } from "../theme.slint";
+import { SafeArea } from "../safe-area.slint";
+
+export component ApplyConfirmation inherits Rectangle {
+    in property <bool> can-configure;
+    in property <string> confirm-text;
+    in property <bool> connected;
+    in property <length> display-safe-inset;
+
+    callback cancel-change();
+    callback confirm-change();
+
+    background: #000000b3;
+    SafeArea {
+        safe-inset: root.display-safe-inset;
+        minimum-padding: 24px;
+        VerticalLayout {
+            padding: 0px;
+            alignment: center;
+            spacing: 16px;
+            Text {
+                text: "APPLY TO BIKE?";
+                color: Theme.accent;
+                font-size: 24px;
+                font-weight: 800;
+            }
+
+            Text {
+                text: root.confirm-text;
+                color: Theme.text;
+                font-size: 18px;
+                wrap: word-wrap;
+            }
+
+            Text {
+                text: "This changes the live bike configuration. The bike must remain stopped.";
+                color: Theme.secondary;
+                wrap: word-wrap;
+                font-size: 16px;
+            }
+
+            Action {
+                label: "Apply now";
+                enabled: root.connected && root.can-configure;
+                selected: true;
+                activated => { root.confirm-change(); }
+            }
+
+            Action {
+                label: "Cancel";
+                activated => { root.cancel-change(); }
+            }
+        }
+    }
+}

@@ -1,0 +1,150 @@
+import { BatteryMeter } from "../battery-meter.slint";
+import { TransitionPage } from "../page-transition.slint";
+import { Metric } from "../controls.slint";
+import { Speedometer } from "../speedometer.slint";
+
+export component RidePage inherits TransitionPage {
+    page-index: 0;
+    in property <string> battery;
+    in property <float> battery-level;
+    in property <bool> compact;
+    in property <bool> fresh;
+    in property <bool> hot;
+    in property <bool> landscape;
+    in property <bool> metric;
+    in property <string> mosfet;
+    in property <string> motor;
+    in property <string> pitch;
+    in property <string> power;
+    in property <bool> short-landscape;
+    in property <string> speed;
+    in property <float> speed-progress;
+    in property <string> voltage;
+
+    if !root.landscape: VerticalLayout {
+        spacing: 10px;
+
+        BatteryMeter {
+            level: root.battery-level;
+            charge: root.battery;
+            voltage: root.voltage;
+        }
+
+        VerticalLayout {
+            vertical-stretch: 1;
+            alignment: center;
+
+            Speedometer {
+                height: root.compact ? 166px : 231px;
+                value: root.speed;
+                live: root.fresh;
+                progress: root.speed-progress;
+                unit: root.metric ? "km/h" : "mph";
+            }
+        }
+
+        HorizontalLayout {
+            vertical-stretch: 0;
+            spacing: 10px;
+            Metric {
+                height: 60px;
+                label: "POWER";
+                value: root.power;
+            }
+
+            Metric {
+                height: 60px;
+                label: "PITCH";
+                value: root.pitch;
+            }
+        }
+
+        if !root.compact: HorizontalLayout {
+            vertical-stretch: 0;
+            spacing: 10px;
+            Metric {
+                height: 60px;
+                label: "CONTROLLER";
+                value: root.mosfet;
+                warning: root.hot;
+            }
+
+            Metric {
+                height: 60px;
+                label: "MOTOR";
+                value: root.motor;
+                warning: root.hot;
+            }
+        }
+    }
+    if root.landscape: HorizontalLayout {
+        spacing: 16px;
+        VerticalLayout {
+            alignment: end;
+            min-width: 0px;
+            preferred-width: 0px;
+            horizontal-stretch: 1;
+            spacing: 20px;
+
+            Speedometer {
+                align-bottom: true;
+                height: min(231px, max(0px, root.height - 35px - 20px));
+                value: root.speed;
+                live: root.fresh;
+                progress: root.speed-progress;
+                unit: root.metric ? "km/h" : "mph";
+            }
+
+            BatteryMeter {
+                level: root.battery-level;
+                charge: root.battery;
+                voltage: root.voltage;
+            }
+        }
+
+        VerticalLayout {
+            min-width: 0px;
+            preferred-width: 0px;
+            horizontal-stretch: 1;
+            spacing: 12px;
+            alignment: end;
+            HorizontalLayout {
+                vertical-stretch: 0;
+                spacing: 10px;
+                Metric {
+                    compact: root.short-landscape;
+                    height: root.short-landscape ? 64px : 76px;
+                    label: "POWER";
+                    value: root.power;
+                }
+
+                Metric {
+                    compact: root.short-landscape;
+                    height: root.short-landscape ? 64px : 76px;
+                    label: "PITCH";
+                    value: root.pitch;
+                }
+            }
+
+            HorizontalLayout {
+                vertical-stretch: 0;
+                spacing: 10px;
+                Metric {
+                    compact: root.short-landscape;
+                    height: root.short-landscape ? 64px : 76px;
+                    label: "ESC TEMP";
+                    value: root.mosfet;
+                    warning: root.hot;
+                }
+
+                Metric {
+                    compact: root.short-landscape;
+                    height: root.short-landscape ? 64px : 76px;
+                    label: "MOTOR";
+                    value: root.motor;
+                    warning: root.hot;
+                }
+            }
+        }
+    }
+}

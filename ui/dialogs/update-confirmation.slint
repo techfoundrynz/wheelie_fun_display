@@ -1,0 +1,47 @@
+import { Action } from "../controls.slint";
+import { Theme } from "../theme.slint";
+import { SafeArea } from "../safe-area.slint";
+
+export component UpdateConfirmation inherits Rectangle {
+    in property <bool> can-maintain;
+    in property <length> display-safe-inset;
+    in property <bool> network-busy;
+    in-out property <bool> ota-confirming;
+    in property <bool> wifi-connected;
+
+    callback update-install();
+
+    background: Theme.bg;
+    SafeArea {
+        safe-inset: root.display-safe-inset;
+        minimum-padding: 20px;
+        VerticalLayout {
+            padding: 0px;
+            spacing: 12px;
+            alignment: center;
+            Text {
+                text: "INSTALL UPDATE?";
+                color: Theme.accent;
+                font-size: 24px;
+            }
+
+            Text {
+                text: "Bluetooth will disconnect during installation. Keep the display powered. Restart after verification to use the new firmware.";
+                color: Theme.text;
+                wrap: word-wrap;
+                font-size: 16px;
+            }
+
+            Action {
+                label: "Install now";
+                enabled: root.can-maintain && root.wifi-connected && !root.network-busy;
+                activated => { root.ota-confirming = false; root.update-install(); }
+            }
+
+            Action {
+                label: "Cancel";
+                activated => { root.ota-confirming = false; }
+            }
+        }
+    }
+}

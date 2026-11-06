@@ -232,6 +232,43 @@ fn main() {
             );
             frame(&window, &clock, 0, &mut pixels, width);
             capture(name, &pixels, width, height);
+            if width > height && name == "ride-live" {
+                let mut gauge_bottom = None;
+                let mut battery_top = None;
+                let mut battery_bottom = None;
+                for y in 100..height - 82 {
+                    for pixel in &pixels[y * width + 32..y * width + width / 2 - 8] {
+                        if pixel.r > 200 && pixel.g > 170 && pixel.b < 50 {
+                            gauge_bottom = Some(y);
+                        }
+                        if pixel.r < 130 && pixel.g > 180 && pixel.b > 180 {
+                            battery_top.get_or_insert(y);
+                            battery_bottom = Some(y);
+                        }
+                    }
+                }
+                let gap = battery_top.expect("Battery fill is missing")
+                    - gauge_bottom.expect("Speed arc is missing")
+                    - 1;
+                assert!(
+                    (18..=23).contains(&gap),
+                    "{width}x{height}: painted speed arc/battery gap is {gap}px, expected 20px plus rasterization rounding"
+                );
+                let navigation =
+                    i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui, "Ride")
+                        .find(|control| {
+                            control.accessible_role()
+                                == Some(i_slint_backend_testing::AccessibleRole::Button)
+                        })
+                        .expect("Ride tab is missing");
+                let navigation_gap = navigation.absolute_position().y.round() as usize
+                    - battery_bottom.expect("Battery fill is missing")
+                    - 1;
+                assert_eq!(
+                    navigation_gap, 16,
+                    "Landscape content/navigation gap changed"
+                );
+            }
         }
         println!(
             "{width}x{height}: Ride header priority, stale fault clearing and status fixtures passed"
@@ -374,6 +411,7 @@ fn main() {
         ui.on_apply_mode(move |_| invoked.set(invoked.get() + 1));
         let mut fixture_time = 0;
         for (id, name) in [(1, "Wheelie Fun Bike"), (2, "wheel-e"), (0, "VESC")] {
+            applied.set(0);
             ui.set_active_integration(id);
             ui.set_vehicle_brand(name.into());
             ui.set_supports_presets(id == 1);
@@ -398,7 +436,19 @@ fn main() {
                     height,
                 );
             }
-            if id != 1 {
+            if id == 1 {
+                ui.set_page(1);
+                fixture_time += 20;
+                frame(&window, &clock, fixture_time, &mut pixels, width);
+                click_control(&window, &ui, "Apply ride response");
+                assert_eq!(applied.get(), 1, "WFB tuning controls disappeared");
+                ui.set_connected(false);
+                fixture_time += 20;
+                frame(&window, &clock, fixture_time, &mut pixels, width);
+                click_control(&window, &ui, "Apply ride response");
+                assert_eq!(applied.get(), 1, "Disconnected WFB allowed a write");
+                ui.set_connected(true);
+            } else {
                 ui.set_page(1);
                 fixture_time += 20;
                 frame(&window, &clock, fixture_time, &mut pixels, width);

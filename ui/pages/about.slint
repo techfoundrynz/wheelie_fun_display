@@ -1,0 +1,68 @@
+import { Page } from "../page.slint";
+import { TransitionPage } from "../page-transition.slint";
+import { InfoRow } from "../settings.slint";
+import { Action } from "../controls.slint";
+import { Theme } from "../theme.slint";
+import { AboutItem } from "../models.slint";
+
+export component AboutPage inherits TransitionPage {
+    page-index: 6;
+    in-out property <bool> about-diagnostics;
+    in property <[AboutItem]> about-items;
+    in property <string> device-label;
+    in property <string> firmware-version;
+    in property <bool> network-busy;
+    in-out property <int> page;
+
+    callback update-check();
+
+    Page {
+        title: "ABOUT WHEELIE FUN DISPLAY";
+        HorizontalLayout {
+            spacing: 8px;
+            Action {
+                label: "Version";
+                selected: !root.about-diagnostics;
+                activated => { root.about-diagnostics = false; }
+            }
+
+            Action {
+                label: "Diagnostics";
+                selected: root.about-diagnostics;
+                activated => { root.about-diagnostics = true; }
+            }
+        }
+
+        if !root.about-diagnostics: VerticalLayout {
+            spacing: 12px;
+
+            Text {
+                text: "Wheelie Fun Display " + root.firmware-version;
+                color: Theme.text;
+                font-size: 24px;
+                font-weight: 800;
+                wrap: word-wrap;
+            }
+
+            Text {
+                text: root.device-label + "\nESP-IDF / PlatformIO / Slint\nGPL-3.0-only\ntechfoundrynz/wheelie_fun_display";
+                color: Theme.secondary;
+                font-size: 16px;
+                wrap: word-wrap;
+            }
+
+            Action {
+                label: "Check for updates";
+                enabled: !root.network-busy;
+                activated => { root.page = 5; root.update-check(); }
+            }
+        }
+        if root.about-diagnostics: VerticalLayout {
+            spacing: 8px;
+            for item in root.about-items: InfoRow {
+                label: item.label;
+                value: item.value;
+            }
+        }
+    }
+}

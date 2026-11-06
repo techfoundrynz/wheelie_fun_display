@@ -26,6 +26,8 @@ export component IconAction inherits Rectangle {
 }
 
 export component Action inherits Rectangle {
+    accessible-role: button;
+    accessible-label: root.label;
     in property <string> label;
     in property <bool> enabled: true;
     in property <bool> selected: false;

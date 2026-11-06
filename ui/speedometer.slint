@@ -6,6 +6,7 @@ export component Speedometer inherits Rectangle {
     in property <string> value;
     in property <string> unit;
     in property <bool> live;
+    in property <bool> align-bottom;
     private property <length> diameter: min(self.width, self.height / 0.78);
     private property <length> thickness: self.diameter * 16 / 260;
     private property <length> r: (self.diameter - self.thickness) / 2;
@@ -13,8 +14,10 @@ export component Speedometer inherits Rectangle {
     private property <angle> start: 159deg;
     private property <angle> sweep: 222deg;
     private property <angle> filled: self.sweep * min(1, max(0, self.progress));
+    private property <length> painted-height: max(self.c + (self.r + self.thickness / 2) * Math.sin(self.start), unit-label.y + unit-label.height);
     Rectangle {
-        y: 0px;
+        // The partial arc paints less than a square, especially when width-limited.
+        y: root.align-bottom ? max(0px, root.height - root.painted-height) : 0px;
         width: root.diameter;
         height: root.diameter;
         x: (parent.width - self.width) / 2;
@@ -81,7 +84,7 @@ export component Speedometer inherits Rectangle {
             horizontal-alignment: center;
         }
 
-        Text {
+        unit-label := Text {
             y: root.diameter * 0.56;
             text: root.unit;
             color: Theme.secondary;

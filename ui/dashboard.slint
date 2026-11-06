@@ -1,27 +1,30 @@
-import { Page } from "page.slint";
+import { Header } from "header.slint";
+import { Navigation } from "navigation.slint";
+import { UpdateConfirmation } from "dialogs/update-confirmation.slint";
+import { ApplyConfirmation } from "dialogs/apply-confirmation.slint";
+import { AboutPage } from "pages/about.slint";
+import { UpdatesPage } from "pages/updates.slint";
+import { WifiPage } from "pages/wifi.slint";
+import { ConfigPage } from "pages/config.slint";
+import { TunePage } from "pages/tune.slint";
+import { RidePage } from "pages/ride.slint";
 import { PageDeck, TransitionPage } from "page-transition.slint";
-import { SwipeScroll } from "swipe-scroll.slint";
-import { SettingsPage, InfoRow, SettingsRow } from "settings.slint";
-import { Action, IconAction, Metric } from "controls.slint";
+import { SettingsPage } from "pages/settings.slint";
 import { Keyboard } from "keyboard.slint";
 import { PinPad } from "pin-pad.slint";
 import { Theme } from "theme.slint";
-import { Speedometer } from "speedometer.slint";
 import { SafeArea } from "safe-area.slint";
 import "fonts/Roboto.ttf";
-
-export struct Peer { name: string, address: string, signal: string }
-export struct WifiItem { ssid: string, detail: string }
-export struct AboutItem { label: string, value: string }
+import { Peer, WifiItem, AboutItem } from "models.slint";
+export { Peer, WifiItem, AboutItem } from "models.slint";
 
 export component Dashboard inherits Window {
     title: root.vehicle-brand;
+    // Host sizing metadata; each runtime resizes its window explicitly.
     in property <length> initial-width: 410px;
     in property <length> initial-height: 502px;
     // Conservative 2.06-inch preview default; firmware sets this from its profile.
     in property <length> display-safe-inset: 32px;
-    width: self.initial-width;
-    height: self.initial-height;
     background: Theme.bg;
     default-font-family: "Roboto";
     default-font-size: 16px;
@@ -43,7 +46,7 @@ export component Dashboard inherits Window {
     in property <string> speed: "--";
     in property <float> speed-progress: 0;
     in property <string> battery: "--";
-    in property <float> battery-level: 0;
+    in property <float> battery-level: 80;
     in property <string> voltage: "--";
     in property <string> power: "--";
     in property <string> mosfet: "--";
@@ -163,7 +166,6 @@ export component Dashboard inherits Window {
     private property <bool> landscape: self.width > self.height;
     private property <bool> short-landscape: self.width > self.height && self.height < 450px;
     private property <length> gutter: self.width < 380px ? 12px : 20px;
-    private property <length> content-inset: max(self.gutter, self.display-safe-inset);
 
     SafeArea {
         width: root.width;
@@ -172,44 +174,18 @@ export component Dashboard inherits Window {
         minimum-padding: root.gutter;
         VerticalLayout {
             padding: 0px;
-            spacing: root.compact ? 8px : 12px;
-            HorizontalLayout {
-                height: 48px;
-                spacing: 12px;
-                Rectangle {
-                    min-width: 0px;
-                    preferred-width: 0px;
-                    horizontal-stretch: 1;
-                    height: 48px;
-                    Rectangle {
-                        x: 0px;
-                        width: 10px;
-                        height: 10px;
-                        y: (parent.height - self.height) / 2;
-                        border-radius: 5px;
-                        background: root.header-alert ? Theme.danger : root.fresh ? Theme.accent : root.connected ? Theme.warning : Theme.danger;
-                    }
+            spacing: 0px;
+            Header {
+                alert: root.header-alert;
+                status: root.header-status;
+                fresh: root.fresh;
+                connected: root.connected;
+                settings-selected: root.page >= 3;
+                open-settings => { root.page = 3; }
+            }
 
-                    Text {
-                        x: 20px;
-                        width: max(0px, parent.width - self.x);
-                        height: parent.height;
-                        text: root.header-status;
-                        color: root.header-alert ? Theme.danger : Theme.secondary;
-                        font-size: 18px;
-                        font-weight: 700;
-                        wrap: word-wrap;
-                        overflow: elide;
-                        vertical-alignment: center;
-                    }
-                }
-
-                IconAction {
-                    icon: @image-url("assets/settings.svg");
-                    label: "Settings";
-                    selected: root.page >= 3;
-                    activated => { root.page = 3; }
-                }
+            Rectangle {
+                height: root.compact ? 8px : 12px;
             }
 
             pages := PageDeck {
@@ -217,8 +193,7 @@ export component Dashboard inherits Window {
                 animations-enabled: root.animations-enabled;
                 swipe-enabled: root.page >= 0 && root.page <= 2 && !root.confirming && !root.ota-confirming && !root.editing && !root.pin-open;
                 page-requested(page) => { root.page = page; }
-                if pages.active-page == 0 || pages.previous-page == 0: TransitionPage {
-                    page-index: 0;
+                if pages.active-page == 0 || pages.previous-page == 0: RidePage {
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;
@@ -226,185 +201,23 @@ export component Dashboard inherits Window {
                     swiping: pages.swiping;
                     swipe-origin: pages.swipe-origin;
                     swipe-offset: pages.swipe-offset;
-                    if !root.landscape: VerticalLayout {
-                        spacing: 10px;
-
-                        Rectangle {
-                            height: 35px;
-                            background: Theme.track;
-                            border-radius: 10px;
-                            Rectangle {
-                                x: 0;
-                                width: parent.width * min(100, max(0, root.battery-level)) / 100;
-                                background: Theme.accent;
-                                border-radius: 10px;
-                            }
-
-                            HorizontalLayout {
-                                padding-left: 12px;
-                                padding-right: 12px;
-                                Text {
-                                    text: root.battery;
-                                    color: #000000;
-                                    font-size: 18px;
-                                    font-weight: 800;
-                                    vertical-alignment: center;
-                                }
-
-                                Text {
-                                    text: root.voltage;
-                                    color: root.battery-level > 85 ? Theme.surface : Theme.text;
-                                    font-size: 18px;
-                                    horizontal-alignment: right;
-                                    vertical-alignment: center;
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            min-height: 0px;
-                            vertical-stretch: 1;
-                        }
-
-                        Speedometer {
-                            height: root.compact ? 166px : 231px;
-                            value: root.speed;
-                            live: root.fresh;
-                            progress: root.speed-progress;
-                            unit: root.metric ? "km/h" : "mph";
-                        }
-
-                        HorizontalLayout {
-                            vertical-stretch: 0;
-                            spacing: 10px;
-                            Metric {
-                                height: 60px;
-                                label: "POWER";
-                                value: root.power;
-                            }
-
-                            Metric {
-                                height: 60px;
-                                label: "PITCH";
-                                value: root.pitch;
-                            }
-                        }
-
-                        if !root.compact: HorizontalLayout {
-                            vertical-stretch: 0;
-                            spacing: 10px;
-                            Metric {
-                                height: 60px;
-                                label: "CONTROLLER";
-                                value: root.mosfet;
-                                warning: root.hot;
-                            }
-
-                            Metric {
-                                height: 60px;
-                                label: "MOTOR";
-                                value: root.motor;
-                                warning: root.hot;
-                            }
-                        }
-                    }
-                    if root.landscape: HorizontalLayout {
-                        spacing: 16px;
-                        VerticalLayout {
-                            alignment: end;
-                            min-width: 0px;
-                            preferred-width: 0px;
-                            horizontal-stretch: 1;
-                            spacing: 12px;
-                            Speedometer {
-                                height: min(231px, max(110px, root.height - 161px - 2 * root.content-inset));
-                                value: root.speed;
-                                live: root.fresh;
-                                progress: root.speed-progress;
-                                unit: root.metric ? "km/h" : "mph";
-                            }
-
-                            Rectangle {
-                                height: 35px;
-                                background: Theme.track;
-                                border-radius: 10px;
-                                Rectangle {
-                                    x: 0;
-                                    width: parent.width * min(100, max(0, root.battery-level)) / 100;
-                                    background: Theme.accent;
-                                    border-radius: 10px;
-                                }
-
-                                HorizontalLayout {
-                                    padding-left: 12px;
-                                    padding-right: 12px;
-                                    Text {
-                                        text: root.battery;
-                                        color: root.battery-level > 25 ? #000000 : Theme.text;
-                                        font-size: 18px;
-                                        font-weight: 800;
-                                        vertical-alignment: center;
-                                    }
-
-                                    Text {
-                                        text: root.voltage;
-                                        color: root.battery-level > 85 ? Theme.surface : Theme.text;
-                                        font-size: 18px;
-                                        horizontal-alignment: right;
-                                        vertical-alignment: center;
-                                    }
-                                }
-                            }
-                        }
-
-                        VerticalLayout {
-                            min-width: 0px;
-                            preferred-width: 0px;
-                            horizontal-stretch: 1;
-                            spacing: 12px;
-                            alignment: end;
-                            HorizontalLayout {
-                                vertical-stretch: 0;
-                                spacing: 10px;
-                                Metric {
-                                    compact: root.short-landscape;
-                                    height: root.short-landscape ? 64px : 76px;
-                                    label: "POWER";
-                                    value: root.power;
-                                }
-
-                                Metric {
-                                    compact: root.short-landscape;
-                                    height: root.short-landscape ? 64px : 76px;
-                                    label: "PITCH";
-                                    value: root.pitch;
-                                }
-                            }
-
-                            HorizontalLayout {
-                                vertical-stretch: 0;
-                                spacing: 10px;
-                                Metric {
-                                    compact: root.short-landscape;
-                                    height: root.short-landscape ? 64px : 76px;
-                                    label: "ESC TEMP";
-                                    value: root.mosfet;
-                                    warning: root.hot;
-                                }
-
-                                Metric {
-                                    compact: root.short-landscape;
-                                    height: root.short-landscape ? 64px : 76px;
-                                    label: "MOTOR";
-                                    value: root.motor;
-                                    warning: root.hot;
-                                }
-                            }
-                        }
-                    }
+                    battery: root.battery;
+                    battery-level: root.battery-level;
+                    compact: root.compact;
+                    fresh: root.fresh;
+                    hot: root.hot;
+                    landscape: root.landscape;
+                    metric: root.metric;
+                    mosfet: root.mosfet;
+                    motor: root.motor;
+                    pitch: root.pitch;
+                    power: root.power;
+                    short-landscape: root.short-landscape;
+                    speed: root.speed;
+                    speed-progress: root.speed-progress;
+                    voltage: root.voltage;
                 }
-                if pages.active-page == 1 || pages.previous-page == 1: TransitionPage {
-                    page-index: 1;
+                if pages.active-page == 1 || pages.previous-page == 1: TunePage {
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;
@@ -412,96 +225,22 @@ export component Dashboard inherits Window {
                     swiping: pages.swiping;
                     swipe-origin: pages.swipe-origin;
                     swipe-offset: pages.swipe-offset;
-                    SwipeScroll {
-                        scroll-active: pages.vertical-dragging;
-                        drag-delta: pages.vertical-offset;
-                        content-width: self.width;
-                        VerticalLayout {
-                            spacing: 12px;
-                            alignment: start;
-                            Text {
-                                text: "RIDE TUNING";
-                                color: Theme.text;
-                                font-size: 20px;
-                                font-weight: 800;
-                            }
-
-                            if !root.supports-presets && !root.supports-limit: Text {
-                                text: "Ride presets and speed-limit tuning are not available for " + root.vehicle-brand + ". Use VESC Tool for vehicle configuration.";
-                                color: Theme.secondary;
-                                font-size: 16px;
-                                wrap: word-wrap;
-                            }
-
-                            if root.supports-presets: VerticalLayout {
-                                spacing: 12px;
-                                Text {
-                                    text: "Ride response";
-                                    color: Theme.secondary;
-                                    font-size: 14px;
-                                }
-
-                                HorizontalLayout {
-                                    spacing: 8px;
-                                    for name[i] in ["Eco", "Cruise", "Sport"]: Action {
-                                        label: name;
-                                        selected: root.draft-mode == i;
-                                        enabled: root.connected;
-                                        border-color: !root.connected ? Theme.raised : i == 0 ? Theme.eco : i == 1 ? Theme.cruise : Theme.sport;
-                                        activated => { root.draft-mode = i; }
-                                    }
-                                }
-
-                                Action {
-                                    label: "Apply ride response";
-                                    enabled: root.connected && root.can-configure;
-                                    activated => { root.apply-mode(root.draft-mode); }
-                                }
-                            }
-                            if root.supports-limit: VerticalLayout {
-                                spacing: 12px;
-                                HorizontalLayout {
-                                    spacing: 10px;
-                                    Action {
-                                        label: "-";
-                                        width: 52px;
-                                        enabled: root.connected && root.draft-limit > 5;
-                                        activated => { root.draft-limit -= 1; }
-                                    }
-
-                                    Text {
-                                        text: "Limit: " + (root.metric ? round(root.draft-limit * 1.609344) : root.draft-limit) + (root.metric ? " km/h" : " mph");
-                                        color: Theme.text;
-                                        font-size: 20px;
-                                        horizontal-alignment: center;
-                                        vertical-alignment: center;
-                                    }
-
-                                    Action {
-                                        label: "+";
-                                        width: 52px;
-                                        enabled: root.connected && root.draft-limit < 35;
-                                        activated => { root.draft-limit += 1; }
-                                    }
-                                }
-
-                                Action {
-                                    label: "Apply speed limit";
-                                    enabled: root.connected && root.can-configure;
-                                    activated => { root.apply-limit(root.draft-limit); }
-                                }
-                            }
-                            if root.supports-presets || root.supports-limit: Text {
-                                text: !root.connected ? "Connect to your bike to adjust ride tuning." : root.can-configure ? root.feedback : "Stop the bike and wait for live WFB telemetry to apply changes.";
-                                color: Theme.secondary;
-                                font-size: 14px;
-                                wrap: word-wrap;
-                            }
-                        }
-                    }
+                    apply-limit(arg0) => { root.apply-limit(arg0); }
+                    apply-mode(arg0) => { root.apply-mode(arg0); }
+                    can-configure: root.can-configure;
+                    connected: root.connected;
+                    integration-pending: !root.connected && root.integration-choice == -1;
+                    draft-limit <=> root.draft-limit;
+                    draft-mode <=> root.draft-mode;
+                    drag-delta: pages.vertical-offset;
+                    feedback: root.feedback;
+                    metric: root.metric;
+                    scroll-active: pages.vertical-dragging;
+                    supports-limit: root.supports-limit;
+                    supports-presets: root.supports-presets;
+                    vehicle-brand: root.vehicle-brand;
                 }
-                if pages.active-page == 2 || pages.previous-page == 2: TransitionPage {
-                    page-index: 2;
+                if pages.active-page == 2 || pages.previous-page == 2: ConfigPage {
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;
@@ -509,128 +248,28 @@ export component Dashboard inherits Window {
                     swiping: pages.swiping;
                     swipe-origin: pages.swipe-origin;
                     swipe-offset: pages.swipe-offset;
-                    SwipeScroll {
-                        scroll-active: pages.vertical-dragging;
-                        drag-delta: pages.vertical-offset;
-                        content-width: self.width;
-                        VerticalLayout {
-                            spacing: 10px;
-                            Text {
-                                text: "YOUR BIKE";
-                                color: Theme.text;
-                                font-size: 20px;
-                                font-weight: 800;
-                            }
-
-                            if root.controller-status != "": Text {
-                                text: root.controller-status;
-                                color: Theme.secondary;
-                                font-size: 14px;
-                                wrap: word-wrap;
-                            }
-                            if root.link-present: Action {
-                                label: "Find main controller again";
-                                activated => { root.discover-controller(); }
-                            }
-                            if !root.link-present && root.transport-kind != 0: Action {
-                                label: root.transport-kind == 1 ? "Connect via CAN" : "Connect via UART";
-                                activated => { root.connect-wired(); }
-                            }
-
-                            SettingsRow {
-                                label: "Vehicle integration";
-                                detail: root.integration-choice == -1 ? "Auto" : root.integration-choice == 1 ? "Wheelie Fun Bike" : root.integration-choice == 2 ? "wheel-e" : "VESC";
-                                enabled: !root.link-present;
-                                activated => { root.integration-choice = root.integration-choice == -1 ? 1 : root.integration-choice == 1 ? 2 : root.integration-choice == 2 ? 0 : -1; }
-                            }
-
-                            if root.link-present: Text {
-                                text: "Disconnect the bike to choose another integration.";
-                                color: Theme.secondary;
-                                font-size: 14px;
-                                wrap: word-wrap;
-                            }
-                            if root.pin-configured: Action {
-                                label: "Lock screen";
-                                activated => { root.screen-lock(); }
-                            }
-
-                            SettingsRow {
-                                label: root.pin-configured ? "Change PIN" : "Set lock PIN";
-                                activated => { root.pin-setup(); }
-                            }
-
-                            if root.pin-configured && root.supports-lock: Action {
-                                label: "Lock bike and screen";
-                                enabled: root.connected && root.can-configure;
-                                activated => { root.bike-lock(); }
-                            }
-                            if root.pin-configured: SettingsRow {
-                                label: "Locked screen timeout";
-                                detail: root.lock-timeout + " s";
-                                activated => { root.lock-timeout-changed(root.lock-timeout == 15 ? 30 : root.lock-timeout == 30 ? 60 : root.lock-timeout == 60 ? 120 : 15); }
-                            }
-                            if root.pin-configured: SettingsRow {
-                                label: "Remove PIN";
-                                activated => { root.pin-remove(); }
-                            }
-                            Text {
-                                text: root.bike-lock-status;
-                                color: Theme.secondary;
-                                wrap: word-wrap;
-                                font-size: 14px;
-                            }
-
-                            if root.link-present: Action {
-                                label: root.transport-kind == 0 ? "Forget bike and scan" : "Disconnect bike";
-                                activated => { root.forget-peer(); }
-                            }
-                            if !root.link-present && root.transport-kind == 0: Rectangle {
-                                VerticalLayout {
-                                    spacing: 8px;
-                                    for peer[i] in root.peers: Rectangle {
-                                        height: 72px;
-                                        background: Theme.surface;
-                                        border-radius: 12px;
-                                        VerticalLayout {
-                                            padding: 12px;
-                                            Text {
-                                                text: peer.name + "   " + peer.signal;
-                                                color: Theme.text;
-                                                font-size: 18px;
-                                                overflow: elide;
-                                            }
-
-                                            Text {
-                                                text: peer.address;
-                                                color: Theme.secondary;
-                                                font-size: 14px;
-                                            }
-                                        }
-
-                                        TouchArea {
-                                            clicked => { root.connect-peer(i); }
-                                        }
-                                    }
-                                }
-                            }
-                            if !root.link-present && root.transport-kind == 0 && root.peers.length == 0: Text {
-                                text: "Power on your bike. Nearby VESC Bluetooth devices will appear here.";
-                                color: Theme.secondary;
-                                wrap: word-wrap;
-                                font-size: 16px;
-                            }
-                            if !root.link-present && root.transport-kind == 0: Action {
-                                label: "Clear saved bike / scan again";
-                                activated => { root.forget-peer(); }
-                            }
-                            Text {
-                                text: root.transport-kind == 0 ? "Standard VESC Bluetooth UART" : root.transport-kind == 1 ? "VESC CAN packet transport" : "VESC serial UART";
-                                color: Theme.secondary;
-                                font-size: 14px;
-                            }
-                        }
-                    }
+                    bike-lock() => { root.bike-lock(); }
+                    bike-lock-status: root.bike-lock-status;
+                    can-configure: root.can-configure;
+                    connect-peer(arg0) => { root.connect-peer(arg0); }
+                    connect-wired() => { root.connect-wired(); }
+                    connected: root.connected;
+                    controller-status: root.controller-status;
+                    discover-controller() => { root.discover-controller(); }
+                    drag-delta: pages.vertical-offset;
+                    forget-peer() => { root.forget-peer(); }
+                    integration-choice <=> root.integration-choice;
+                    link-present: root.link-present;
+                    lock-timeout: root.lock-timeout;
+                    lock-timeout-changed(arg0) => { root.lock-timeout-changed(arg0); }
+                    peers: root.peers;
+                    pin-configured: root.pin-configured;
+                    pin-remove() => { root.pin-remove(); }
+                    pin-setup() => { root.pin-setup(); }
+                    screen-lock() => { root.screen-lock(); }
+                    scroll-active: pages.vertical-dragging;
+                    supports-lock: root.supports-lock;
+                    transport-kind: root.transport-kind;
                 }
                 if pages.active-page == 3 || pages.previous-page == 3: TransitionPage {
                     page-index: 3;
@@ -666,8 +305,7 @@ export component Dashboard inherits Window {
                         about => { root.page = 6; }
                     }
                 }
-                if pages.active-page == 4 || pages.previous-page == 4: TransitionPage {
-                    page-index: 4;
+                if pages.active-page == 4 || pages.previous-page == 4: WifiPage {
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;
@@ -675,49 +313,17 @@ export component Dashboard inherits Window {
                     swiping: pages.swiping;
                     swipe-origin: pages.swipe-origin;
                     swipe-offset: pages.swipe-offset;
-                    Page {
-                        title: "WI-FI";
-                        Text {
-                            text: root.wifi-status;
-                            color: Theme.secondary;
-                            font-size: 14px;
-                            wrap: word-wrap;
-                        }
-
-                        HorizontalLayout {
-                            spacing: 6px;
-                            Action {
-                                label: "Scan";
-                                enabled: !root.network-busy;
-                                activated => { root.wifi-scan(); }
-                            }
-
-                            Action {
-                                label: "Hidden SSID";
-                                enabled: !root.network-busy;
-                                activated => { root.wifi-manual(); }
-                            }
-                        }
-
-                        if root.wifi-saved != "": Action {
-                            label: "Connect: " + root.wifi-saved;
-                            enabled: !root.network-busy;
-                            activated => { root.wifi-connect-saved(); }
-                        }
-                        if root.wifi-saved != "": Action {
-                            label: "Forget saved network";
-                            enabled: !root.network-busy;
-                            activated => { root.wifi-forget(); }
-                        }
-                        for wifi[i] in root.wifi-networks: Action {
-                            label: wifi.ssid + " / " + wifi.detail;
-                            enabled: !root.network-busy;
-                            activated => { root.wifi-select(i); }
-                        }
-                    }
+                    network-busy: root.network-busy;
+                    wifi-connect-saved() => { root.wifi-connect-saved(); }
+                    wifi-forget() => { root.wifi-forget(); }
+                    wifi-manual() => { root.wifi-manual(); }
+                    wifi-networks: root.wifi-networks;
+                    wifi-saved: root.wifi-saved;
+                    wifi-scan() => { root.wifi-scan(); }
+                    wifi-select(arg0) => { root.wifi-select(arg0); }
+                    wifi-status: root.wifi-status;
                 }
-                if pages.active-page == 5 || pages.previous-page == 5: TransitionPage {
-                    page-index: 5;
+                if pages.active-page == 5 || pages.previous-page == 5: UpdatesPage {
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;
@@ -725,55 +331,24 @@ export component Dashboard inherits Window {
                     swiping: pages.swiping;
                     swipe-origin: pages.swipe-origin;
                     swipe-offset: pages.swipe-offset;
-                    Page {
-                        title: "FIRMWARE UPDATE";
-                        Text {
-                            text: "techfoundrynz/wheelie_fun_display\nInstalled: " + root.firmware-version;
-                            color: Theme.secondary;
-                            font-size: 14px;
-                            wrap: word-wrap;
-                        }
-
-                        Text {
-                            text: root.wifi-status;
-                            color: Theme.text;
-                            font-size: 16px;
-                            wrap: word-wrap;
-                        }
-
-                        if !root.wifi-connected: Action {
-                            label: "Connect to Wi-Fi";
-                            activated => { root.page = 4; root.wifi-scan(); }
-                        }
-                        Action {
-                            label: "Check GitHub Releases";
-                            enabled: root.wifi-connected && !root.network-busy && !root.reboot-ready;
-                            activated => { root.update-check(); }
-                        }
-
-                        if root.update-available && !root.reboot-ready: Action {
-                            label: "Install " + root.release-version;
-                            enabled: !root.network-busy && root.can-maintain;
-                            activated => { root.ota-confirming = true; }
-                        }
-                        if root.updating: Text {
-                            text: root.update-progress + "% downloaded";
-                            color: Theme.accent;
-                            font-size: 18px;
-                        }
-                        if root.updating: Action {
-                            label: "Cancel update";
-                            activated => { root.update-cancel(); }
-                        }
-                        if root.reboot-ready: Action {
-                            label: "Restart into update";
-                            enabled: root.can-maintain;
-                            activated => { root.update-reboot(); }
-                        }
-                    }
+                    can-maintain: root.can-maintain;
+                    firmware-version: root.firmware-version;
+                    network-busy: root.network-busy;
+                    ota-confirming <=> root.ota-confirming;
+                    page <=> root.page;
+                    reboot-ready: root.reboot-ready;
+                    release-version: root.release-version;
+                    update-available: root.update-available;
+                    update-cancel() => { root.update-cancel(); }
+                    update-check() => { root.update-check(); }
+                    update-progress: root.update-progress;
+                    update-reboot() => { root.update-reboot(); }
+                    updating: root.updating;
+                    wifi-connected: root.wifi-connected;
+                    wifi-scan() => { root.wifi-scan(); }
+                    wifi-status: root.wifi-status;
                 }
-                if pages.active-page == 6 || pages.previous-page == 6: TransitionPage {
-                    page-index: 6;
+                if pages.active-page == 6 || pages.previous-page == 6: AboutPage {
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;
@@ -781,66 +356,23 @@ export component Dashboard inherits Window {
                     swiping: pages.swiping;
                     swipe-origin: pages.swipe-origin;
                     swipe-offset: pages.swipe-offset;
-                    Page {
-                        title: "ABOUT WHEELIE FUN DISPLAY";
-                        HorizontalLayout {
-                            spacing: 8px;
-                            Action {
-                                label: "Version";
-                                selected: !root.about-diagnostics;
-                                activated => { root.about-diagnostics = false; }
-                            }
-
-                            Action {
-                                label: "Diagnostics";
-                                selected: root.about-diagnostics;
-                                activated => { root.about-diagnostics = true; }
-                            }
-                        }
-
-                        if !root.about-diagnostics: VerticalLayout {
-                            spacing: 12px;
-
-                            Text {
-                                text: "Wheelie Fun Display " + root.firmware-version;
-                                color: Theme.text;
-                                font-size: 24px;
-                                font-weight: 800;
-                                wrap: word-wrap;
-                            }
-
-                            Text {
-                                text: root.device-label + "\nESP-IDF / PlatformIO / Slint\nGPL-3.0-only\ntechfoundrynz/wheelie_fun_display";
-                                color: Theme.secondary;
-                                font-size: 16px;
-                                wrap: word-wrap;
-                            }
-
-                            Action {
-                                label: "Check for updates";
-                                enabled: !root.network-busy;
-                                activated => { root.page = 5; root.update-check(); }
-                            }
-                        }
-                        if root.about-diagnostics: VerticalLayout {
-                            spacing: 8px;
-                            for item in root.about-items: InfoRow {
-                                label: item.label;
-                                value: item.value;
-                            }
-                        }
-                    }
+                    about-diagnostics <=> root.about-diagnostics;
+                    about-items: root.about-items;
+                    device-label: root.device-label;
+                    firmware-version: root.firmware-version;
+                    network-busy: root.network-busy;
+                    page <=> root.page;
+                    update-check() => { root.update-check(); }
                 }
             }
 
-            HorizontalLayout {
-                height: 50px;
-                spacing: 6px;
-                for label[i] in ["Ride", "Tune", "Bike"]: Action {
-                    label: label;
-                    selected: root.page == i;
-                    activated => { root.page = i; }
-                }
+            Rectangle {
+                height: root.landscape ? 16px : root.compact ? 8px : 12px;
+            }
+
+            Navigation {
+                page: root.page;
+                page-requested(page) => { root.page = page; }
             }
         }
     }
@@ -849,84 +381,21 @@ export component Dashboard inherits Window {
     if root.transitioning: TouchArea {
         clicked => {}
     }
-    if root.confirming: Rectangle {
-        background: #000000b3;
-        SafeArea {
-            safe-inset: root.display-safe-inset;
-            minimum-padding: 24px;
-            VerticalLayout {
-                padding: 0px;
-                alignment: center;
-                spacing: 16px;
-                Text {
-                    text: "APPLY TO BIKE?";
-                    color: Theme.accent;
-                    font-size: 24px;
-                    font-weight: 800;
-                }
-
-                Text {
-                    text: root.confirm-text;
-                    color: Theme.text;
-                    font-size: 18px;
-                    wrap: word-wrap;
-                }
-
-                Text {
-                    text: "This changes the live bike configuration. The bike must remain stopped.";
-                    color: Theme.secondary;
-                    wrap: word-wrap;
-                    font-size: 16px;
-                }
-
-                Action {
-                    label: "Apply now";
-                    enabled: root.connected && root.can-configure;
-                    selected: true;
-                    activated => { root.confirm-change(); }
-                }
-
-                Action {
-                    label: "Cancel";
-                    activated => { root.cancel-change(); }
-                }
-            }
-        }
+    if root.confirming: ApplyConfirmation {
+        can-configure: root.can-configure;
+        cancel-change() => { root.cancel-change(); }
+        confirm-change() => { root.confirm-change(); }
+        confirm-text: root.confirm-text;
+        connected: root.connected;
+        display-safe-inset: root.display-safe-inset;
     }
-    if root.ota-confirming: Rectangle {
-        background: Theme.bg;
-        SafeArea {
-            safe-inset: root.display-safe-inset;
-            minimum-padding: 20px;
-            VerticalLayout {
-                padding: 0px;
-                spacing: 12px;
-                alignment: center;
-                Text {
-                    text: "INSTALL UPDATE?";
-                    color: Theme.accent;
-                    font-size: 24px;
-                }
-
-                Text {
-                    text: "Bluetooth will disconnect during installation. Keep the display powered. Restart after verification to use the new firmware.";
-                    color: Theme.text;
-                    wrap: word-wrap;
-                    font-size: 16px;
-                }
-
-                Action {
-                    label: "Install now";
-                    enabled: root.can-maintain && root.wifi-connected && !root.network-busy;
-                    activated => { root.ota-confirming = false; root.update-install(); }
-                }
-
-                Action {
-                    label: "Cancel";
-                    activated => { root.ota-confirming = false; }
-                }
-            }
-        }
+    if root.ota-confirming: UpdateConfirmation {
+        can-maintain: root.can-maintain;
+        display-safe-inset: root.display-safe-inset;
+        network-busy: root.network-busy;
+        ota-confirming <=> root.ota-confirming;
+        update-install() => { root.update-install(); }
+        wifi-connected: root.wifi-connected;
     }
     if root.editing: Keyboard {
         safe-inset: root.display-safe-inset;

@@ -83,6 +83,7 @@ inputs += [
     root / "platformio.ini",
     root / "partitions.csv",
     root / "scripts/prepare_slint_fonts.py",
+    root / "scripts/pio_toolchain.py",
 ]
 inputs += sdk_fragments
 inputs += sorted((root / "firmware/components/slint_runtime").glob("*.cmake"))

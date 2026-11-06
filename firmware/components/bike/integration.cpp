@@ -172,4 +172,8 @@ const VehicleIntegration &integration(IntegrationId id) {
   }
 }
 
+const VehicleIntegration &presentation_integration(IntegrationId verified, IntegrationId selected, bool ready) {
+  return integration(ready ? verified : selected);
+}
+
 } // namespace bike

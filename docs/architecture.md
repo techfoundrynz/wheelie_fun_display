@@ -78,7 +78,7 @@ The first USB installation must include the new two-slot partition table and OTA
 |---|---|
 | `ui/pages/ride.slint` | Portrait and landscape telemetry layouts |
 | `ui/pages/tune.slint` | Ride presets and speed-limit drafts |
-| `ui/pages/bike.slint` | Vehicle discovery, integration selection and locking actions |
+| `ui/pages/config.slint` | Vehicle discovery, integration selection and locking actions |
 | `ui/pages/settings.slint` | Display, units, transport and proxy preferences |
 | `ui/pages/wifi.slint` | Network discovery and saved connections |
 | `ui/pages/updates.slint` | Release checks, downloads and restart actions |
@@ -89,11 +89,11 @@ The first USB installation must include the new two-slot partition table and OTA
 | `ui/settings.slint`, `ui/controls.slint` | Shared rows, steppers, actions and metric cards |
 | `ui/dialogs/` | Bike-change and firmware-install confirmations |
 
-Ride, Tune, Bike, Wi-Fi, Updates and About inherit `TransitionPage`, retaining the same incoming/outgoing-page lifecycle without adding a layout wrapper. Settings uses its scrolling `Page` inside a `TransitionPage`. Gesture offsets remain owned by `PageDeck` and are forwarded to scrolling content. New Slint files are included automatically by the recursive firmware UI dependency scan.
+Ride, Tune, Config, Wi-Fi, Updates and About inherit `TransitionPage`, retaining the same incoming/outgoing-page lifecycle without adding a layout wrapper. Settings uses its scrolling `Page` inside a `TransitionPage`. Gesture offsets remain owned by `PageDeck` and are forwarded to scrolling content. New Slint files are included automatically by the recursive firmware UI dependency scan.
 
 Page provides a vertically scrolling content layout. Action, Metric, SettingsRow, Stepper, SectionTitle and InfoRow are reusable themed components. Keyboard provides case/symbol modes, password masking/reveal, space and delete, with bounded SSID/password editors in the application. Settings links to Wi-Fi, Updates and About; About has separate version and live-diagnostics views. Speed and temperature preferences are independent, while fault/overheat decisions use native protocol units.
 
-The header Settings cog uses a Lucide SVG and a reusable 48-pixel IconAction touch target. Ride, Tune and Bike remain in the bottom navigation; Settings and its subpages highlight the header cog.
+The header Settings cog uses a Lucide SVG and a reusable 48-pixel IconAction touch target. Ride, Tune and Config remain in the bottom navigation; Settings and its subpages highlight the header cog.
 
 Rounded-panel layout uses the profile-supplied DISPLAY_SAFE_INSET (32 pixels on the 2.06 board) through a reusable SafeArea component. This conservative symmetric inset is rotation invariant; it is not a claimed measurement of the panel corner radius. The fixed header shows the connection state or a more specific alert; vehicle branding remains separate from the status controls.
 
@@ -101,7 +101,9 @@ PageDeck and TransitionPage implement opaque 250 ms ease-out navigation with a r
 
 Primary tabs use a shared SwipeGestureHandler with dominant-axis locking. Horizontal drags retain only the current and adjacent tab, with a bounded offset and no wrap at Ride/Bike. A 40-pixel deliberate drag commits; short or reversed drags snap back. Snap duration scales with remaining distance. The recognizer cancels child presses before dragging, so Apply/peer actions cannot be triggered by a swipe. Vertical motion is delegated to SwipeScroll, a clipped non-interactive Flickable with clamped manual offsets; this avoids nested recognizers swallowing quick vertical drags. Orientation changes and modal input cancel active gestures.
 
-VehicleIntegration provides independent WFB, wheel-e and generic VESC implementations for branding, capability flags, polling, decoding and command construction. Instances are static and share the VESC transport. A verified NVS association binds address, integration and cached name atomically. The stream session invalidates pending work when changing vehicles. The Bike picker prioritizes matching names and resolves selections by address; the bridge uses its own user-configurable BLE name, defaulting to `WB Disp`.
+VehicleIntegration provides independent WFB, wheel-e and generic VESC implementations for branding, capability flags, polling, decoding and command construction. Instances are static and share the VESC transport. A verified NVS association binds address, integration and cached name atomically. The stream session invalidates pending work when changing vehicles. The Config page's vehicle picker prioritizes matching names and resolves selections by address; the bridge uses its own user-configurable BLE name, defaulting to `WB Disp`.
+
+Before connection verification, UI branding and feature previews follow an explicitly selected integration. Auto waits for discovery. A ready session always supplies the verified integration, while protocol decoding, polling and command dispatch use only that verified transport integration. Previewing WFB controls never enables disconnected writes.
 
 The security module owns PIN verification, NVS records, lock transactions and screen idling. PinPad exposes masked numeric entry above all other UI. A same-session, fresh stopped-state reply confirms an explicit bike lock/unlock request. The input backend consumes the wake contact until release and restores configured brightness between completed display frames. See the integration and locking guides for supported commands and verification limits.
 
