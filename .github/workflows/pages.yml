@@ -57,10 +57,10 @@ jobs:
         run: python tests/flasher_browser_test.py --site .cache/pages/site
       - name: Test actual WebAssembly touchscreen
         run: python tests/simulator_browser_test.py --site .cache/pages/site
-      - name: Test hosted PR preview isolation
-        run: python tests/preview_browser_test.py --site .cache/pages/site
       - name: Package separate CI browser gallery
         run: python scripts/package_browser_results.py --site .cache/pages/site
+      - name: Test hosted PR preview isolation
+        run: python tests/preview_browser_test.py --site .cache/pages/site
       - name: Test documentation navigation and responsive layout
         run: python tests/docs_browser_test.py --site .cache/pages/site
       - name: Record exact preview revision

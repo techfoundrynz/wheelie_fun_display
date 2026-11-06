@@ -4,17 +4,36 @@ import argparse
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+import re
 import sys
 import tempfile
 import threading
+import time
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import expect, sync_playwright
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from publish_pages import assemble
 
 
 class PagesHandler(SimpleHTTPRequestHandler):
+    def do_GET(self):
+        if self.path.endswith("/report/"):
+            markup = (Path(self.translate_path(self.path)) / "index.html").read_bytes()
+            split = markup.index(b"<iframe")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(markup)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            # Commit navigation before the iframe exists, reproducing the CI race.
+            self.wfile.write(markup[:split])
+            self.wfile.flush()
+            time.sleep(0.25)
+            self.wfile.write(markup[split:])
+            return
+        super().do_GET()
+
     def log_message(self, *_):
         pass
 
@@ -29,13 +48,19 @@ def main():
     parser.add_argument("--site", type=Path, required=True)
     parser.add_argument("--browser-executable")
     args = parser.parse_args()
+    source = args.site.resolve()
+    for required in ("simulator/index.html", "ci/index.html"):
+        if not (source / required).is_file():
+            parser.error(
+                f"Build the simulator and package its browser gallery first: missing {required}"
+            )
     output = Path(".cache/pages/preview-browser-tests")
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as directory:
         site = Path(directory)
-        assemble(site, args.site.resolve())
+        assemble(site, source)
         destination = "previews/pr-12/" + "a" * 40
-        assemble(site, args.site.resolve(), destination)
+        assemble(site, source, destination)
         server = ThreadingHTTPServer(
             ("127.0.0.1", 0), partial(PagesHandler, directory=str(site))
         )
@@ -51,7 +76,17 @@ def main():
                     errors = []
                     page.on("pageerror", lambda error: errors.append(str(error)))
                     page.goto(f"http://127.0.0.1:{server.server_port}/{destination}/")
-                    frame = page.frames[1]
+                    preview = page.frame_locator('iframe[title="PR simulator preview"]')
+                    expect(preview.locator("#status")).to_have_text(
+                        re.compile(r"^Ready")
+                    )
+                    # Readiness above guarantees an attached browsing context.
+                    frame = (
+                        page.locator('iframe[title="PR simulator preview"]')
+                        .element_handle()
+                        .content_frame()
+                    )
+                    assert frame is not None
                     frame.wait_for_function(
                         "window.wheelieFunDisplay && document.querySelector('#status').textContent.startsWith('Ready')"
                     )
@@ -76,7 +111,12 @@ def main():
                     )
                     page.screenshot(path=str(output / f"{width}-hosted-simulator.png"))
                     page.get_by_role("link", name="Browser test gallery").click()
-                    page.frames[1].locator("h1").wait_for()
+                    preview.get_by_role("heading", name="Touchscreen checks").wait_for()
+                    page.screenshot(path=str(output / f"{width}-hosted-gallery.png"))
+                    page.get_by_role("link", name="Simulator", exact=True).click()
+                    expect(preview.locator("#status")).to_have_text(
+                        re.compile(r"^Ready")
+                    )
                     assert not errors, errors
                     page.close()
                 browser.close()
