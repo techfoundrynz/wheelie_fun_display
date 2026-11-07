@@ -43,6 +43,12 @@ These are the shipped profile's internal connections, not suggested pins for ext
 
 BLE is the default vehicle transport. CAN and UART appear in Settings only after their pin pairs are configured in the target profile. Choose available pins and provide the required external CAN transceiver or UART wiring; see [vehicle transports](transports.md).
 
+## Case and handlebar mount
+
+![Portrait and landscape Waveshare 2.06 cases with handlebar clamps](images/waveshare-206-mounted.png)
+
+The [case and mount guide](../cad/waveshare-206/README.md) includes the editable Fusion archive and STEP downloads for the printed casing, aluminium upper saddle and lower clamp cap, plus the split rubber liner. The same casing can be rotated on the clamp for **portrait or landscape mounting** using its square mounting pattern. Set **Settings > Orientation** to match; all four UI rotations (0°, 90°, 180° and 270°) are supported. The guide also covers model dimensions, fasteners and assembly details for the nominal 22.225 mm (7/8-inch) handlebar design.
+
 ## USB recovery and checks
 
 If the serial device is missing, hold **BOOT**, tap **RESET**, then release **BOOT**. Check the USB data cable and run `pio device list` to identify the board's current port.

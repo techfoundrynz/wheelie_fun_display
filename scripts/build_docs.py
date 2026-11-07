@@ -178,6 +178,15 @@ PAGES = [
         "Licenses and notices for bundled components and assets.",
     ),
 ]
+PAGES.append(
+    (
+        "cad/waveshare-206/README.md",
+        "hardware/waveshare-206/case-mount",
+        "Waveshare case and mount",
+        "Hardware",
+        "STEP downloads, assembly views and hardware for the 2.06-inch casing and clamp.",
+    )
+)
 SOURCE_ROUTES = {(ROOT / source).resolve(): route for source, route, *_ in PAGES}
 SOURCE_ROUTES[(ROOT / "README.md").resolve()] = ""
 
@@ -221,6 +230,12 @@ def rewrite_links(body: str, source: Path, route: str) -> str:
             path = relative(target.name, route)
         elif target.is_relative_to((ROOT / "docs/images").resolve()):
             path = asset("images/" + target.name, route)
+        elif target.is_relative_to((ROOT / "cad").resolve()) and target.suffix in {
+            ".step",
+            ".f3d",
+            ".f3z",
+        }:
+            path = relative("", route) + target.relative_to(ROOT).as_posix()
         elif target.is_relative_to(ROOT):
             path = REPO + "/blob/main/" + target.relative_to(ROOT).as_posix()
         else:
@@ -332,6 +347,13 @@ def build(output: Path, images: Path) -> None:
     (assets / "images").mkdir(exist_ok=True)
     for name in ["manifest.json"] + manifest["images"]:
         shutil.copyfile(images / name, assets / "images" / name)
+    # Ship CAD downloads with Pages so the guide works in offline artifacts too.
+    for source in sorted((ROOT / "cad").rglob("*")):
+        if not source.is_file() or source.suffix not in {".step", ".f3d", ".f3z"}:
+            continue
+        destination = output / source.relative_to(ROOT)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, destination)
     fonts = assets / "fonts"
     fonts.mkdir(exist_ok=True)
     shutil.copyfile(ROOT / "ui/fonts/Roboto.ttf", fonts / "Roboto.ttf")

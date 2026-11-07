@@ -33,3 +33,7 @@
 *.wasm binary
 *.bin binary
 *.elf binary
+
+# Native Fusion design archives
+*.f3d binary
+*.f3z binary
