@@ -24,9 +24,10 @@
     "reference/vesc-protocol/index.html",
     "reference/wfb-bike-layer/index.html",
     "reference/theme/index.html",
+    "reference/wfb-ride-controls/index.html",
     "reference/notices/index.html"
   ],
   "simulator": "simulator/",
   "installer": "install/",
-  "sources": 23
+  "sources": 24
 }

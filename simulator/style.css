@@ -98,6 +98,12 @@
 .display-frame.landscape {
   width: 526px;
 }
+.display-frame.large-display {
+  width: 504px;
+}
+.display-frame.large-display.landscape {
+  width: 824px;
+}
 canvas {
   display: block;
   width: 100%;

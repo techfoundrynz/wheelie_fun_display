@@ -4,6 +4,8 @@
 export class WebSimulator {
     free(): void;
     [Symbol.dispose](): void;
+    adjust_tuning(id: number, delta: number): void;
+    edit_tuning(id: number): void;
     frame(milliseconds: number): void;
     invoke(callback: string): void;
     navigate(page: number): void;
@@ -12,8 +14,10 @@ export class WebSimulator {
     scroll(x: number, y: number, delta: number): void;
     set_connected(connected: boolean): void;
     set_control(name: string, value: number): void;
+    set_display_model(model: number): void;
     set_integration(id: number): void;
     set_rotation(degrees: number): void;
+    set_tuning_section(section: number): void;
     show_pairing_demo(): void;
     state(name: string): any;
     /**
@@ -28,6 +32,8 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_websimulator_free: (a: number, b: number) => void;
+    readonly websimulator_adjust_tuning: (a: number, b: number, c: number) => void;
+    readonly websimulator_edit_tuning: (a: number, b: number) => void;
     readonly websimulator_frame: (a: number, b: number, c: number) => void;
     readonly websimulator_invoke: (a: number, b: number, c: number, d: number) => void;
     readonly websimulator_navigate: (a: number, b: number) => void;
@@ -36,8 +42,10 @@ export interface InitOutput {
     readonly websimulator_scroll: (a: number, b: number, c: number, d: number) => void;
     readonly websimulator_set_connected: (a: number, b: number) => void;
     readonly websimulator_set_control: (a: number, b: number, c: number, d: number) => void;
+    readonly websimulator_set_display_model: (a: number, b: number) => void;
     readonly websimulator_set_integration: (a: number, b: number) => void;
     readonly websimulator_set_rotation: (a: number, b: number) => void;
+    readonly websimulator_set_tuning_section: (a: number, b: number) => void;
     readonly websimulator_show_pairing_demo: (a: number) => void;
     readonly websimulator_state: (a: number, b: number, c: number) => number;
     readonly websimulator_use_documentation_fixture: (a: number, b: number) => void;

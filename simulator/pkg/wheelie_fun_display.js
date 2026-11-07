@@ -12,6 +12,19 @@ export class WebSimulator {
         wasm.__wbg_websimulator_free(ptr, 0);
     }
     /**
+     * @param {number} id
+     * @param {number} delta
+     */
+    adjust_tuning(id, delta) {
+        wasm.websimulator_adjust_tuning(this.__wbg_ptr, id, delta);
+    }
+    /**
+     * @param {number} id
+     */
+    edit_tuning(id) {
+        wasm.websimulator_edit_tuning(this.__wbg_ptr, id);
+    }
+    /**
      * @param {number} milliseconds
      */
     frame(milliseconds) {
@@ -108,6 +121,12 @@ export class WebSimulator {
         wasm.websimulator_set_control(this.__wbg_ptr, ptr0, len0, value);
     }
     /**
+     * @param {number} model
+     */
+    set_display_model(model) {
+        wasm.websimulator_set_display_model(this.__wbg_ptr, model);
+    }
+    /**
      * @param {number} id
      */
     set_integration(id) {
@@ -118,6 +137,12 @@ export class WebSimulator {
      */
     set_rotation(degrees) {
         wasm.websimulator_set_rotation(this.__wbg_ptr, degrees);
+    }
+    /**
+     * @param {number} section
+     */
+    set_tuning_section(section) {
+        wasm.websimulator_set_tuning_section(this.__wbg_ptr, section);
     }
     show_pairing_demo() {
         wasm.websimulator_show_pairing_demo(this.__wbg_ptr);
