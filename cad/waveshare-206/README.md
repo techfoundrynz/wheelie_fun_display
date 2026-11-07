@@ -1,5 +1,7 @@
 # Waveshare 2.06 casing and handlebar clamp
 
+Part of the [Waveshare 2.06 hardware guide](../../docs/hardware-waveshare-206.md).
+
 A compact casing and split handlebar clamp for the Waveshare ESP32-S3 Touch AMOLED 2.06 module. The Fusion assembly shows portrait and landscape installations of the same custom parts.
 
 ![Portrait and landscape display casings mounted on a handlebar](../../docs/images/waveshare-206-mounted.png)

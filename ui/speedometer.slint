@@ -24,7 +24,7 @@ export component Speedometer inherits Rectangle {
     private property <float> arc-bottom-factor: 0.5 + (1 - self.stroke-ratio) / 2 * self.max-sine + self.stroke-ratio / 2;
     private property <float> value-y-factor: 0.26;
     private property <float> value-height-factor: 0.33;
-    private property <float> unit-y-factor: 0.60;
+    private property <float> unit-y-factor: 0.56;
     private property <float> content-top-factor: min(self.arc-top-factor, self.value-y-factor, self.unit-y-factor);
     private property <float> shape-height-factor: max(self.arc-bottom-factor, self.value-y-factor + self.value-height-factor) - self.content-top-factor;
     private property <length> diameter: min(self.width,

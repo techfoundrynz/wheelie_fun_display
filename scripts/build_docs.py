@@ -73,6 +73,13 @@ PAGES = [
         "AMOLED setup, board wiring, orientation and USB recovery.",
     ),
     (
+        "cad/waveshare-206/README.md",
+        "hardware/waveshare-206/case-mount",
+        "Waveshare case and mount",
+        "Hardware",
+        "STEP downloads, assembly views and hardware for the 2.06-inch casing and clamp.",
+    ),
+    (
         "docs/hardware-guition-43.md",
         "hardware/guition-43",
         "GUITION P4 4.3-inch",
@@ -178,15 +185,6 @@ PAGES = [
         "Licenses and notices for bundled components and assets.",
     ),
 ]
-PAGES.append(
-    (
-        "cad/waveshare-206/README.md",
-        "hardware/waveshare-206/case-mount",
-        "Waveshare case and mount",
-        "Hardware",
-        "STEP downloads, assembly views and hardware for the 2.06-inch casing and clamp.",
-    )
-)
 SOURCE_ROUTES = {(ROOT / source).resolve(): route for source, route, *_ in PAGES}
 SOURCE_ROUTES[(ROOT / "README.md").resolve()] = ""
 
@@ -251,10 +249,14 @@ def logo() -> str:
 
 def navigation(route: str, available: list[tuple]) -> str:
     groups: dict[str, list[str]] = {}
-    for _, slug, title, group, _ in available:
+    routes = {page[1] for page in available}
+    for source, slug, title, group, _ in available:
+        nested = slug.rpartition("/")[0] in routes
+        child = ' class="nav-child"' if nested else ""
+        label = "Case & mount (CAD)" if source.startswith("cad/") else title
         current = ' aria-current="page"' if slug == route else ""
         groups.setdefault(group, []).append(
-            f'<a href="{relative(slug, route)}"{current}>{escape(title)}</a>'
+            f'<a href="{relative(slug, route)}"{child}{current}>{escape(label)}</a>'
         )
     groups.setdefault("Start here", []).append(
         f'<a href="{relative("install", route)}">Install firmware</a>'
