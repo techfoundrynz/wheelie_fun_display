@@ -18,9 +18,9 @@ Power the bike and open its BLE interface. Make sure another client has not occu
 
 ## The link connects but values stay unavailable
 
-Transport connection, main-controller discovery and telemetry freshness are separate. Check the main-controller status on the Bike page. The package must match WFB or wheel-e when that integration is selected; generic VESC does not expose package-specific controls.
+Transport connection, main-controller discovery and telemetry freshness are separate. Check the main-controller status on the Settings vehicle section. The package must match WFB or wheel-e when that integration is selected; generic VESC does not expose package-specific controls.
 
-If a phone owns the proxy, the display pauses its own queries. Disconnect the phone and let discovery/polling resume. If needed, choose **Find main controller again**. `--` is an unavailable reading, not zero.
+Read-only display polls normally continue while a phone uses the proxy, but unfinished phone packets and phone firmware transfers temporarily suppress them. Initial discovery also waits if the phone connected before it finished. Disconnect the phone to let discovery complete, then use **Find main controller again** if needed. BMS polls during a phone session require a command-96 reply earlier in the current vehicle session. `--` is an unavailable reading, not zero.
 
 ## The BLE PIN is rejected
 
@@ -34,7 +34,7 @@ The target must define both pins for that interface. The stock profile leaves op
 
 ## A tuning or lock action is unavailable
 
-The selected integration may not support it. Otherwise, wait for fresh stationary telemetry, a ready connection and no controller fault. A phone proxy lease also reserves the conversation. Draft values are not readbacks.
+The selected integration may not support it. Otherwise, wait for fresh stationary telemetry, a ready connection and no controller fault. Configuration writes remain blocked while a phone is connected to the proxy, even though read-only telemetry can continue. Draft values are not readbacks.
 
 For a lock request, an unconfirmed state means the display has not received the required matching telemetry. Do not assume the motor is disabled merely because the request was queued.
 

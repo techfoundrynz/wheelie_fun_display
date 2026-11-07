@@ -30,6 +30,11 @@ struct ProxyLease {
            session == upstream_session;
   }
 
+  bool accepts_display(uint32_t epoch, uint32_t session) const {
+    return enabled && !paused && synced && upstream_ready && connected && epoch == generation &&
+           session == upstream_session;
+  }
+
   bool begin_maintenance() {
     if (connected)
       return false;

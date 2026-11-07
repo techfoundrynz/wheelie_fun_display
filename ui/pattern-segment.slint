@@ -1,0 +1,37 @@
+import { Theme } from "theme.slint";
+
+// Bitmap-backed diagonals avoid runtime vector rasterization on MCU stacks.
+export component PatternSegment inherits Rectangle {
+    in property <length> start-x;
+    in property <length> start-y;
+    in property <length> end-x;
+    in property <length> end-y;
+    in property <length> cell;
+    private property <length> dx: self.end-x - self.start-x;
+    private property <length> dy: self.end-y - self.start-y;
+    private property <length> thickness: max(2px, self.cell / 32);
+    private property <bool> down: (self.dx > 0px) == (self.dy > 0px);
+    private property <int> columns: self.cell > 0px ? Math.round(Math.abs(self.dx) / self.cell) : 1;
+    private property <int> rows: self.cell > 0px ? Math.round(Math.abs(self.dy) / self.cell) : 1;
+    x: min(self.start-x, self.end-x);
+    y: min(self.start-y, self.end-y);
+    width: max(self.thickness, Math.abs(self.dx));
+    height: max(self.thickness, Math.abs(self.dy));
+    if root.dx == 0px || root.dy == 0px: Rectangle {
+        x: root.dx == 0px ? -root.thickness / 2 : 0px;
+        y: root.dy == 0px ? -root.thickness / 2 : 0px;
+        background: Theme.accent;
+    }
+    if root.dx != 0px && root.dy != 0px: Image {
+        x: 0px;
+        y: 0px;
+        width: parent.width;
+        height: parent.height;
+        colorize: Theme.accent;
+        image-fit: fill;
+        source: root.columns == 2 && root.rows == 2 ? (root.down ? @image-url("assets/pattern-line-22-down.svg") : @image-url("assets/pattern-line-22-up.svg")) :
+            root.columns == 2 ? (root.down ? @image-url("assets/pattern-line-21-down.svg") : @image-url("assets/pattern-line-21-up.svg")) :
+            root.rows == 2 ? (root.down ? @image-url("assets/pattern-line-12-down.svg") : @image-url("assets/pattern-line-12-up.svg")) :
+            (root.down ? @image-url("assets/pattern-line-11-down.svg") : @image-url("assets/pattern-line-11-up.svg"));
+    }
+}

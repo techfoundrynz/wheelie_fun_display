@@ -11,7 +11,7 @@ Keep firmware artifacts tied to the hardware profile and record the checks perfo
 
 The public release feed is `techfoundrynz/wheelie_fun_display`. A release needs the matching environment-named image and GitHub SHA256 digest. Missing releases or incompatible images are reported without replacing the installed firmware.
 
-Installation pauses vehicle communications. A phone owning the proxy conversation blocks maintenance until it disconnects. Certificate-verified HTTPS and image validation protect the download; this is not a separate signed-firmware/secure-boot scheme.
+Installation pauses vehicle communications. A connected phone blocks display firmware maintenance until it disconnects; read-only display telemetry can continue during the phone connection. Certificate-verified HTTPS and image validation protect the download; this is not a separate signed-firmware/secure-boot scheme.
 
 ## Automatic releases and PR previews
 

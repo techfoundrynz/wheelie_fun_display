@@ -1,0 +1,201 @@
+import { StatItem } from "../models.slint";
+import { TransitionPage } from "../page-transition.slint";
+import { SwipeScroll } from "../swipe-scroll.slint";
+import { Metric } from "../controls.slint";
+import { SectionTitle } from "../settings.slint";
+import { Theme } from "../theme.slint";
+
+component StatRow inherits HorizontalLayout {
+    in property <string> first-label;
+    in property <string> first-value;
+    in property <string> second-label;
+    in property <string> second-value;
+    spacing: 10px;
+    height: 72px;
+    Metric {
+        label: root.first-label;
+        value: root.first-value;
+    }
+
+    Metric {
+        label: root.second-label;
+        value: root.second-value;
+    }
+}
+
+component StatList inherits VerticalLayout {
+    in property <[StatItem]> items;
+    spacing: 6px;
+    for item in root.items: Rectangle {
+        height: 52px;
+        background: Theme.surface;
+        border-radius: 10px;
+        HorizontalLayout {
+            padding: 12px;
+            spacing: 8px;
+            Text {
+                text: item.label;
+                color: Theme.secondary;
+                font-size: 15px;
+                vertical-alignment: center;
+                overflow: elide;
+                horizontal-stretch: 1;
+            }
+
+            Text {
+                text: item.value;
+                max-width: parent.width * 0.56;
+                overflow: elide;
+                color: Theme.text;
+                font-size: 17px;
+                font-weight: 700;
+                vertical-alignment: center;
+                horizontal-alignment: right;
+            }
+        }
+    }
+}
+
+export component StatsPage inherits TransitionPage {
+    page-index: 1;
+    in property <[StatItem]> vesc-stats;
+    in property <[StatItem]> bms-stats;
+    in property <[StatItem]> bms-cells;
+    in property <[StatItem]> bms-temperatures;
+    in property <string> bms-state;
+    in property <bool> connected;
+    in property <bool> fresh;
+    in property <bool> metric;
+    in property <length> drag-delta;
+    in property <bool> scroll-active;
+    in property <string> speed;
+    in property <string> power;
+    in property <string> battery;
+    in property <string> voltage;
+    in property <string> motor-current;
+    in property <string> battery-current;
+    in property <string> pitch;
+    in property <string> roll;
+    in property <string> mosfet;
+    in property <string> motor;
+    in property <string> trip;
+    in property <string> odometer;
+    SwipeScroll {
+        drag-delta: root.drag-delta;
+        scroll-active: root.scroll-active;
+        content-width: self.width;
+        VerticalLayout {
+            spacing: 12px;
+            Text {
+                text: "STATS";
+                color: Theme.text;
+                font-size: 20px;
+                font-weight: 800;
+            }
+
+            if !root.fresh: Text {
+                text: root.connected ? "Waiting for current telemetry." : "Connect a bike to view live stats.";
+                color: Theme.secondary;
+                font-size: 14px;
+            }
+            SectionTitle {
+                text: "RIDE";
+            }
+
+            StatRow {
+                first-label: "SPEED";
+                first-value: root.speed == "--" ? "--" : root.speed + (root.metric ? " km/h" : " mph");
+                second-label: "POWER";
+                second-value: root.power;
+            }
+
+            SectionTitle {
+                text: "DISTANCE";
+            }
+
+            StatRow {
+                first-label: "TRIP";
+                first-value: root.trip;
+                second-label: "ODOMETER";
+                second-value: root.odometer;
+            }
+
+            SectionTitle {
+                text: "ELECTRICAL";
+            }
+
+            StatRow {
+                first-label: "VOLTAGE";
+                first-value: root.voltage;
+                second-label: "BATTERY";
+                second-value: root.battery;
+            }
+
+            StatRow {
+                first-label: "INPUT CURRENT";
+                first-value: root.battery-current;
+                second-label: "MOTOR CURRENT";
+                second-value: root.motor-current;
+            }
+
+            SectionTitle {
+                text: "TEMPERATURES";
+            }
+
+            StatRow {
+                first-label: "CONTROLLER";
+                first-value: root.mosfet;
+                second-label: "MOTOR";
+                second-value: root.motor;
+            }
+
+            SectionTitle {
+                text: "ATTITUDE";
+            }
+
+            StatRow {
+                first-label: "PITCH";
+                first-value: root.pitch;
+                second-label: "ROLL";
+                second-value: root.roll;
+            }
+
+            SectionTitle {
+                text: "CONTROLLER DETAILS";
+            }
+
+            StatList {
+                items: root.vesc-stats;
+            }
+
+            SectionTitle {
+                text: "VESC BMS";
+            }
+
+            Text {
+                text: root.bms-state;
+                color: Theme.secondary;
+                font-size: 14px;
+                wrap: word-wrap;
+            }
+
+            StatList {
+                items: root.bms-stats;
+            }
+
+            if root.bms-cells.length > 0: SectionTitle {
+                text: "CELL VOLTAGES";
+            }
+            StatList {
+                items: root.bms-cells;
+            }
+
+            if root.bms-temperatures.length > 0: SectionTitle {
+                text: "BMS TEMPERATURE SENSORS";
+            }
+            StatList {
+                items: root.bms-temperatures;
+            }
+        }
+    }
+}

@@ -1,7 +1,31 @@
 use slint::{ComponentHandle, ModelRc, Timer, TimerMode, VecModel};
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 slint::include_modules!();
+#[path = "../stats_fixture.rs"]
+mod stats_fixture;
+
+fn project_proxy_name(ui: &Dashboard, preference: &str) {
+    let id = if ui.get_connected() {
+        ui.get_active_integration()
+    } else {
+        ui.get_integration_choice()
+    };
+    ui.set_vehicle_brand(
+        match id {
+            1 => "Wheelie Fun Bike",
+            2 => "wheel-e",
+            _ => "VESC",
+        }
+        .into(),
+    );
+    ui.set_supports_presets(id == 1);
+    ui.set_supports_limit(id == 1);
+    ui.set_supports_lock(id == 1 || id == 2);
+    ui.set_proxy_name_locked(id == 1);
+    ui.set_proxy_name(if id == 1 { "WFB" } else { preference }.into());
+}
 
 fn main() -> Result<(), slint::PlatformError> {
     let ui = Dashboard::new()?;
@@ -34,7 +58,11 @@ fn main() -> Result<(), slint::PlatformError> {
     } else {
         0
     });
-    ui.set_connection("Demo / simulated telemetry".into());
+    let proxy_name_preference = Rc::new(RefCell::new(String::from("WB Disp")));
+    let editing_name = Rc::new(Cell::new(false));
+    ui.set_proxy_name("WFB".into());
+    ui.set_proxy_name_locked(true);
+    ui.set_connection("Connected".into());
     ui.set_connected(true);
     ui.set_link_present(true);
     ui.set_fresh(true);
@@ -50,27 +78,29 @@ fn main() -> Result<(), slint::PlatformError> {
         ui.set_connected(false);
         ui.set_link_present(false);
         ui.set_fresh(false);
-        ui.set_controller_status("Demo / connect to discover the main controller".into());
+        ui.set_controller_status("Demo | connect to discover the main controller".into());
     });
     let weak = ui.as_weak();
     ui.on_connect_wired(move || {
         let ui = weak.unwrap();
+        let choice = ui.get_integration_choice();
+        ui.set_active_integration(if choice < 0 { 1 } else { choice });
         ui.set_connected(true);
         ui.set_link_present(true);
         ui.set_fresh(true);
-        ui.set_controller_status("Demo / main VESC CAN 7 / simulated firmware".into());
+        ui.set_controller_status("Demo | main VESC CAN 7 | simulated firmware".into());
     });
     let weak = ui.as_weak();
     ui.on_discover_controller(move || {
         weak.unwrap()
-            .set_controller_status("Demo / simulated controller discovery complete".into())
+            .set_controller_status("Demo | simulated controller discovery complete".into())
     });
     let weak = ui.as_weak();
     ui.on_ble_proxy_changed(move |enabled| {
         let ui = weak.unwrap();
         ui.set_ble_proxy_enabled(enabled);
         ui.set_ble_proxy_status(if enabled {
-            "Simulator / no Bluetooth proxy traffic".into()
+            "Simulator | no Bluetooth proxy traffic".into()
         } else {
             "Off".into()
         });
@@ -87,15 +117,17 @@ fn main() -> Result<(), slint::PlatformError> {
         ui.set_connected(false);
         ui.set_link_present(false);
         ui.set_fresh(false);
-        ui.set_connection("Demo / choose the sample bike".into());
+        ui.set_connection("Demo | choose the sample bike".into());
     });
     let weak = ui.as_weak();
     ui.on_connect_peer(move |_| {
         let ui = weak.unwrap();
+        let choice = ui.get_integration_choice();
+        ui.set_active_integration(if choice < 0 { 1 } else { choice });
         ui.set_connected(true);
         ui.set_link_present(true);
         ui.set_fresh(true);
-        ui.set_connection("Demo / simulated telemetry".into());
+        ui.set_connection("Connected".into());
         ui.set_page(0);
     });
     let weak = ui.as_weak();
@@ -135,12 +167,28 @@ fn main() -> Result<(), slint::PlatformError> {
     });
     ui.set_wifi_networks(ModelRc::from(Rc::new(VecModel::from(vec![WifiItem {
         ssid: "Workshop demo".into(),
-        detail: "-45 dBm / locked".into(),
+        detail: "-45 dBm | locked".into(),
     }]))));
     let weak = ui.as_weak();
     ui.on_wifi_scan(move || {
         weak.unwrap()
-            .set_wifi_status("Demo / choose a network".into())
+            .set_wifi_status("Demo | choose a network".into())
+    });
+    let weak = ui.as_weak();
+    let preference = proxy_name_preference.clone();
+    let editing = editing_name.clone();
+    ui.on_edit_proxy_name(move || {
+        let ui = weak.unwrap();
+        project_proxy_name(&ui, &preference.borrow());
+        if ui.get_proxy_name_locked() {
+            return;
+        }
+        editing.set(true);
+        ui.set_editor_secret(false);
+        ui.set_editor_heading("BLE name | up to 29 bytes".into());
+        ui.set_editor_value(preference.borrow().clone().into());
+        ui.set_editor_masked("".into());
+        ui.set_editing(true);
     });
     let weak = ui.as_weak();
     ui.on_wifi_manual(move || {
@@ -181,15 +229,30 @@ fn main() -> Result<(), slint::PlatformError> {
         ui.set_editor_value(value.into());
     });
     let weak = ui.as_weak();
+    let editing = editing_name.clone();
     ui.on_editor_cancel(move || {
+        editing.set(false);
         let ui = weak.unwrap();
         ui.set_editing(false);
         ui.set_editor_value("".into());
         ui.set_editor_masked("".into());
     });
     let weak = ui.as_weak();
+    let editing = editing_name.clone();
+    let preference = proxy_name_preference.clone();
     ui.on_editor_done(move || {
         let ui = weak.unwrap();
+        if editing.get() {
+            if !ui.get_proxy_name_locked() && !ui.get_editor_value().trim().is_empty() {
+                *preference.borrow_mut() = ui.get_editor_value().to_string();
+                project_proxy_name(&ui, &preference.borrow());
+            }
+            editing.set(false);
+            ui.set_editing(false);
+            ui.set_editor_value("".into());
+            ui.set_editor_masked("".into());
+            return;
+        }
         if !ui.get_editor_secret() {
             ui.set_wifi_saved(ui.get_editor_value());
             ui.set_editor_secret(true);
@@ -197,7 +260,7 @@ fn main() -> Result<(), slint::PlatformError> {
         } else {
             ui.set_wifi_connected(true);
             ui.set_editing(false);
-            ui.set_wifi_status("Demo / Wi-Fi connected".into());
+            ui.set_wifi_status("Demo | Wi-Fi connected".into());
         }
         ui.set_editor_value("".into());
         ui.set_editor_masked("".into());
@@ -212,17 +275,17 @@ fn main() -> Result<(), slint::PlatformError> {
     ui.on_wifi_connect_saved(move || {
         let ui = weak.unwrap();
         ui.set_wifi_connected(true);
-        ui.set_wifi_status("Demo / Wi-Fi connected".into());
+        ui.set_wifi_status("Demo | Wi-Fi connected".into());
     });
     let weak = ui.as_weak();
     ui.on_update_check(move || {
         let ui = weak.unwrap();
-        ui.set_wifi_status("Demo / no real release downloaded".into());
+        ui.set_wifi_status("Demo | no real release downloaded".into());
     });
     ui.set_about_items(ModelRc::from(Rc::new(VecModel::from(vec![
         AboutItem {
             label: "Runtime".into(),
-            value: "Desktop simulator / simulated telemetry".into(),
+            value: "Desktop simulator | simulated telemetry".into(),
         },
         AboutItem {
             label: "Version".into(),
@@ -300,9 +363,23 @@ fn main() -> Result<(), slint::PlatformError> {
     let timer = Timer::default();
     timer.start(TimerMode::Repeated, Duration::from_millis(100), move || {
         let ui = weak.unwrap();
+        project_proxy_name(&ui, &proxy_name_preference.borrow());
+        if ui.get_proxy_name_locked() && editing_name.replace(false) {
+            ui.set_editing(false);
+            ui.set_editor_value("".into());
+            ui.set_editor_masked("".into());
+        }
         let moving = (started.elapsed().as_secs_f32() / 8.0).sin().max(0.0);
         let mps = moving * 9.0;
         let live = ui.get_connected();
+        ui.set_connection(if live { "Connected" } else { "Disconnected" }.into());
+        ui.set_data_stale(false);
+        ui.set_bike_ble_rssi(-62);
+        ui.set_bike_ble_signal(if live && ui.get_transport_kind() == 0 {
+            3
+        } else {
+            -1
+        });
         ui.set_can_configure(live && mps < 0.2);
         ui.set_speed(if live {
             format!("{:.1}", mps * if ui.get_metric() { 3.6 } else { 2.2369363 }).into()
@@ -312,7 +389,33 @@ fn main() -> Result<(), slint::PlatformError> {
         ui.set_speed_progress(if live { mps / 15.6464 } else { 0.0 });
         ui.set_battery(if live { "82%".into() } else { "--".into() });
         ui.set_battery_level(if live { 82.0 } else { 0.0 });
-        ui.set_voltage(if live { "75.6 V".into() } else { "--".into() });
+        ui.set_voltage(if live { "50.4 V".into() } else { "--".into() });
+        ui.set_motor_current(if live {
+            format!("{:.1} A", moving * 800. / 28.).into()
+        } else {
+            "--".into()
+        });
+        ui.set_battery_current(if live {
+            format!("{:.1} A", moving * 800. / 50.4).into()
+        } else {
+            "--".into()
+        });
+        ui.set_roll(if live { "0.8°".into() } else { "--".into() });
+        let (divisor, unit) = if ui.get_metric() {
+            (1., "km")
+        } else {
+            (1.609344, "mi")
+        };
+        ui.set_trip(if live {
+            format!("{:.2} {unit}", 12.34 / divisor).into()
+        } else {
+            "--".into()
+        });
+        ui.set_odometer(if live {
+            format!("{:.1} {unit}", 12345.6 / divisor).into()
+        } else {
+            "--".into()
+        });
         ui.set_power(if live {
             format!("{:.0} W", moving * 800.0).into()
         } else {
@@ -341,6 +444,7 @@ fn main() -> Result<(), slint::PlatformError> {
         } else {
             "--".into()
         });
+        stats_fixture::project(&ui, live);
     });
     ui.run()
 }

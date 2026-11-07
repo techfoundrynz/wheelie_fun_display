@@ -1,6 +1,7 @@
 #include "wired_transport.hpp"
 #include "bike/can_bridge.hpp"
 #include "bike/can_packet.hpp"
+#include "bike/proxy_tx_drain.hpp"
 #include "ble_proxy.hpp"
 #include "can_driver.hpp"
 #include "driver/uart.h"
@@ -65,6 +66,7 @@ uint64_t now_ms() {
 
 StaticQueue_t tx_control, rx_control;
 std::atomic<uint32_t> proxy_requested{0}, proxy_active{0};
+bike::ProxyTxDrain proxy_tx;
 std::atomic<bool> proxy_reset{false};
 
 struct Runtime {
@@ -367,8 +369,12 @@ void worker(void *context) {
         r.decoder.feed({bytes.data(), size_t(count)}, now_ms());
       }
     }
-    if (!failed && xQueueReceive(r.tx, &r.outgoing, 0) == pdTRUE && r.outgoing.session == generation) {
-      if (r.outgoing.proxy_epoch) {
+    if (!failed && xQueueReceive(r.tx, &r.outgoing, 0) == pdTRUE) {
+      bike::ProxyTxDrain::WriteGuard writing(proxy_tx, r.outgoing.proxy_epoch);
+      if (r.outgoing.session != generation) {
+        // Stale requests still relinquish their queued count through the guard.
+      }
+      else if (r.outgoing.proxy_epoch) {
         if (r.outgoing.proxy_epoch == requested_owner && proxy_requested.load() == requested_owner) {
           if (kind == Kind::Can) {
             const auto rejected = r.phone_decoder.rejected();
@@ -508,7 +514,9 @@ public:
   bool send_to(std::span<const uint8_t> payload, int controller_id) override {
     auto &r = *runtime;
     r.lock();
-    const bool ready = r.enabled && !r.paused && r.state.status != Status::Error;
+    // Keep ordinary writes outside the retained phone epoch, including the
+    // backend-drain/quiet handoff after the phone itself has disconnected.
+    const bool ready = r.enabled && !r.paused && r.state.status != Status::Error && proxy_requested.load() == 0;
     const auto generation = r.generation;
     r.unlock();
     if (!ready || payload.empty() || payload.size() > bike::max_payload)
@@ -598,7 +606,22 @@ bool wired_send_proxy_fragment(std::span<const uint8_t> bytes, uint32_t epoch) {
   packet.proxy_epoch = epoch;
   packet.size = bytes.size();
   std::copy(bytes.begin(), bytes.end(), packet.bytes.begin());
-  return xQueueSend(r.tx, &packet, 0) == pdTRUE;
+  proxy_tx.reserve();
+  if (xQueueSend(r.tx, &packet, 0) == pdTRUE)
+    return true;
+  proxy_tx.rejected();
+  return false;
+}
+
+bool wired_proxy_drained(uint32_t epoch) {
+  if (!runtime || !epoch || !proxy_tx.drained() || proxy_requested.load() != epoch || proxy_active.load() != epoch)
+    return false;
+  runtime->lock();
+  // A CAN/UART adapter can relay phone traffic before display discovery marks
+  // a main controller Ready. Match the raw-proxy admission gate, not that UI state.
+  const bool ready = runtime->enabled && !runtime->paused;
+  runtime->unlock();
+  return ready;
 }
 
 void wired_reset_proxy_link() {

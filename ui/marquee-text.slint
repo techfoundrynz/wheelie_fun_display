@@ -1,0 +1,48 @@
+import { Theme } from "theme.slint";
+
+export component MarqueeText inherits Rectangle {
+    in property <string> text;
+    in property <color> text-color: Theme.secondary;
+    in property <bool> enabled: true;
+    min-width: 0px;
+    preferred-width: 0px;
+    clip: true;
+
+    private property <length> travel: max(0px, label.preferred-width - self.width);
+    private property <duration> travel-time: max(800ms, self.travel / 32px * 1s);
+    // Pause at the start, move to the end, pause there, then move back.
+    private property <int> phase: 0;
+    private property <bool> moving: self.phase == 1 || self.phase == 3;
+    private property <length> offset: self.enabled && (self.phase == 1 || self.phase == 2) ? self.travel : 0px;
+    animate offset {
+        duration: root.enabled && root.moving ? root.travel-time : 0ms;
+        easing: linear;
+    }
+
+    function reset() {
+        self.phase = 0;
+        ticker.restart();
+    }
+    changed text => { self.reset(); }
+    changed width => { self.reset(); }
+    changed travel => { self.reset(); }
+    changed enabled => { self.reset(); }
+
+    ticker := Timer {
+        running: root.enabled && root.width > 0px && root.travel > 1px;
+        interval: root.moving ? root.travel-time : 1200ms;
+        triggered => { root.phase = Math.mod(root.phase + 1, 4); }
+    }
+
+    label := Text {
+        x: -root.offset;
+        width: max(root.width, self.preferred-width);
+        height: root.height;
+        text: root.text;
+        color: root.text-color;
+        font-size: 18px;
+        font-weight: 700;
+        wrap: no-wrap;
+        vertical-alignment: center;
+    }
+}

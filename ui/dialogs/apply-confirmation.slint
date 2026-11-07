@@ -6,15 +6,18 @@ export component ApplyConfirmation inherits Rectangle {
     in property <bool> can-configure;
     in property <string> confirm-text;
     in property <bool> connected;
-    in property <length> display-safe-inset;
+    in property <length> display-safe-inset-x;
+    in property <length> display-safe-inset-y;
 
     callback cancel-change();
     callback confirm-change();
 
     background: #000000b3;
     SafeArea {
-        safe-inset: root.display-safe-inset;
-        minimum-padding: 24px;
+        safe-inset-x: root.display-safe-inset-x;
+        safe-inset-y: root.display-safe-inset-y;
+        minimum-padding-x: 24px;
+        minimum-padding-y: 24px;
         VerticalLayout {
             padding: 0px;
             alignment: center;

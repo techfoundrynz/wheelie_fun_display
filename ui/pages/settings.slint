@@ -1,3 +1,6 @@
+import { VehicleSettings } from "../sections/vehicle-settings.slint";
+import { LockSettings } from "../sections/lock-settings.slint";
+import { Peer } from "../models.slint";
 import { Theme } from "../theme.slint";
 import { Page } from "../page.slint";
 import { SectionTitle, SettingsRow, Stepper } from "../settings.slint";
@@ -12,8 +15,29 @@ export component SettingsPage inherits Page {
     in property <bool> uart-available;
     in property <bool> can-change-transport: true;
     in property <string> proxy-name;
+    in property <bool> proxy-name-locked: false;
     in property <bool> ble-proxy-enabled;
     in property <string> ble-proxy-status;
+    in property <string> controller-status;
+    in-out property <int> integration-choice;
+    in property <bool> link-present;
+    in property <[Peer]> peers;
+    in property <string> bike-lock-status;
+    in property <bool> can-configure;
+    in property <bool> connected;
+    in property <int> lock-timeout;
+    in property <bool> pin-configured;
+    in property <bool> supports-lock;
+    in property <string> proxy-pairing-code;
+    callback connect-peer(int);
+    callback connect-wired();
+    callback discover-controller();
+    callback forget-peer();
+    callback bike-lock();
+    callback screen-lock();
+    callback pin-setup();
+    callback pin-remove();
+    callback lock-timeout-changed(int);
     title: "SETTINGS";
     SectionTitle {
         text: "DISPLAY";
@@ -37,6 +61,19 @@ export component SettingsPage inherits Page {
         activated => { root.rotate(); }
     }
 
+    Stepper {
+        label: "Brightness";
+        value: root.brightness + "%";
+        can-decrease: root.brightness > 10;
+        can-increase: root.brightness < 100;
+        decrease => { root.dim(); }
+        increase => { root.brighten(); }
+    }
+
+    SectionTitle {
+        text: "UNITS";
+    }
+
     SettingsRow {
         label: "Speed units";
         detail: root.metric ? "km/h" : "mph";
@@ -49,24 +86,38 @@ export component SettingsPage inherits Page {
         activated => { root.toggle-temperature(); }
     }
 
-    Stepper {
-        label: "Brightness";
-        value: root.brightness + "%";
-        can-decrease: root.brightness > 10;
-        can-increase: root.brightness < 100;
-        decrease => { root.dim(); }
-        increase => { root.brighten(); }
+    VehicleSettings {
+        controller-status: root.controller-status;
+        integration-choice <=> root.integration-choice;
+        link-present: root.link-present;
+        peers: root.peers;
+        transport-kind: root.transport-kind;
+        can-available: root.can-available;
+        uart-available: root.uart-available;
+        can-change-transport: root.can-change-transport;
+        select-transport(kind) => { root.select-transport(kind); }
+        connect-peer(index) => { root.connect-peer(index); }
+        connect-wired => { root.connect-wired(); }
+        discover-controller => { root.discover-controller(); }
+        forget-peer => { root.forget-peer(); }
+    }
+
+    LockSettings {
+        bike-lock-status: root.bike-lock-status;
+        can-configure: root.can-configure;
+        connected: root.connected;
+        lock-timeout: root.lock-timeout;
+        pin-configured: root.pin-configured;
+        supports-lock: root.supports-lock;
+        bike-lock => { root.bike-lock(); }
+        screen-lock => { root.screen-lock(); }
+        pin-setup => { root.pin-setup(); }
+        pin-remove => { root.pin-remove(); }
+        lock-timeout-changed(value) => { root.lock-timeout-changed(value); }
     }
 
     SectionTitle {
-        text: "CONNECTIONS & SYSTEM";
-    }
-
-    if root.can-available || root.uart-available: SettingsRow {
-        label: "Vehicle connection";
-        detail: root.transport-kind == 1 ? "CAN" : root.transport-kind == 2 ? "UART" : "BLE";
-        enabled: root.can-change-transport;
-        activated => { root.select-transport(root.transport-kind == 0 ? (root.can-available ? 1 : 2) : root.transport-kind == 1 && root.uart-available ? 2 : 0); }
+        text: "PHONE CONNECTION";
     }
 
     SettingsRow {
@@ -75,7 +126,7 @@ export component SettingsPage inherits Page {
         activated => { root.toggle-proxy(); }
     }
 
-    SettingsRow {
+    if !root.proxy-name-locked: SettingsRow {
         label: "BLE name";
         detail: root.proxy-name;
         activated => { root.edit-proxy-name(); }
@@ -87,6 +138,15 @@ export component SettingsPage inherits Page {
         font-size: 14px;
         wrap: word-wrap;
     }
+    if root.pin-configured && root.proxy-pairing-code != "": Text {
+        text: "Phone BLE code: " + root.proxy-pairing-code;
+        color: Theme.secondary;
+        font-size: 14px;
+    }
+    SectionTitle {
+        text: "SYSTEM";
+    }
+
     SettingsRow {
         label: "Wi-Fi";
         activated => { root.wifi(); }

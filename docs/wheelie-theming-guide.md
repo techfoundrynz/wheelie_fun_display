@@ -19,8 +19,9 @@ Use a black background with raised dark cards. Reserve colour for live state, se
 | `secondary` | `#BBBBBB` | Secondary labels and units |
 | `muted` | `#AAAAAA` | Inactive labels |
 | `dim` | `#808080` | Unselected settings cog and subdued details |
-| `danger` | `#FF4444` | Faults and overheating |
-| `warning` | `#FFC300` | Pending or cautionary state |
+| `success` | `#60D394` | Healthy vehicle links and authorized phone connections |
+| `danger` | `#FF4444` | Disconnected/unavailable links, faults and overheating |
+| `warning` | `#FFC300` | Connecting, reconnecting, discovery, authentication waits and stale telemetry |
 | `gauge` | `#FFD700` | Speed arc |
 | `eco` | `#198E13` | Eco preset |
 | `cruise` | `#0E77AC` | Standard preset |
@@ -40,17 +41,17 @@ Use the bundled Roboto font with a clear weight hierarchy:
 
 Keep literal font weights in Slint so the embedded compiler includes the required faces. The firmware font plan includes 14, 16, 18, 20, 24, 28, 36, 48, 60, 72 and 84 px bitmaps. Large sizes use numeric glyph coverage for the speed readout. The browser simulator reads the same font plan.
 
-The connection header uses an 18 px label with a 10 px state dot. A fresh controller fault or temperature warning takes priority over the connection label and uses the danger colour. Otherwise show the most specific connection/probe/telemetry state; a phone reserving the link is an expected operational state. Ignore expired fault text, and keep an unpaired display labelled Disconnected rather than replacing it with a generic telemetry message. Long header text may wrap within the fixed 48 px row, while the Settings cog keeps its own hit area. Prominent page titles use 24 or 28 px. Metric values reduce to 18 px in compact landscape layouts so large readings retain their units. The speed readout scales with the gauge diameter, with units beneath it.
+The connection header uses an 18 px label with a 10 px state dot. A fresh controller fault or temperature warning takes priority over the connection label and uses the danger colour. A healthy link says Connected. Otherwise show the most specific connection/probe/telemetry state; phone connection state belongs in its separate icon. Ignore expired fault text, and keep an unpaired display labelled Disconnected rather than replacing it with a generic telemetry message. Header text stays on one line within the fixed 48 px row. Overflow scrolls horizontally at a steady pace, pausing at both ends, while the Settings cog keeps its own hit area. Prominent page titles use 24 or 28 px. Metric values reduce to 18 px in compact landscape layouts so large readings retain their units. The speed readout scales with the gauge diameter, with units beneath it.
 
 Use `°` for angles and `°C` / `°F` for temperatures. Speed and temperature units have independent preferences.
 
 ## Header and navigation
 
-The top row contains connection state on the left and the settings cog on the right. Vertically centre both controls. Bound long status text to the available width and elide it before it overlaps the cog.
+The top row contains vehicle connection state on the left and the settings cog on the right. The state dot uses success green for a fresh healthy link, yellow for pending/reconnecting/stale states, and red for disconnection, unavailability or a fresh fault. Keep the status text in the normal text colour across connection states; only a current controller fault or over-temperature alert changes it to danger red. An authorized phone connection has a compact green Lucide smartphone immediately left of the cog; enabling the proxy, advertising or an unauthenticated connection does not show it. Keep the primary message about the bike rather than replacing it with a phone-status label. Place compact four-bar bike BLE signal strength immediately left of the phone icon, or left of the cog when no phone is connected. Use secondary colour for active signal bars, warning for a single weak bar, and dim inactive bars. Hide signal strength for CAN/UART or an unavailable BLE reading. Vertically centre all indicators and the cog. Clip status text to the available width and use a marquee when it overflows. Reset to the start when the message or available width changes; short messages stay still.
 
-The header has no vehicle wordmark or fallback brand heading. Integration identity remains available on the Bike page; its verified capabilities determine the available controls.
+The header has no vehicle wordmark or fallback brand heading. Integration identity remains available on the Settings vehicle section; its verified capabilities determine the available controls.
 
-The bottom navigation contains Ride, Tune and Bike. Use cyan for the active item and a quieter surface for inactive items. Primary-page swipes keep the header and navigation stationary.
+The bottom navigation contains Ride, Stats and Tune. Use cyan for the active item and a quieter surface for inactive items. Primary-page swipes keep the header and navigation stationary.
 
 ## Cards and controls
 
@@ -72,7 +73,9 @@ Portrait layouts use the space recovered from the single-row connection header f
 
 The supported rotations are 0°, 90°, 180° and 270°. Portrait and landscape layouts share components and theme tokens. A rotation cancels the current gesture and requires a new contact.
 
-Read the panel resolution and safe inset from the hardware profile. Keep header controls, cards, dialogs, keyboard keys and PIN entry inside `SafeArea`. Rounded panels need additional corner clearance; rectangular panels can use the smaller inset defined by their profile.
+Read the panel resolution and independent horizontal/vertical safe insets from the hardware profile. X controls left/right clearance and Y controls top/bottom clearance in the current UI orientation; retain these roles when rotating. Keep header controls, cards, dialogs, keyboard keys and PIN entry inside `SafeArea`. Rounded panels need additional corner clearance; rectangular panels can use the smaller inset defined by their profile.
+
+In portrait, place Trip and ODO at the outer lower corners of the speed dial, with each label and value left aligned. Position these readings within the dial area rather than reserving a separate layout row, and retain clearance below the rounded arc caps. Let the dial grow into the available width and height while keeping the telemetry cards aligned to the bottom.
 
 Check both supported display sizes in both aspect ratios: 410 × 502, 502 × 410, 480 × 800 and 800 × 480. Include long connection text, large power values, independent units, scrolling, PIN entry and keyboard editing.
 

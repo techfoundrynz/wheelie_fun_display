@@ -16,13 +16,13 @@ The Waveshare target is 410 × 502 pixels with CO5300 display and FT3168 touch. 
 
 ## 1. Power up
 
-Connect USB power and let the dashboard appear. If a lock PIN was previously configured, unlock the display before continuing. With no saved bike, **Disconnected** is normal while the Bike page fills with nearby devices. A saved connection may show **Reconnecting**.
+Connect USB power and let the dashboard appear. If a screen lock was previously configured, unlock the display before continuing. With no saved bike, **Disconnected** is normal while the Settings vehicle section fills with nearby devices. A saved connection may show **Reconnecting**.
 
 Tap the cog in the upper-right corner to open Settings. Set your preferred brightness, speed units and temperature units. **Settings > Orientation** cycles through 0°, 90°, 180° and 270°; touch coordinates rotate with the interface. These preferences are saved across restarts.
 
 ## 2. Choose the bike integration
 
-Open **Bike > Vehicle integration** before connecting. **Auto** is the default: it probes discovered motor controllers for the supported WFB and wheel-e packages and uses the first verified match. This works over BLE, CAN and UART, including renamed devices. Choose a specific integration when you want to require that package; generic VESC provides read-only standard telemetry.
+Open **Settings > Vehicle > Vehicle integration** before connecting. **Auto** is the default: it probes discovered motor controllers for the supported WFB and wheel-e packages and uses the first verified match. This works over BLE, CAN and UART, including renamed devices. Choose a specific integration when you want to require that package; generic VESC provides read-only standard telemetry.
 
 | Integration | What to expect |
 | --- | --- |
@@ -34,7 +34,7 @@ The branding and available controls follow the integration. A matching name only
 
 ## 3. Connect
 
-BLE is the default. On the **Bike** page, select your device. Recognizable bike names appear first, while other VESC UART devices remain selectable. If the upstream device requires encrypted BLE, enter its six-digit pairing PIN when prompted.
+BLE is the default. Open **Settings > Vehicle** and select your device. Recognizable bike names appear first, while other VESC UART devices remain selectable. If the upstream device requires encrypted BLE, enter its six-digit pairing PIN when prompted.
 
 The display then discovers the main VESC using CAN ping and firmware/package queries. It uses the first matching motor controller with the custom package installed. This controller may be the one directly connected to BLE, or another controller reached through CAN.
 
@@ -42,20 +42,20 @@ Wait for live values before using tuning or bike-lock controls. `--` means data 
 
 ## 4. Learn the screens
 
-- **Ride** shows speed, battery, power, pitch and connection state. The layout adapts to orientation.
+- **Ride** shows speed, battery, power, pitch and connection state. In portrait, TRIP and ODOMETER sit in the upper corners of the speedometer area.
 - **Tune** exposes only the controls supported by the selected integration. Draft changes take effect only after Apply and confirmation.
-- **Bike** contains connection, integration and PIN/lock controls.
-- The **cog** opens Settings, Wi-Fi, firmware updates and About.
+- **Stats** shows read-only electrical, distance, temperature, attitude and controller information, plus BMS details when available.
+- The **cog** opens Settings. Its sections contain display/units, vehicle connection and integration, screen lock, phone connection, and system controls.
 
-Swipe horizontally between Ride, Tune and Bike. Vertical drags scroll lists and longer pages. A short horizontal swipe returns to the current page; there is no wrap from Bike back to Ride.
+Swipe horizontally between Ride, Stats and Tune. Vertical drags scroll lists and longer pages. A short horizontal swipe returns to the current page; there is no wrap from Tune back to Ride.
 
-## 5. Add a lock PIN, if wanted
+## 5. Add a screen lock, if wanted
 
-On the Bike page, choose **Set lock PIN**, enter six digits and confirm them. There is no default lock PIN. Keep your code available; there is no recovery-code interface.
+Open **Settings > Set screen lock**, choose **Use PIN** or **Use pattern** on the entry page, and enter the six-digit code or six-dot pattern twice. There is no default credential or recovery-code interface. After unlocking, **Settings > Phone BLE code** shows the numeric passkey for pairing your phone to the display. See [PINs, patterns and pairing](docs/pins-and-locking.md) for dot numbering and bond changes.
 
-**Lock screen** protects the display controls. **Lock bike and screen** also requests the package's supported lock command. The display waits for matching telemetry before reporting the bike lock as confirmed. A locked display dims to black after its selected timeout; tap once to wake it, then enter the PIN. The wake tap is consumed.
+**Lock screen** protects the display controls. **Lock bike and screen** also requests the package's supported lock command. The display waits for matching telemetry before reporting the bike lock as confirmed. A locked display dims to black after its selected timeout; tap once to wake it, then enter the PIN or draw the configured pattern. The wake tap is consumed.
 
-The bike PIN also protects the phone BLE proxy when enabled. An upstream VESC Express pairing PIN is separate and does not become the proxy PIN. See [PINs and locking](docs/pins-and-locking.md).
+The configured screen-lock credential also protects the phone BLE proxy when enabled. An upstream VESC Express pairing PIN is separate and does not become the proxy PIN. See [PINs and locking](docs/pins-and-locking.md).
 
 ## 6. Keep it up to date
 

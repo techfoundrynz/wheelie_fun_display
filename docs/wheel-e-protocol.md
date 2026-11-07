@@ -132,7 +132,7 @@ These are modern wheel-e states, not the four-bit legacy Float compatibility sta
 
 ## Standard telemetry and freshness
 
-After verification, the display polls standard VESC setup telemetry (`47`) together with wheel-e realtime data (`33`) at 5 Hz. Standard telemetry supplies signed speed in m/s, voltage, battery percentage, motor/battery current, Celsius temperatures and controller fault. The UI converts speed and temperature into the independently selected display units.
+After verification, the display polls standard VESC setup telemetry (`47`) together with wheel-e realtime data (`33`) at a target of 10 Hz per family, subject to outstanding-request credits and phone arbitration. Standard telemetry supplies signed speed in m/s, voltage, battery percentage, motor/battery current, Celsius temperatures and controller fault. The UI converts speed and temperature into the independently selected display units.
 
 Package data supplies pitch, roll and run state. Standard telemetry is not a substitute for a missing package-identity or package-telemetry reply. Auto may instead select generic VESC when no supported package verifies; that integration has standard read-only telemetry and no wheel-e lock or tuning features.
 

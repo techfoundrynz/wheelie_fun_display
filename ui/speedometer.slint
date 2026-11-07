@@ -7,17 +7,41 @@ export component Speedometer inherits Rectangle {
     in property <string> unit;
     in property <bool> live;
     in property <bool> align-bottom;
-    private property <length> diameter: min(self.width, self.height / 0.78);
-    private property <length> thickness: self.diameter * 16 / 260;
+    in property <length> height-limit: self.width;
+    private property <float> stroke-ratio: 16 / 260;
+    private property <float> start-degrees: 159;
+    private property <float> sweep-degrees: 222;
+    private property <angle> start: self.start-degrees * 1deg;
+    private property <angle> sweep: self.sweep-degrees * 1deg;
+    private property <angle> filled: self.sweep * min(1, max(0, self.progress));
+    function contains-angle(degrees: float) -> bool {
+        return Math.mod(degrees - root.start-degrees, 360) <= root.sweep-degrees;
+    }
+    // Include the endpoint caps as well as any cardinal extrema within the sweep.
+    private property <float> min-sine: min(Math.sin(self.start), Math.sin(self.start + self.sweep), self.contains-angle(270) ? -1 : 1);
+    private property <float> max-sine: max(Math.sin(self.start), Math.sin(self.start + self.sweep), self.contains-angle(90) ? 1 : -1);
+    private property <float> arc-top-factor: 0.5 + (1 - self.stroke-ratio) / 2 * self.min-sine - self.stroke-ratio / 2;
+    private property <float> arc-bottom-factor: 0.5 + (1 - self.stroke-ratio) / 2 * self.max-sine + self.stroke-ratio / 2;
+    private property <float> value-y-factor: 0.26;
+    private property <float> value-height-factor: 0.33;
+    private property <float> unit-y-factor: 0.60;
+    private property <float> content-top-factor: min(self.arc-top-factor, self.value-y-factor, self.unit-y-factor);
+    private property <float> shape-height-factor: max(self.arc-bottom-factor, self.value-y-factor + self.value-height-factor) - self.content-top-factor;
+    private property <length> diameter: min(self.width,
+        max(0px, self.height-limit) / self.shape-height-factor,
+        max(0px, self.height-limit - unit-label.height) / (self.unit-y-factor - self.content-top-factor));
+    private property <length> thickness: self.diameter * self.stroke-ratio;
     private property <length> r: (self.diameter - self.thickness) / 2;
     private property <length> c: self.diameter / 2;
-    private property <angle> start: 159deg;
-    private property <angle> sweep: 222deg;
-    private property <angle> filled: self.sweep * min(1, max(0, self.progress));
-    private property <length> painted-height: max(self.c + (self.r + self.thickness / 2) * Math.sin(self.start), unit-label.y + unit-label.height);
-    Rectangle {
+    private property <length> painted-top: self.diameter * self.content-top-factor;
+    out property <length> painted-height: max(self.diameter * self.arc-bottom-factor,
+        value-label.y + value-label.height, unit-label.y + unit-label.height) - self.painted-top;
+    // Equivalent to a negative bottom margin on the square drawing surface:
+    // layouts reserve only the actual painted bounds, not the missing lower arc.
+    height: self.painted-height;
+    dial-face := Rectangle {
         // The partial arc paints less than a square, especially when width-limited.
-        y: root.align-bottom ? max(0px, root.height - root.painted-height) : 0px;
+        y: (root.align-bottom ? max(0px, root.height - root.painted-height) : 0px) - root.painted-top;
         width: root.diameter;
         height: root.diameter;
         x: (parent.width - self.width) / 2;
@@ -32,7 +56,7 @@ export component Speedometer inherits Rectangle {
             arc-sweep-angle: root.sweep;
             stroke: Theme.track;
             stroke-width: root.thickness;
-            stroke-line-cap: butt;
+            stroke-line-cap: round;
             MoveTo {
                 x: (root.c + root.r * Math.cos(root.start)) / 1px;
                 y: (root.c + root.r * Math.sin(root.start)) / 1px;
@@ -59,7 +83,7 @@ export component Speedometer inherits Rectangle {
             arc-sweep-angle: root.filled;
             stroke: Theme.gauge;
             stroke-width: root.thickness;
-            stroke-line-cap: butt;
+            stroke-line-cap: round;
             MoveTo {
                 x: (root.c + root.r * Math.cos(root.start)) / 1px;
                 y: (root.c + root.r * Math.sin(root.start)) / 1px;
@@ -74,9 +98,9 @@ export component Speedometer inherits Rectangle {
                 sweep: true;
             }
         }
-        Text {
-            y: root.diameter * 0.23;
-            height: root.diameter * 0.33;
+        value-label := Text {
+            y: root.diameter * root.value-y-factor;
+            height: root.diameter * root.value-height-factor;
             text: root.value;
             color: root.live ? Theme.text : Theme.dim;
             font-size: root.diameter * 0.28;
@@ -85,10 +109,11 @@ export component Speedometer inherits Rectangle {
         }
 
         unit-label := Text {
-            y: root.diameter * 0.56;
+            y: root.diameter * root.unit-y-factor;
             text: root.unit;
             color: Theme.secondary;
             font-size: 18px;
+            font-weight: 800;
             horizontal-alignment: center;
         }
     }

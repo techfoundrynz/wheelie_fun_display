@@ -12,7 +12,8 @@ generated = build / "esp-idf/main/generated"
 source = generated / "dashboard.cpp"
 
 # SCons can reuse CMake metadata after a failed configure. Always prepare the
-# private raw output before it scans/compiles the final translation unit.
+# matching raw snapshot published with dashboard.h before scanning/compiling.
+# CMake fingerprints all three outputs and repairs mismatches on configuration.
 subprocess.run(
     [
         env.subst("$PYTHONEXE"),

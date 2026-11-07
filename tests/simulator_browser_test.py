@@ -68,8 +68,9 @@ def main() -> None:
                 assert not page.evaluate(
                     "window.wheelieFunDisplay.state('documentation-fixture')"
                 )
-                assert "Demo" in page.evaluate(
-                    "window.wheelieFunDisplay.state('connection')"
+                assert (
+                    page.evaluate("window.wheelieFunDisplay.state('connection')")
+                    == "Connected"
                 )
                 assert "simulated" in page.locator(".notice").inner_text().lower()
                 installer_link = page.get_by_role(
@@ -85,6 +86,10 @@ def main() -> None:
                     "name => window.wheelieFunDisplay.state(name)", name
                 )
 
+            safe_x = max(20, state("safe-inset-x"))
+            safe_y = max(12, state("safe-inset-y"))
+            page_top = safe_y + 48 + 8
+
             def tap(x, y):
                 canvas.scroll_into_view_if_needed()
                 bounds = canvas.bounding_box()
@@ -94,6 +99,10 @@ def main() -> None:
                     bounds["y"] + y * bounds["height"] / dimensions[1],
                 )
                 page.wait_for_timeout(40)
+
+            def tap_settings():
+                width = canvas.evaluate("canvas => canvas.width")
+                tap(width - safe_x - 24, safe_y + 24)
 
             def swipe(x0, y0, x1, y1):
                 canvas.scroll_into_view_if_needed()
@@ -119,20 +128,37 @@ def main() -> None:
             page.locator("#ride").click()
             page.wait_for_timeout(100)
             assert state("speed") == "24.0"
+            assert state("trip") == "12.34 km"
+            assert state("odometer") == "12345.6 km"
+            page.locator("#connected").uncheck()
+            page.wait_for_function(
+                "window.wheelieFunDisplay.state('trip') === '--' && window.wheelieFunDisplay.state('odometer') === '--'"
+            )
+            page.locator("#connected").check()
+            page.wait_for_function(
+                "window.wheelieFunDisplay.state('trip') === '12.34 km' && window.wheelieFunDisplay.state('odometer') === '12345.6 km'"
+            )
             page.locator("#stop").click()
-            tap(205, 445)
+            tap(205, 502 - safe_y - 25)
             page.wait_for_timeout(300)
             assert state("page") == 1
             swipe(300, 200, 155, 200)
             assert state("page") == 2
             swipe(120, 200, 290, 200)
             assert state("page") == 1
-            tap(354, 56)
+            tap_settings()
             page.wait_for_timeout(300)
             assert state("page") == 3
-            tap(200, 262)
+            page.evaluate("window.wheelieFunDisplay.scroll(205, 250, -80)")
+            page.wait_for_timeout(300)
+            tap(200, page_top + 282 - 80)
             assert state("metric") is False
-            tap(200, 334)
+            page.wait_for_function(
+                "window.wheelieFunDisplay.state('trip') === '7.67 mi' && window.wheelieFunDisplay.state('odometer') === '7671.2 mi'"
+            )
+            assert state("trip") == "7.67 mi"
+            assert state("odometer") == "7671.2 mi"
+            tap(200, page_top + 354 - 80)
             assert state("celsius") is False
             assert state("motor") == "108°F"
             page.locator("#orientation").click()
@@ -144,7 +170,7 @@ def main() -> None:
             ]
             page.evaluate("window.wheelieFunDisplay.navigate(0)")
             page.wait_for_timeout(300)
-            tap(446, 56)
+            tap_settings()
             page.wait_for_timeout(300)
             assert state("page") == 3, "Landscape touch must align with the cog"
             page.evaluate("window.wheelieFunDisplay.navigate(0)")
@@ -177,13 +203,13 @@ def main() -> None:
                 )
                 page.evaluate("window.wheelieFunDisplay.navigate(0)")
                 page.wait_for_timeout(300)
-                tap(dimensions[0] - 56, 56)
+                tap_settings()
                 page.wait_for_timeout(300)
                 assert state("page") == 3, f"Cog touch must align at {degrees} degrees"
             page.locator("#integration").select_option("2")
             page.wait_for_timeout(100)
             assert state("brand") == "wheel-e"
-            page.evaluate("window.wheelieFunDisplay.navigate(1)")
+            page.evaluate("window.wheelieFunDisplay.navigate(2)")
             page.wait_for_timeout(300)
             canvas.screenshot(path=str(args.output / "wheel-e-tune.png"))
             # PIN entry is real shared Slint UI; only pairing/bonding is simulated.
@@ -191,33 +217,167 @@ def main() -> None:
             page.wait_for_timeout(100)
             assert state("pairing-open") is True
             canvas.screenshot(path=str(args.output / "pairing.png"))
-            for digit in range(1, 7):
-                tap(88 + ((digit - 1) % 3) * 117, 203 + ((digit - 1) // 3) * 54)
-            assert state("pairing-mask") == "******"
-            tap(322, 365)
+
+            def tap_pin(digit, *, locked=False):
+                width, height = canvas.evaluate(
+                    "canvas => [canvas.width, canvas.height]"
+                )
+                inset_x = max(20, state("safe-inset-x"))
+                inset_y = max(20, state("safe-inset-y"))
+                available_width = width - 2 * inset_x
+                available_height = height - 2 * inset_y
+                if width > height:
+                    left = inset_x + available_width * 0.38 + 16
+                    top = inset_y
+                    key_width = available_width * 0.62 - 16
+                    key_height = available_height
+                else:
+                    left, top = inset_x, inset_y + 152
+                    key_width = available_width
+                    key_height = available_height - 152 - 48
+                if digit == "backspace":
+                    column, row = 0, 3
+                elif digit == "clear":
+                    column, row = 2, 3
+                else:
+                    column, row = (
+                        ((digit - 1) % 3, (digit - 1) // 3) if digit else (1, 3)
+                    )
+                cell_width = (key_width - 16) / 3
+                cell_height = (key_height - 24) / 4
+                tap(
+                    left + column * (cell_width + 8) + cell_width / 2,
+                    top + row * (cell_height + 8) + cell_height / 2,
+                )
+
+            for digit in range(1, 4):
+                tap_pin(digit)
+            tap_pin("backspace")
+            assert state("pairing-value") == "12"
+            tap_pin("clear")
+            assert state("pairing-value") == ""
+            for digit in range(1, 6):
+                tap_pin(digit)
+            assert state("pairing-value") == "12345"
+            assert state("pairing-open") is True
+            tap_pin(6)
+            assert state("pairing-open") is True
+            tap(32 + (410 - 64) * 0.75 + 2, 462)
             assert state("pairing-open") is False
             page.evaluate("window.wheelieFunDisplay.invoke('pin-setup')")
             page.wait_for_timeout(100)
             for _ in range(2):
                 for digit in range(1, 7):
-                    tap(88 + ((digit - 1) % 3) * 117, 203 + ((digit - 1) // 3) * 54)
-                tap(322, 365)
+                    tap_pin(digit)
             assert state("pin-configured") is True and state("pin-open") is False
             page.evaluate("window.wheelieFunDisplay.invoke('screen-lock')")
             page.wait_for_timeout(100)
             assert state("screen-locked") is True
-            tap(354, 56)
+            tap_settings()
             assert state("screen-locked") is True
+            for digit in [0, 9, 8]:
+                tap_pin(digit, locked=True)
+            tap_pin("clear", locked=True)
+            assert state("screen-locked") is True and state("pin-value") == ""
+            for digit in [6, 5, 4, 3, 2, 1]:
+                tap_pin(digit, locked=True)
+            assert state("screen-locked") is True and state("pin-value") == ""
             for digit in range(1, 7):
-                tap(88 + ((digit - 1) % 3) * 117, 203 + ((digit - 1) // 3) * 54)
-            tap(322, 365)
+                tap_pin(digit, locked=True)
             assert state("screen-locked") is False
+            page.evaluate("window.wheelieFunDisplay.invoke('pin-setup')")
+            assert state("pin-pattern") is False
+            for digit in range(1, 7):
+                tap_pin(digit)
+            # The entry-screen switch changes only how the same credential is entered.
+            tap(32 + (410 - 64) * 0.25 - 2, 462)
+            assert state("pin-pattern") is True
+
+            def draw_pattern(nodes):
+                width, height = canvas.evaluate(
+                    "canvas => [canvas.width, canvas.height]"
+                )
+                inset_x = max(20, state("safe-inset-x"))
+                inset_y = max(20, state("safe-inset-y"))
+                available_width = width - 2 * inset_x
+                available_height = height - 2 * inset_y
+                left = inset_x
+                top = inset_y + 152
+                region_width = available_width
+                region_height = available_height - 152 - 48
+                if width > height:
+                    left = inset_x + available_width * 0.38 + 16
+                    top = inset_y
+                    region_width = available_width * 0.62 - 16
+                    region_height = available_height
+                side = min(region_width, region_height)
+                left += (region_width - side) / 2
+                top += (region_height - side) / 2
+                for index, node in enumerate(nodes):
+                    x = left + ((node - 1) % 3 + 0.5) * side / 3
+                    y = top + ((node - 1) // 3 + 0.5) * side / 3
+                    kind = "down" if index == 0 else "move"
+                    page.evaluate(
+                        "([kind, x, y]) => window.wheelieFunDisplay.pointer(kind, x, y)",
+                        [kind, x, y],
+                    )
+                page.evaluate(
+                    "([x, y]) => window.wheelieFunDisplay.pointer('up', x, y)", [x, y]
+                )
+                page.wait_for_timeout(50)
+
+            draw_pattern([1, 3, 9, 8])
+            draw_pattern([1, 3, 9, 8])
+            assert state("pin-open") is False and state("unlock-method") == 1
+            assert state("proxy-pairing-code") == "123698"
+            page.evaluate("window.wheelieFunDisplay.invoke('screen-lock')")
+            tap(205, 462)  # Use PIN on the locked entry screen.
+            assert state("pin-pattern") is False
+            for digit in [1, 2, 3, 6, 9, 8]:
+                tap_pin(digit, locked=True)
+            assert state("screen-locked") is False
+            assert state("proxy-pairing-code") == "123698"
+            page.evaluate("window.wheelieFunDisplay.invoke('screen-lock')")
+            assert state("pin-pattern") is False, (
+                "Entry preference must survive reopening"
+            )
+            tap(205, 462)
+            assert state("pin-pattern") is True
+            draw_pattern([1, 2, 3, 4, 5, 6])
+            assert state("screen-locked") is True and state("pin-value") == ""
+            draw_pattern([1, 3, 9, 8])
+            assert state("screen-locked") is False
+            assert state("proxy-name-locked") is False
+            assert state("proxy-name") == "WB Disp"
             page.evaluate("window.wheelieFunDisplay.invoke('edit-proxy-name')")
-            page.wait_for_timeout(100)
-            assert state("editing") is True and state("editor-value") == "WB Disp"
+            assert state("editing") is True
             page.evaluate("window.wheelieFunDisplay.invoke('editor-backspace')")
             page.evaluate("window.wheelieFunDisplay.invoke('editor-done')")
-            assert state("editing") is False and state("proxy-name") == "WB Dis"
+            assert state("proxy-name") == "WB Dis"
+            page.select_option("#integration", "1")
+            page.wait_for_timeout(100)
+            assert state("proxy-name-locked") is True
+            assert state("proxy-name") == "WFB"
+            page.evaluate("window.wheelieFunDisplay.invoke('edit-proxy-name')")
+            assert state("editing") is False
+            assert state("proxy-name-preference") == "WB Dis"
+            page.select_option("#integration", "2")
+            page.wait_for_timeout(100)
+            assert state("proxy-name-locked") is False
+            assert state("proxy-name") == "WB Dis"
+            page.select_option("#integration", "1")
+            page.wait_for_timeout(100)
+            assert state("proxy-name") == "WFB"
+            assert state("proxy-name-preference") == "WB Dis"
+            page.locator("#connected").uncheck()
+            page.wait_for_timeout(100)
+            assert state("proxy-name-locked") is False, (
+                "Auto without a verified bike must remain editable"
+            )
+            assert state("proxy-name") == "WB Dis"
+            page.locator("#connected").check()
+            page.wait_for_timeout(100)
+            assert state("proxy-name") == "WFB"
             page.set_viewport_size({"width": 390, "height": 844})
             page.wait_for_timeout(100)
             assert page.evaluate(
@@ -241,8 +401,8 @@ def main() -> None:
             touch_canvas.scroll_into_view_if_needed()
             bounds = touch_canvas.bounding_box()
             touch_page.touchscreen.tap(
-                bounds["x"] + 354 * bounds["width"] / 410,
-                bounds["y"] + 56 * bounds["height"] / 502,
+                bounds["x"] + (410 - safe_x - 24) * bounds["width"] / 410,
+                bounds["y"] + (safe_y + 24) * bounds["height"] / 502,
             )
             touch_page.wait_for_timeout(300)
             assert touch_page.evaluate("window.wheelieFunDisplay.state('page')") == 3
@@ -258,7 +418,7 @@ def main() -> None:
             "Root and project-prefix routes",
             "Shared UI software rendering",
             "Telemetry controls",
-            "Ride/Tune/Bike swipes",
+            "Ride/Stats/Tune swipes",
             "Four-angle rotation and touch mapping",
             "Independent speed and temperature units",
             "Upstream BLE pairing PIN",

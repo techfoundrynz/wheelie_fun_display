@@ -1,5 +1,192 @@
 import { Theme } from "theme.slint";
 
+component HaloGlyph inherits Text {
+    accessible-role: none;
+    font-size: 18px;
+    font-weight: 800;
+    vertical-alignment: center;
+}
+
+// Translucent glyph layers approximate a soft, centered blur in software.
+component BatteryLabel inherits Rectangle {
+    in property <string> text;
+    in property <bool> align-right;
+    min-width: 0px;
+    horizontal-stretch: 1;
+
+    // Fixed layers avoid allocating a repeater item tree per glyph copy.
+    HaloGlyph {
+        x: -2px;
+        y: -2px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: #00000009;
+        horizontal-alignment: root.align-right ? right : left;
+    }
+
+    HaloGlyph {
+        x: 0px;
+        y: -2px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: #0000001a;
+        horizontal-alignment: root.align-right ? right : left;
+    }
+
+    HaloGlyph {
+        x: 2px;
+        y: -2px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: #00000009;
+        horizontal-alignment: root.align-right ? right : left;
+    }
+
+    HaloGlyph {
+        x: -2px;
+        y: 0px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: #0000001a;
+        horizontal-alignment: root.align-right ? right : left;
+    }
+
+    HaloGlyph {
+        x: 2px;
+        y: 0px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: #0000001a;
+        horizontal-alignment: root.align-right ? right : left;
+    }
+
+    HaloGlyph {
+        x: -2px;
+        y: 2px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: #00000009;
+        horizontal-alignment: root.align-right ? right : left;
+    }
+
+    HaloGlyph {
+        x: 0px;
+        y: 2px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: #0000001a;
+        horizontal-alignment: root.align-right ? right : left;
+    }
+
+    HaloGlyph {
+        x: 2px;
+        y: 2px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: #00000009;
+        horizontal-alignment: root.align-right ? right : left;
+    }
+
+    HaloGlyph {
+        x: -1px;
+        y: -1px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: #00000029;
+        horizontal-alignment: root.align-right ? right : left;
+    }
+
+    HaloGlyph {
+        x: 0px;
+        y: -1px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: #0000003d;
+        horizontal-alignment: root.align-right ? right : left;
+    }
+
+    HaloGlyph {
+        x: 1px;
+        y: -1px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: #00000029;
+        horizontal-alignment: root.align-right ? right : left;
+    }
+
+    HaloGlyph {
+        x: -1px;
+        y: 0px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: #0000003d;
+        horizontal-alignment: root.align-right ? right : left;
+    }
+
+    HaloGlyph {
+        x: 1px;
+        y: 0px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: #0000003d;
+        horizontal-alignment: root.align-right ? right : left;
+    }
+
+    HaloGlyph {
+        x: -1px;
+        y: 1px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: #00000029;
+        horizontal-alignment: root.align-right ? right : left;
+    }
+
+    HaloGlyph {
+        x: 0px;
+        y: 1px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: #0000003d;
+        horizontal-alignment: root.align-right ? right : left;
+    }
+
+    HaloGlyph {
+        x: 1px;
+        y: 1px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: #00000029;
+        horizontal-alignment: root.align-right ? right : left;
+    }
+
+    Text {
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: Theme.text;
+        font-size: 18px;
+        font-weight: 800;
+        horizontal-alignment: root.align-right ? right : left;
+        vertical-alignment: center;
+    }
+}
+
 export component BatteryMeter inherits Rectangle {
     in property <float> level;
     in property <string> charge;
@@ -18,21 +205,13 @@ export component BatteryMeter inherits Rectangle {
     HorizontalLayout {
         padding-left: 12px;
         padding-right: 12px;
-        Text {
+        BatteryLabel {
             text: root.charge;
-            color: Theme.bg;
-            font-size: 18px;
-            font-weight: 800;
-            vertical-alignment: center;
         }
 
-        Text {
+        BatteryLabel {
             text: root.voltage;
-            color: Theme.bg;
-            font-size: 18px;
-            font-weight: 800;
-            horizontal-alignment: right;
-            vertical-alignment: center;
+            align-right: true;
         }
     }
 }

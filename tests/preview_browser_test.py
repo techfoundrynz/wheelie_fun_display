@@ -100,10 +100,22 @@ def main():
                     canvas.scroll_into_view_if_needed()
                     bounds = canvas.bounding_box()
                     w, h = canvas.evaluate("node => [node.width, node.height]")
+                    safe_x = max(
+                        20,
+                        frame.evaluate(
+                            "window.wheelieFunDisplay.state('safe-inset-x')"
+                        ),
+                    )
+                    safe_y = max(
+                        12,
+                        frame.evaluate(
+                            "window.wheelieFunDisplay.state('safe-inset-y')"
+                        ),
+                    )
                     canvas.click(
                         position={
-                            "x": (w - 56) * bounds["width"] / w,
-                            "y": 56 * bounds["height"] / h,
+                            "x": (w - safe_x - 24) * bounds["width"] / w,
+                            "y": (safe_y + 24) * bounds["height"] / h,
                         }
                     )
                     frame.wait_for_function(

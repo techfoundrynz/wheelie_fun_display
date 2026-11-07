@@ -1,0 +1,55 @@
+import { SettingsRow, SectionTitle } from "../settings.slint";
+import { Action } from "../controls.slint";
+import { Theme } from "../theme.slint";
+export component LockSettings inherits Rectangle {
+    in property <string> bike-lock-status;
+    in property <bool> can-configure;
+    in property <bool> connected;
+    in property <int> lock-timeout;
+    in property <bool> pin-configured;
+    in property <bool> supports-lock;
+    callback bike-lock();
+    callback screen-lock();
+    callback pin-setup();
+    callback pin-remove();
+    callback lock-timeout-changed(int);
+    min-height: content.min-height;
+    max-height: content.min-height;
+    content := VerticalLayout {
+        spacing: 12px;
+        SectionTitle {
+            text: "SCREEN LOCK";
+        }
+
+        if root.pin-configured: Action {
+            label: "Lock screen";
+            activated => { root.screen-lock(); }
+        }
+
+        SettingsRow {
+            label: root.pin-configured ? "Change screen lock" : "Set screen lock";
+            activated => { root.pin-setup(); }
+        }
+
+        if root.pin-configured && root.supports-lock: Action {
+            label: "Lock bike and screen";
+            enabled: root.connected && root.can-configure;
+            activated => { root.bike-lock(); }
+        }
+        if root.pin-configured: SettingsRow {
+            label: "Locked screen timeout";
+            detail: root.lock-timeout + " s";
+            activated => { root.lock-timeout-changed(root.lock-timeout == 15 ? 30 : root.lock-timeout == 30 ? 60 : root.lock-timeout == 60 ? 120 : 15); }
+        }
+        if root.pin-configured: SettingsRow {
+            label: "Remove screen lock";
+            activated => { root.pin-remove(); }
+        }
+        Text {
+            text: root.bike-lock-status;
+            color: Theme.secondary;
+            wrap: word-wrap;
+            font-size: 14px;
+        }
+    }
+}

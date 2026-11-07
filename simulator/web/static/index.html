@@ -1,142 +1,104 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="dark" />
-    <link rel="icon" href="../assets/favicon.svg" />
-    <title>Wheelie Fun Display · Interactive simulator</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body class="simulator-page">
-    <a class="skip-link" href="#content">Skip to content</a>
-    <header class="site-header">
-      <a class="brand" href="../"
-        ><!-- WFD_BIKE_ICON --><span>Wheelie Fun Display</span></a
-      >
-      <nav class="header-actions" aria-label="Site">
-        <a href="../">Documentation</a
-        ><a href="../install/"
-          >Install firmware</a
-        ><a class="active" href="./" aria-current="page">Simulator</a>
-      </nav>
-    </header>
-    <main id="content" class="simulator-main" tabindex="-1">
-      <section class="intro">
-        <p class="eyebrow">TRY THE DISPLAY</p>
-        <h1>Your ride, on screen.</h1>
-        <p>
-          The same Slint interface and software renderer as the device, running
-          in your browser. Touch, drag and swipe to explore.
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <link rel="icon" href="../assets/favicon.svg" />
+  <title>Wheelie Fun Display · Interactive simulator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="simulator-page">
+  <a class="skip-link" href="#content">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="../"><!-- WFD_BIKE_ICON --><span>Wheelie Fun Display</span></a>
+    <nav class="header-actions" aria-label="Site">
+      <a href="../">Documentation</a><a href="../install/">Install firmware</a><a class="active" href="./"
+        aria-current="page">Simulator</a>
+    </nav>
+  </header>
+  <main id="content" class="simulator-main" tabindex="-1">
+    <section class="intro">
+      <p class="eyebrow">TRY THE DISPLAY</p>
+      <h1>Your ride, on screen.</h1>
+      <p>
+        The same Slint interface and software renderer as the device, running
+        in your browser. Touch, drag and swipe to explore.
+      </p>
+      <div class="notice">
+        <span class="dot"></span><span>Demo only. All telemetry, connections and updates are simulated.
+          Nothing connects to a bike or downloads firmware.</span>
+      </div>
+    </section>
+    <p id="status" role="status">Loading the interactive display…</p>
+    <div class="workspace" id="workspace" hidden>
+      <section class="display-section" aria-label="Interactive display">
+        <div class="display-frame">
+          <canvas id="display" width="410" height="502" tabindex="0"
+            aria-label="Wheelie Fun Display touchscreen. Use pointer or touch to activate controls, drag to scroll, and swipe between Ride, Stats and Tune."></canvas>
+        </div>
+        <p class="hint">
+          Swipe between Ride, Stats and Tune. Use the cog for Settings.
         </p>
-        <div class="notice">
-          <span class="dot"></span
-          ><span
-            >Demo only. All telemetry, connections and updates are simulated.
-            Nothing connects to a bike or downloads firmware.</span
-          >
+        <div class="view-options">
+          <button id="orientation" type="button">Rotate: 0°</button><button id="reset" type="button" class="secondary">
+            Reset demo
+          </button>
         </div>
       </section>
-      <p id="status" role="status">Loading the interactive display…</p>
-      <div class="workspace" id="workspace" hidden>
-        <section class="display-section" aria-label="Interactive display">
-          <div class="display-frame">
-            <canvas
-              id="display"
-              width="410"
-              height="502"
-              tabindex="0"
-              aria-label="Wheelie Fun Display touchscreen. Use pointer or touch to activate controls, drag to scroll, and swipe between Ride, Tune and Bike."
-            ></canvas>
-          </div>
-          <p class="hint">
-            Swipe between Ride, Tune and Bike. Use the cog for Settings.
-          </p>
-          <div class="view-options">
-            <button id="orientation" type="button">Rotate: 0°</button
-            ><button id="reset" type="button" class="secondary">
-              Reset demo
-            </button>
-          </div>
-        </section>
-        <aside class="controls" aria-labelledby="controls-title">
-          <p class="eyebrow">SIMULATED HARDWARE</p>
-          <h2 id="controls-title">Set the scene</h2>
-          <label class="switch"
-            ><span>Bike connected</span
-            ><input id="connected" type="checkbox" checked
-          /></label>
-          <label class="select-label" for="integration"
-            >Vehicle integration</label
-          ><select id="integration">
-            <option value="1">Wheelie Fun Bike</option>
-            <option value="2">wheel-e</option>
-            <option value="0">Generic VESC</option>
-          </select>
-          <label class="range-label" for="speed"
-            ><span>Speed</span><output id="speed-value">0 km/h</output></label
-          ><input
-            id="speed"
-            type="range"
-            min="0"
-            max="65"
-            step="0.5"
-            value="0"
-          />
-          <label class="range-label" for="battery"
-            ><span>Battery</span><output id="battery-value">82%</output></label
-          ><input id="battery" type="range" min="0" max="100" value="82" />
-          <label class="range-label" for="temperature"
-            ><span>Controller temperature</span
-            ><output id="temperature-value">36°C</output></label
-          ><input id="temperature" type="range" min="20" max="100" value="36" />
-          <label class="range-label" for="pitch"
-            ><span>Pitch</span><output id="pitch-value">0°</output></label
-          ><input
-            id="pitch"
-            type="range"
-            min="-30"
-            max="60"
-            step="0.5"
-            value="0"
-          />
-          <div class="presets">
-            <button id="stop" type="button">Stop bike</button
-            ><button id="ride" type="button" class="secondary">
-              Ride example
-            </button>
-          </div>
-          <p class="small">
-            Stop the simulated bike before applying tuning or exploring update
-            installation. Demo PINs last only until you reload; use a made-up
-            code.
-          </p>
-          <button id="pairing-demo" class="secondary" type="button">
-            Try Bluetooth pairing
+      <aside class="controls" aria-labelledby="controls-title">
+        <p class="eyebrow">SIMULATED HARDWARE</p>
+        <h2 id="controls-title">Set the scene</h2>
+        <label class="switch"><span>Bike connected</span><input id="connected" type="checkbox" checked /></label>
+        <label class="select-label" for="integration">Vehicle integration</label><select id="integration">
+          <option value="1">Wheelie Fun Bike</option>
+          <option value="2">wheel-e</option>
+          <option value="0">Generic VESC</option>
+        </select>
+        <label class="range-label" for="speed"><span>Speed</span><output id="speed-value">0 km/h</output></label><input
+          id="speed" type="range" min="0" max="65" step="0.5" value="0" />
+        <label class="range-label" for="battery"><span>Battery</span><output
+            id="battery-value">82%</output></label><input id="battery" type="range" min="0" max="100" value="82" />
+        <label class="range-label" for="temperature"><span>Controller temperature</span><output
+            id="temperature-value">36°C</output></label><input id="temperature" type="range" min="20" max="100"
+          value="36" />
+        <label class="range-label" for="pitch"><span>Pitch</span><output id="pitch-value">0°</output></label><input
+          id="pitch" type="range" min="-30" max="60" step="0.5" value="0" />
+        <div class="presets">
+          <button id="stop" type="button">Stop bike</button><button id="ride" type="button" class="secondary">
+            Ride example
           </button>
-          <p class="small">
-            The simulated upstream Bluetooth PIN is <strong>123456</strong>. It
-            is separate from the demo bike lock PIN.
-          </p>
-          <details>
-            <summary>Jump to a screen</summary>
-            <div id="screen-links" class="screen-links">
-              <button data-page="0">Ride</button
-              ><button data-page="1">Tune</button
-              ><button data-page="2">Bike</button
-              ><button data-page="3">Settings</button
-              ><button data-page="4">Wi-Fi</button
-              ><button data-page="5">Updates</button
-              ><button data-page="6">About</button>
-            </div>
-          </details>
-        </aside>
-      </div>
-    </main>
-    <footer>
-      Wheelie Fun Display · GPL-3.0-only · WebAssembly preview · Session-only
-      settings
-    </footer>
-    <script type="module" src="app.js"></script>
-  </body>
+        </div>
+        <p class="small">
+          Stop the simulated bike before applying tuning or exploring update
+          installation. Demo PINs last only until you reload; use a made-up
+          code.
+        </p>
+        <button id="pairing-demo" class="secondary" type="button">
+          Try Bluetooth pairing
+        </button>
+        <p class="small">
+          The simulated upstream Bluetooth PIN is <strong>123456</strong>. It
+          is separate from the demo bike lock PIN.
+        </p>
+        <details>
+          <summary>Jump to a screen</summary>
+          <div id="screen-links" class="screen-links">
+            <button data-page="0">Ride</button><button data-page="1">Tune</button><button
+              data-page="2">Bike</button><button data-page="3">Settings</button><button
+              data-page="4">Wi-Fi</button><button data-page="5">Updates</button><button data-page="6">About</button>
+          </div>
+        </details>
+      </aside>
+    </div>
+  </main>
+  <footer>
+    Wheelie Fun Display · GPL-3.0-only · WebAssembly preview · Session-only
+    settings
+  </footer>
+  <script type="module" src="app.js"></script>
+</body>
+
 </html>

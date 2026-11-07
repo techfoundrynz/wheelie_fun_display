@@ -25,6 +25,8 @@ python scripts/check_sdkconfig.py --all
 
 `pio run` builds all supported `default_envs`. The project pins Espressif platform 8.0.0 / ESP-IDF 6.1 in the common environment and a matching pinned Slint compiler/runtime pair. The Slint compiler and runtime are downloaded together with checksum verification.
 
+Slint generation uses a content fingerprint of the UI/resources, compiler, font-preparation script and font plan/options. Unchanged inputs reuse the matching generated header/source pair: glyph ordering can vary between compiler runs, so unnecessary regeneration otherwise causes spurious changes and recompilation. Missing outputs or changed inputs regenerate the pair; the fingerprint is committed only after generation and font preparation succeed. Build checks cover preservation of both output hashes for unchanged inputs.
+
 Each application image is `.pio/build/<environment>/firmware.bin`. The ESP project identity is derived as `wfd_<hardware-id>`; release filenames use the PlatformIO environment name.
 
 ## First USB installation

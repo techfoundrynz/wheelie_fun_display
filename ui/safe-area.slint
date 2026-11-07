@@ -1,15 +1,18 @@
-// Keep the complete content rectangle inside the panel's visible area.
-// The board profile supplies the inset in native pixels; a symmetric inset
-// remains valid when portrait and landscape swap at runtime.
+// Insets follow the logical UI axes in every orientation: X is left/right,
+// Y is top/bottom. Independent values retain corner clearance without forcing
+// the same padding on both axes.
 export component SafeArea inherits Rectangle {
-    in property <length> safe-inset: 0px;
-    in property <length> minimum-padding: 0px;
-    out property <length> content-inset: max(0px, self.safe-inset, self.minimum-padding);
-    Rectangle {
-        x: root.content-inset;
-        y: root.content-inset;
-        width: max(0px, root.width - 2 * root.content-inset);
-        height: max(0px, root.height - 2 * root.content-inset);
+    in property <length> safe-inset-x: 0px;
+    in property <length> safe-inset-y: 0px;
+    in property <length> minimum-padding-x: 0px;
+    in property <length> minimum-padding-y: 0px;
+    out property <length> content-inset-x: max(0px, self.safe-inset-x, self.minimum-padding-x);
+    out property <length> content-inset-y: max(0px, self.safe-inset-y, self.minimum-padding-y);
+    content := Rectangle {
+        x: root.content-inset-x;
+        y: root.content-inset-y;
+        width: max(0px, root.width - 2 * root.content-inset-x);
+        height: max(0px, root.height - 2 * root.content-inset-y);
         @children
     }
 }

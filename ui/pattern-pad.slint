@@ -1,0 +1,221 @@
+import { Theme } from "theme.slint";
+import { PatternSegment } from "pattern-segment.slint";
+
+// Fixed instances keep the unlock keypad out of runtime repeater contexts.
+component PatternNode inherits Rectangle {
+    in property <int> node;
+    in property <length> cell;
+    in property <bool> selected;
+    in property <bool> ready;
+    x: (Math.mod(self.node - 1, 3) + 0.5) * self.cell - self.width / 2;
+    y: (Math.floor((self.node - 1) / 3) + 0.5) * self.cell - self.height / 2;
+    width: min(48px, self.cell * 0.6);
+    height: self.width;
+    border-radius: self.width / 2;
+    background: self.selected ? Theme.accent : Theme.surface;
+    border-width: 2px;
+    border-color: self.selected ? Theme.accent : Theme.control;
+    Text {
+        text: "" + root.node;
+        font-size: 18px;
+        font-weight: 800;
+        color: root.selected ? Theme.bg : root.ready ? Theme.text : Theme.dim;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
+export component PatternPad inherits Rectangle {
+    in property <string> value;
+    in property <bool> ready;
+    callback digit(int);
+    callback clear();
+    callback submit();
+    private property <length> side: min(self.width, self.height);
+    private property <length> cell: self.side / 3;
+    private property <bool> drawing;
+    private property <int> pattern-length: self.value.character-count;
+    private property <float> pattern-number: self.value.to-float();
+    private property <int> first: self.node-at(0);
+    private property <int> second: self.node-at(1);
+    private property <int> third: self.node-at(2);
+    private property <int> fourth: self.node-at(3);
+    private property <int> fifth: self.node-at(4);
+    private property <int> sixth: self.node-at(5);
+    // Compute set membership once, including duplicate-safe input handling.
+    private property <int> selected-mask:
+        (self.contains-node(1) ? 1 : 0) + (self.contains-node(2) ? 2 : 0) +
+        (self.contains-node(3) ? 4 : 0) + (self.contains-node(4) ? 8 : 0) +
+        (self.contains-node(5) ? 16 : 0) + (self.contains-node(6) ? 32 : 0) +
+        (self.contains-node(7) ? 64 : 0) + (self.contains-node(8) ? 128 : 0) +
+        (self.contains-node(9) ? 256 : 0);
+    clip: true;
+    function node-at(index: int) -> int {
+        if index < 0 || index >= root.pattern-length { return 0; }
+        return Math.mod(Math.floor(root.pattern-number / Math.pow(10, root.pattern-length - index - 1)), 10);
+    }
+    function contains-node(node: int) -> bool {
+        return root.first == node || root.second == node || root.third == node || root.fourth == node || root.fifth == node || root.sixth == node;
+    }
+    function selected(node: int) -> bool {
+        return node >= 1 && node <= 9 && Math.mod(Math.floor(root.selected-mask / Math.pow(2, node - 1)), 2) == 1;
+    }
+    function node-x(node: int) -> length { return (Math.mod(node - 1, 3) + 0.5) * root.cell; }
+    function node-y(node: int) -> length { return (Math.floor((node - 1) / 3) + 0.5) * root.cell; }
+    function visit(x: length, y: length) {
+        if root.ready && root.pattern-length < 6 && x >= 0px && y >= 0px && x < root.side && y < root.side {
+            let column = Math.floor(x / root.cell);
+            let row = Math.floor(y / root.cell);
+            let node = row * 3 + column + 1;
+            let dx = x - root.node-x(node);
+            let dy = y - root.node-y(node);
+            if dx * dx + dy * dy <= root.cell * root.cell * 0.15 && !root.selected(node) {
+                if root.pattern-length > 0 {
+                    let previous = root.node-at(root.pattern-length - 1) - 1;
+                    let mx = Math.mod(previous, 3) + column;
+                    let my = Math.floor(previous / 3) + row;
+                    let middle = my / 2 * 3 + mx / 2 + 1;
+                    if Math.mod(mx, 2) == 0 && Math.mod(my, 2) == 0 && !root.selected(middle) {
+                        if root.pattern-length == 5 { return; }
+                        root.digit(middle);
+                    }
+                }
+                root.digit(node);
+            }
+        }
+    }
+    grid := Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: root.side;
+        height: root.side;
+        PatternSegment {
+            visible: root.pattern-length > 1;
+            cell: root.cell;
+            start-x: root.node-x(root.first);
+            start-y: root.node-y(root.first);
+            end-x: root.node-x(root.second);
+            end-y: root.node-y(root.second);
+        }
+
+        PatternSegment {
+            visible: root.pattern-length > 2;
+            cell: root.cell;
+            start-x: root.node-x(root.second);
+            start-y: root.node-y(root.second);
+            end-x: root.node-x(root.third);
+            end-y: root.node-y(root.third);
+        }
+
+        PatternSegment {
+            visible: root.pattern-length > 3;
+            cell: root.cell;
+            start-x: root.node-x(root.third);
+            start-y: root.node-y(root.third);
+            end-x: root.node-x(root.fourth);
+            end-y: root.node-y(root.fourth);
+        }
+
+        PatternSegment {
+            visible: root.pattern-length > 4;
+            cell: root.cell;
+            start-x: root.node-x(root.fourth);
+            start-y: root.node-y(root.fourth);
+            end-x: root.node-x(root.fifth);
+            end-y: root.node-y(root.fifth);
+        }
+
+        PatternSegment {
+            visible: root.pattern-length > 5;
+            cell: root.cell;
+            start-x: root.node-x(root.fifth);
+            start-y: root.node-y(root.fifth);
+            end-x: root.node-x(root.sixth);
+            end-y: root.node-y(root.sixth);
+        }
+
+        PatternNode {
+            node: 1;
+            cell: root.cell;
+            selected: root.selected(1);
+            ready: root.ready;
+        }
+
+        PatternNode {
+            node: 2;
+            cell: root.cell;
+            selected: root.selected(2);
+            ready: root.ready;
+        }
+
+        PatternNode {
+            node: 3;
+            cell: root.cell;
+            selected: root.selected(3);
+            ready: root.ready;
+        }
+
+        PatternNode {
+            node: 4;
+            cell: root.cell;
+            selected: root.selected(4);
+            ready: root.ready;
+        }
+
+        PatternNode {
+            node: 5;
+            cell: root.cell;
+            selected: root.selected(5);
+            ready: root.ready;
+        }
+
+        PatternNode {
+            node: 6;
+            cell: root.cell;
+            selected: root.selected(6);
+            ready: root.ready;
+        }
+
+        PatternNode {
+            node: 7;
+            cell: root.cell;
+            selected: root.selected(7);
+            ready: root.ready;
+        }
+
+        PatternNode {
+            node: 8;
+            cell: root.cell;
+            selected: root.selected(8);
+            ready: root.ready;
+        }
+
+        PatternNode {
+            node: 9;
+            cell: root.cell;
+            selected: root.selected(9);
+            ready: root.ready;
+        }
+
+        touch := TouchArea {
+            enabled: root.ready;
+            pointer-event(event) => {
+                if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
+                    root.clear();
+                    root.drawing = true;
+                    root.visit(self.mouse-x, self.mouse-y);
+                }
+                if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && root.drawing {
+                    root.visit(self.mouse-x, self.mouse-y);
+                    root.drawing = false;
+                    if root.pattern-length == 6 { root.submit(); } else { root.clear(); }
+                }
+                if event.kind == PointerEventKind.cancel {
+                    root.drawing = false;
+                    root.clear();
+                }
+            }
+            moved => { if self.pressed && root.drawing { root.visit(self.mouse-x, self.mouse-y); } }
+        }
+    }
+}

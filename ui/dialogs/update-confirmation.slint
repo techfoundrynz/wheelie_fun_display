@@ -4,7 +4,8 @@ import { SafeArea } from "../safe-area.slint";
 
 export component UpdateConfirmation inherits Rectangle {
     in property <bool> can-maintain;
-    in property <length> display-safe-inset;
+    in property <length> display-safe-inset-x;
+    in property <length> display-safe-inset-y;
     in property <bool> network-busy;
     in-out property <bool> ota-confirming;
     in property <bool> wifi-connected;
@@ -13,8 +14,10 @@ export component UpdateConfirmation inherits Rectangle {
 
     background: Theme.bg;
     SafeArea {
-        safe-inset: root.display-safe-inset;
-        minimum-padding: 20px;
+        safe-inset-x: root.display-safe-inset-x;
+        safe-inset-y: root.display-safe-inset-y;
+        minimum-padding-x: 20px;
+        minimum-padding-y: 20px;
         VerticalLayout {
             padding: 0px;
             spacing: 12px;

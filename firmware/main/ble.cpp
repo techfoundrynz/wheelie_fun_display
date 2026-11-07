@@ -1,6 +1,7 @@
 #include "ble.hpp"
 #include "bike/ble_name.hpp"
 #include "bike/proxy_lease.hpp"
+#include "bike/proxy_tx_drain.hpp"
 #include "ble_proxy.hpp"
 #include "ble_security.hpp"
 #include "board.hpp"
@@ -63,6 +64,7 @@ std::atomic<bool> paused{false};
 std::atomic<uint16_t> pending_terminate{BLE_HS_CONN_HANDLE_NONE};
 std::atomic<bool> pending_cancel{false};
 std::atomic<uint32_t> proxy_requested{0}, proxy_active{0};
+bike::ProxyTxDrain proxy_tx;
 std::atomic<bool> reset_requested{false};
 std::atomic<bool> display_gap{false};
 
@@ -115,6 +117,8 @@ void save_peer() {
 void retry() {
   lock();
   connection = BLE_HS_CONN_HANDLE_NONE;
+  state.rssi_valid = false;
+  state.rssi_sample_ms = 0;
   rx_handle = tx_handle = 0;
   lifecycle.retry();
   const auto delay = has_preferred ? std::min(30000u, 1000u << std::min(failures++, 5u)) : 1000u;
@@ -295,8 +299,10 @@ int mtu_exchanged(uint16_t handle, const ble_gatt_error *, uint16_t, void *arg) 
                        lifecycle.current(static_cast<uint32_t>(reinterpret_cast<uintptr_t>(arg))) &&
                        lifecycle.status == Status::Discovering;
   unlock();
-  if (current)
+  if (current) {
+    ESP_LOGI("ble", "VESC ATT MTU: %u bytes", unsigned(ble_att_mtu(handle)));
     discover_service(handle, arg);
+  }
   return 0;
 }
 
@@ -375,6 +381,8 @@ int gap_event(ble_gap_event *event, void *arg) {
                          lifecycle.status == Status::Connecting;
     if (current && !event->connect.status) {
       connection = event->connect.conn_handle;
+      state.rssi_valid = false;
+      state.rssi_sample_ms = 0;
       cccd_handle = service_end = rx_handle = tx_handle = 0;
       lifecycle.connected(static_cast<uint32_t>(reinterpret_cast<uintptr_t>(arg)));
     }
@@ -388,6 +396,10 @@ int gap_event(ble_gap_event *event, void *arg) {
       retry();
       break;
     }
+    ble_gap_conn_desc description{};
+    if (!ble_gap_conn_find(event->connect.conn_handle, &description))
+      ESP_LOGI("ble", "VESC link: interval=%.2f ms latency=%u timeout=%u ms", description.conn_itvl * 1.25,
+               unsigned(description.conn_latency), unsigned(description.supervision_timeout) * 10);
     ble_security::upstream_connected(event->connect.conn_handle,
                                      static_cast<uint32_t>(reinterpret_cast<uintptr_t>(arg)));
     if (ble_gattc_exchange_mtu(event->connect.conn_handle, mtu_exchanged, arg))
@@ -404,6 +416,14 @@ int gap_event(ble_gap_event *event, void *arg) {
         unlock();
       }
       retry();
+    }
+    break;
+  case BLE_GAP_EVENT_CONN_UPDATE:
+    if (current_callback(event->conn_update.conn_handle, arg) && !event->conn_update.status) {
+      ble_gap_conn_desc description{};
+      if (!ble_gap_conn_find(event->conn_update.conn_handle, &description))
+        ESP_LOGI("ble", "VESC link updated: interval=%.2f ms latency=%u timeout=%u ms", description.conn_itvl * 1.25,
+                 unsigned(description.conn_latency), unsigned(description.supervision_timeout) * 10);
     }
     break;
   case BLE_GAP_EVENT_NOTIFY_RX: {
@@ -516,7 +536,9 @@ void host(void *) {
 
 void worker(void *) {
   Request request;
-  uint64_t discovering_since = 0;
+  uint64_t discovering_since = 0, next_rssi = 0;
+  uint32_t rssi_session = 0;
+  int rssi_error = 0;
   for (;;) {
     // A lease changes only between complete queued packets. A dashboard
     // packet already being written finishes before any phone fragment starts.
@@ -549,6 +571,8 @@ void worker(void *) {
       continue;
     }
     if (xQueueReceive(requests, &request, pdMS_TO_TICKS(20)) == pdTRUE) {
+      // Includes stale-session/epoch discards and every early continue below.
+      bike::ProxyTxDrain::WriteGuard writing(proxy_tx, request.proxy_epoch);
       if (request.action == 1) {
         lock();
         const bool valid = synced && request.session == lifecycle.session && lifecycle.selectable();
@@ -600,34 +624,88 @@ void worker(void *) {
         if (!ready)
           continue;
         const size_t chunk = std::max(20, int(ble_att_mtu(h)) - 3);
-        bool failed = false;
-        for (size_t offset = 0; offset < request.size && !failed; offset += chunk) {
+        for (size_t offset = 0; offset < request.size;) {
           const size_t len = std::min(chunk, request.size - offset);
+          const auto started = uint64_t(esp_timer_get_time() / 1000);
+          const auto deadline = started + 2000;
           int rc = 0;
-          for (int attempt = 0; attempt < 5; ++attempt) {
+          bool canceled = false;
+          for (;;) {
             lock();
-            // A current dashboard packet is allowed to finish after claim.
-            // A revoked proxy fragment stops immediately; release resets the link.
+            // Accepted old-epoch batches finish during a normal phone handoff.
+            // A real pause/reset/session change still cancels the current batch.
             const bool owner_current = bike::proxy_continues_tx(request.proxy_epoch, proxy_requested.load());
-            const bool same =
-                connection == h && lifecycle.session == request.session && !paused.load() && owner_current;
+            const bool same = connection == h && lifecycle.session == request.session &&
+                              lifecycle.status == Status::Ready && !paused.load() && !reset_requested.load() &&
+                              owner_current;
             unlock();
             if (!same) {
-              rc = BLE_HS_ENOTCONN;
+              canceled = true;
               break;
             }
             rc = ble_gattc_write_no_rsp_flat(h, rx, request.bytes.data() + offset, len);
-            if (!rc || rc != BLE_HS_ENOMEM)
+            // NimBLE already retains controller-credit EAGAIN internally and
+            // returns success. Retry only errors that did not accept this write.
+            if (!rc || (rc != BLE_HS_ENOMEM && rc != BLE_HS_EBUSY))
               break;
-            vTaskDelay(pdMS_TO_TICKS(10));
+            if (uint64_t(esp_timer_get_time() / 1000) >= deadline)
+              break;
+            // Shared central/peripheral pools may need several BLE intervals to
+            // recover. Yield so the host and notification worker can make progress.
+            vTaskDelay(std::max<TickType_t>(1, pdMS_TO_TICKS(10)));
           }
-          failed = rc != 0;
+          if (canceled)
+            break; // The caller already owns the reset; never terminate its replacement link.
+          if (rc) {
+            ESP_LOGW("ble", "VESC write failed: error=%d offset=%u/%u waited_ms=%u", rc, unsigned(offset),
+                     unsigned(request.size), unsigned(uint64_t(esp_timer_get_time() / 1000) - started));
+            fail_connection(h);
+            break;
+          }
+          offset += len; // Advance only after NimBLE accepts the exact current bytes.
         }
-        if (failed)
-          fail_connection();
       }
     }
     const auto now = uint64_t(esp_timer_get_time() / 1000);
+    lock();
+    const auto rssi_handle = connection;
+    const auto current_session = lifecycle.session;
+    const bool rssi_ready = lifecycle.status == Status::Ready;
+    if (!rssi_ready || rssi_session != current_session) {
+      state.rssi_valid = false;
+      state.rssi_sample_ms = 0;
+      next_rssi = 0;
+      rssi_session = current_session;
+      rssi_error = 0;
+    }
+    unlock();
+    if (rssi_ready && now >= next_rssi) {
+      // HCI access belongs to the BLE worker, outside application mutexes and
+      // between complete queued writes. Never sample the phone's handle.
+      int8_t signal = 127;
+      const int error = ble_gap_conn_rssi(rssi_handle, &signal);
+      const bool valid = error == 0 && signal >= -127 && signal <= 20;
+      const auto sampled_ms = uint64_t(esp_timer_get_time() / 1000);
+      lock();
+      bool first_sample = false;
+      if (connection == rssi_handle && lifecycle.session == current_session && lifecycle.status == Status::Ready) {
+        first_sample = valid && !state.rssi_sample_ms;
+        state.rssi = signal;
+        state.rssi_valid = valid;
+        if (valid)
+          state.rssi_sample_ms = sampled_ms;
+      }
+      unlock();
+      if (first_sample)
+        ESP_LOGI("ble", "VESC RSSI: handle=%u session=%u signal=%d dBm", unsigned(rssi_handle),
+                 unsigned(current_session), int(signal));
+      const int sample_error = valid ? 0 : error ? error : BLE_HS_ECONTROLLER;
+      if (sample_error && sample_error != rssi_error)
+        ESP_LOGW("ble", "VESC RSSI unavailable: handle=%u session=%u error=%d raw=%d", unsigned(rssi_handle),
+                 unsigned(current_session), error, int(signal));
+      rssi_error = sample_error;
+      next_rssi = now + 1000;
+    }
     lock();
     const bool do_scan = synced && lifecycle.can_scan() && now >= retry_at;
     const bool discovering = lifecycle.status == Status::Discovering;
@@ -648,6 +726,9 @@ void worker(void *) {
 } // namespace
 
 void start() {
+  // Keep normal operation comparable with throughput measurements; retain
+  // warnings/errors and the concise link/MTU diagnostics emitted by this file.
+  esp_log_level_set("NimBLE", ESP_LOG_WARN);
   mutex = xSemaphoreCreateMutex();
   static StaticQueue_t request_control, receive_control;
   requests = create_packet_queue<Request>(8, request_control);
@@ -693,6 +774,7 @@ Snapshot snapshot() {
   auto copy = state;
   copy.status = lifecycle.status;
   copy.session = lifecycle.session;
+  copy.rssi_valid = copy.rssi_valid && lifecycle.status == Status::Ready;
   if (has_preferred) {
     copy.peer_identity[0] = preferred.type;
     std::copy_n(preferred.val, 6, copy.peer_identity.begin() + 1);
@@ -791,6 +873,11 @@ bool proxy_ready(uint32_t epoch) {
          snapshot().status == Status::Ready && !paused.load();
 }
 
+bool proxy_drained(uint32_t epoch) {
+  return epoch && proxy_tx.drained() && proxy_requested.load() == epoch && proxy_active.load() == epoch &&
+         snapshot().status == Status::Ready && !paused.load();
+}
+
 bool send_proxy_fragment(std::span<const uint8_t> bytes, uint32_t epoch) {
   if (!proxy_ready(epoch) || bytes.empty() || bytes.size() > 512)
     return false;
@@ -799,7 +886,11 @@ bool send_proxy_fragment(std::span<const uint8_t> bytes, uint32_t epoch) {
   request.proxy_epoch = epoch;
   request.size = bytes.size();
   std::copy(bytes.begin(), bytes.end(), request.bytes.begin());
-  return xQueueSend(requests, &request, 0) == pdTRUE;
+  proxy_tx.reserve();
+  if (xQueueSend(requests, &request, 0) == pdTRUE)
+    return true;
+  proxy_tx.rejected();
+  return false;
 }
 
 void reset_link() {

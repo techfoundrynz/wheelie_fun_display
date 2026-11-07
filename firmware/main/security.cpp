@@ -4,8 +4,11 @@
 #include "ble_proxy.hpp"
 #include "ble_security.hpp"
 #include "board.hpp"
+#include "esp_log.h"
 #include "esp_random.h"
 #include "esp_timer.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "nvs.h"
 #include "psa/crypto.h"
 #include "slint_backend.hpp"
@@ -14,6 +17,7 @@
 #include <array>
 #include <cstdio>
 #include <cstring>
+#include <optional>
 #include <string>
 
 namespace security
@@ -21,16 +25,10 @@ namespace security
 namespace
 {
 
-struct Record {
-  uint8_t version = 1;
-  std::array<uint8_t, 16> salt{};
-  std::array<uint8_t, 32> digest{};
-  uint8_t armed = 0;
-  uint8_t timeout = 30;
-  uint8_t failures = 0;
-};
+using Record = bike::LockRecord;
 
 Record record, candidate;
+bool input_pattern = false;
 Dashboard *ui;
 const bike::Telemetry *telemetry;
 enum class Mode {
@@ -49,6 +47,8 @@ bool local_authenticated = false;
 bike::PinAttempts attempts;
 bike::LockRequest request;
 std::string digits;
+bool submit_requested = false;
+int mode_requested = -1;
 
 uint32_t numeric_pin() {
   uint32_t number = 0;
@@ -64,7 +64,7 @@ uint64_t now_ms() {
 void clear_digits() {
   std::fill(digits.begin(), digits.end(), '\0');
   digits.clear();
-  ui->set_pin_mask("");
+  ui->set_pin_value("");
 }
 
 void message(const char *text) {
@@ -82,27 +82,45 @@ bool save(const Record &value) {
   return error == ESP_OK;
 }
 
-std::array<uint8_t, 32> hash(const Record &value, const std::string &pin) {
+std::optional<std::array<uint8_t, 32>> hash(const Record &value, const std::string &pin) {
   std::array<uint8_t, 22> input{};
   std::copy(value.salt.begin(), value.salt.end(), input.begin());
   std::copy(pin.begin(), pin.end(), input.begin() + value.salt.size());
   std::array<uint8_t, 32> digest{};
   size_t digest_size = 0;
-  ESP_ERROR_CHECK(psa_crypto_init() == PSA_SUCCESS ? ESP_OK : ESP_FAIL);
+  if (psa_crypto_init() != PSA_SUCCESS) {
+    std::fill(input.begin(), input.end(), 0);
+    return std::nullopt;
+  }
   const auto status =
       psa_hash_compute(PSA_ALG_SHA_256, input.data(), input.size(), digest.data(), digest.size(), &digest_size);
-  ESP_ERROR_CHECK(status == PSA_SUCCESS && digest_size == digest.size() ? ESP_OK : ESP_FAIL);
   std::fill(input.begin(), input.end(), 0);
+  if (status != PSA_SUCCESS || digest_size != digest.size()) {
+    std::fill(digest.begin(), digest.end(), 0);
+    return std::nullopt;
+  }
   return digest;
 }
 
-bool matches(const Record &value) {
+std::optional<bool> matches(const Record &value) {
   auto digest = hash(value, digits);
+  if (!digest)
+    return std::nullopt;
   uint8_t difference = 0;
-  for (size_t i = 0; i < digest.size(); ++i)
-    difference |= digest[i] ^ value.digest[i];
-  std::fill(digest.begin(), digest.end(), 0);
+  for (size_t i = 0; i < digest->size(); ++i)
+    difference |= (*digest)[i] ^ value.digest[i];
+  std::fill(digest->begin(), digest->end(), 0);
   return difference == 0;
+}
+
+bool entry_pattern() {
+  return input_pattern;
+}
+
+void project_proxy_pin(uint32_t pin) {
+  char code[7];
+  std::snprintf(code, sizeof(code), "%06u", unsigned(pin));
+  ui->set_proxy_pairing_code(code);
 }
 
 void open(Mode next) {
@@ -111,8 +129,18 @@ void open(Mode next) {
   clear_digits();
   activity = now_ms();
   ui->set_pin_open(true);
-  ui->set_pin_heading(next == Mode::New ? "CREATE PIN" : next == Mode::Confirm ? "CONFIRM PIN" : "ENTER PIN");
-  message(next == Mode::New       ? "Choose a six-digit PIN"
+  const bool pattern = entry_pattern();
+  ui->set_pin_pattern(pattern);
+  ui->set_pin_heading(pattern ? (next == Mode::New       ? "CREATE PATTERN"
+                                 : next == Mode::Confirm ? "CONFIRM PATTERN"
+                                                         : "ENTER PATTERN")
+                              : (next == Mode::New       ? "CREATE PIN"
+                                 : next == Mode::Confirm ? "CONFIRM PIN"
+                                                         : "ENTER PIN"));
+  if (next == Mode::Unlock)
+    ui->set_proxy_pairing_code("");
+  message(pattern                 ? "Connect six dots, then lift your finger."
+          : next == Mode::New     ? "Choose a six-digit PIN"
           : next == Mode::Confirm ? "Enter the new PIN again"
                                   : "Enter your six-digit PIN");
 }
@@ -121,6 +149,7 @@ void close() {
   mode = Mode::None;
   clear_digits();
   candidate = {};
+  candidate_passkey = 0;
   ui->set_pin_open(false);
 }
 
@@ -129,7 +158,7 @@ void finish_unlock() {
     auto next = record;
     next.armed = 0;
     if (!save(next)) {
-      message("Could not save unlock. Enter PIN to retry.");
+      message("Could not save unlock. Try again.");
       return;
     }
     record = next;
@@ -139,6 +168,7 @@ void finish_unlock() {
   ui->set_screen_locked(false);
   ble_proxy::set_paused(false);
   close();
+  ESP_LOGI("security", "Screen unlocked: stack_free=%u", unsigned(uxTaskGetStackHighWaterMark(nullptr)));
 }
 
 bool send_lock(bool desired) {
@@ -147,7 +177,7 @@ bool send_lock(bool desired) {
   const auto &vehicle = bike::integration(link.integration);
   if (link.status == transport::Status::SecurityRequired && local_authenticated) {
     ble_security::retry();
-    message("Pair Bluetooth, then enter your bike PIN again.");
+    message("Pair Bluetooth, then unlock the screen again.");
     return false;
   }
   if (!vehicle.features().lock) {
@@ -202,76 +232,106 @@ void lock_bike() {
 
 void submit() {
   const auto now = now_ms();
-  if (mode == Mode::None || corrupt || request.pending || !attempts.allowed(now) || !bike::valid_pin(digits))
+  if (mode == Mode::None || corrupt || request.pending || !attempts.allowed(now))
     return;
+  if (entry_pattern() ? !bike::valid_pattern(digits) : !bike::valid_pin(digits)) {
+    clear_digits();
+    message(entry_pattern() ? "Connect six different dots." : "Enter six digits.");
+    return;
+  }
   if (mode == Mode::New) {
     candidate = record;
+    candidate.version = 2;
+    candidate.pattern = input_pattern;
     esp_fill_random(candidate.salt.data(), candidate.salt.size());
-    candidate.digest = hash(candidate, digits);
+    auto digest = hash(candidate, digits);
+    if (!digest) {
+      clear_digits();
+      message("PIN verification unavailable. Please retry.");
+      return;
+    }
+    candidate.digest = *digest;
+    std::fill(digest->begin(), digest->end(), 0);
     candidate_passkey = numeric_pin();
     open(Mode::Confirm);
     return;
   }
   if (mode == Mode::Confirm) {
-    const bool correct = matches(candidate);
+    const auto correct = matches(candidate);
     clear_digits();
-    if (!correct) {
+    if (!correct.has_value()) {
+      message("PIN verification unavailable. Please retry.");
+      return;
+    }
+    if (!*correct) {
       candidate = {};
       open(Mode::New);
-      message("PINs did not match. Choose a PIN again.");
+      message(entry_pattern() ? "Patterns did not match. Draw a new pattern."
+                              : "PINs did not match. Choose a PIN again.");
       return;
     }
     if (!save(candidate)) {
-      message("Could not save PIN. Enter it again to retry.");
+      message("Could not save screen lock. Try again.");
       return;
     }
     record = candidate;
     configured = true;
     ble_security::set_bike_pin(true, true, candidate_passkey, record.digest);
+    project_proxy_pin(candidate_passkey);
     candidate_passkey = 0;
+    ui->set_unlock_method(input_pattern);
     ui->set_pin_configured(true);
-    ui->set_bike_lock_status("PIN saved. Keep your code somewhere safe.");
+    ui->set_bike_lock_status(record.pattern ? "Pattern saved. Six dot numbers form the phone BLE code."
+                                            : "PIN saved. Keep your code somewhere safe.");
     close();
     return;
   }
   const auto entered_pin = numeric_pin();
-  const bool correct = matches(record);
+  const auto correct = matches(record);
   clear_digits();
-  attempts.result(correct, now);
+  if (!correct.has_value()) {
+    message("PIN verification unavailable. Please retry.");
+    return;
+  }
+  attempts.result(*correct, now);
   auto updated = record;
   updated.failures = std::min(attempts.failures, 5u);
   if (!save(updated)) {
-    message("Could not save PIN attempt. Try again.");
+    message("Could not save lock attempt. Try again.");
     return;
   }
   record = updated;
-  if (!correct) {
-    message(attempts.allowed(now) ? "Incorrect PIN" : "Too many attempts. Wait 30 seconds.");
+  if (!*correct) {
+    message(attempts.allowed(now) ? (entry_pattern() ? "Incorrect pattern" : "Incorrect PIN")
+                                  : "Too many attempts. Wait 30 seconds.");
     return;
   }
   local_authenticated = true;
   ble_security::set_bike_pin(true, true, entered_pin, record.digest);
+  project_proxy_pin(entered_pin);
   if (mode == Mode::Change) {
     open(Mode::New);
   }
   else if (mode == Mode::Remove) {
     nvs_handle_t h;
     if (nvs_open("security", NVS_READWRITE, &h) != ESP_OK) {
-      message("Could not remove PIN. Try again.");
+      message("Could not remove screen lock. Try again.");
       return;
     }
     const auto erased = nvs_erase_key(h, "pin");
     const auto committed = erased == ESP_OK ? nvs_commit(h) : erased;
     nvs_close(h);
     if (committed != ESP_OK) {
-      message("Could not remove PIN. Try again.");
+      message("Could not remove screen lock. Try again.");
       return;
     }
     record = {};
     configured = false;
     ble_security::set_bike_pin(false, true, 0, {});
     ui->set_pin_configured(false);
-    ui->set_bike_lock_status("PIN removed");
+    ui->set_proxy_pairing_code("");
+    ui->set_unlock_method(input_pattern);
+    ui->set_bike_lock_status("Screen lock removed");
     close();
   }
   else if (mode == Mode::Unlock) {
@@ -284,36 +344,71 @@ void submit() {
   }
 }
 
+void change_entry_mode(int method) {
+  if (mode == Mode::None || request.pending || corrupt || method < 0 || method > 1 || !attempts.allowed(now_ms()))
+    return;
+  nvs_handle_t h;
+  if (nvs_open("security", NVS_READWRITE, &h) != ESP_OK) {
+    message("Could not save entry mode. Try again.");
+    return;
+  }
+  auto error = nvs_set_u8(h, "entry_mode", uint8_t(method));
+  if (error == ESP_OK)
+    error = nvs_commit(h);
+  nvs_close(h);
+  if (error != ESP_OK) {
+    message("Could not save entry mode. Try again.");
+    return;
+  }
+  input_pattern = method == 1;
+  ESP_LOGI("security", "Entry mode saved: %s", input_pattern ? "pattern" : "PIN");
+  ui->set_unlock_method(method);
+  open(mode);
+}
+
 } // namespace
 
 void init(Dashboard &dashboard, const bike::Telemetry &data) {
   ui = &dashboard;
   telemetry = &data;
+  // Allocate the hardware SHA lock before the first UI frame.
+  // A fixed, non-secret input also validates the crypto backend without touching NVS.
+  const auto crypto_ready = hash(Record{}, "000000").has_value();
   nvs_handle_t h;
   auto error = nvs_open("security", NVS_READONLY, &h);
   if (error == ESP_OK) {
-    size_t length = sizeof(record);
-    error = nvs_get_blob(h, "pin", &record, &length);
+    std::array<uint8_t, sizeof(Record)> bytes{};
+    size_t length = bytes.size();
+    error = nvs_get_blob(h, "pin", bytes.data(), &length);
     configured = error == ESP_OK;
     corrupt = (error != ESP_OK && error != ESP_ERR_NVS_NOT_FOUND) ||
-              (configured &&
-               (length != sizeof(record) || record.version != 1 || record.armed > 1 || record.failures > 5 ||
-                (record.timeout != 15 && record.timeout != 30 && record.timeout != 60 && record.timeout != 120)));
+              (configured && !bike::decode_lock_record(std::span(bytes.data(), length), record));
+    uint8_t preferred = record.pattern;
+    if (nvs_get_u8(h, "entry_mode", &preferred) != ESP_OK || preferred > 1)
+      preferred = record.pattern;
+    input_pattern = preferred == 1;
     nvs_close(h);
   }
   else if (error != ESP_ERR_NVS_NOT_FOUND)
     corrupt = true;
   ble_security::set_bike_pin(configured || corrupt, !configured && !corrupt, 0, record.digest);
+  ui->set_unlock_method(input_pattern);
+  ESP_LOGI("security", "Entry mode: %s", input_pattern ? "pattern" : "PIN");
   ui->set_pin_configured(configured);
-  ui->set_bike_lock_status(configured ? "PIN configured. Lock only while the bike is stopped."
-                                      : "Set a PIN to enable bike locking.");
+  ui->set_bike_lock_status(configured ? "Screen lock configured. Lock only while the bike is stopped."
+                                      : "Set a screen lock to enable bike locking.");
   ui->set_lock_timeout(record.timeout);
   attempts.failures = record.failures;
   if (record.failures >= 5)
     attempts.retry_at = now_ms() + 30000;
+  ui->on_unlock_method_requested([](int method) {
+    if (!submit_requested && mode != Mode::None && method >= 0 && method <= 1)
+      mode_requested = method;
+  });
   ui->on_pin_setup([] {
-    if (!locked && mode == Mode::None)
+    if (!locked && mode == Mode::None) {
       open(configured ? Mode::Change : Mode::New);
+    }
   });
   ui->on_pin_remove([] {
     if (!locked && configured && mode == Mode::None)
@@ -329,25 +424,40 @@ void init(Dashboard &dashboard, const bike::Telemetry &data) {
     ui->set_screen_locked(true);
     open(Mode::Unlock);
   });
-  ui->on_pin_submit(submit);
+  ui->on_pin_submit([] {
+    if (mode != Mode::None && !submit_requested)
+      submit_requested = true;
+  });
+  ui->on_pin_clear([] {
+    if (!submit_requested)
+      clear_digits();
+  });
   ui->on_pin_cancel([] {
-    if (!locked)
+    if (!locked) {
+      submit_requested = false;
+      mode_requested = -1;
       close();
+    }
   });
   ui->on_pin_digit([](int digit) {
     activity = now_ms();
     if (mode != Mode::None && digit >= 0 && digit <= 9 && digits.size() < 6 && !request.pending &&
         attempts.allowed(activity)) {
-      digits.push_back('0' + digit);
-      ui->set_pin_mask(std::string(digits.size(), '*').c_str());
+      if (entry_pattern())
+        bike::append_pattern(digits, digit);
+      else
+        digits.push_back('0' + digit);
+      ui->set_pin_value(digits.c_str());
     }
   });
   ui->on_pin_backspace([] {
+    if (submit_requested)
+      return;
     if (!digits.empty()) {
       digits.back() = '\0';
       digits.pop_back();
     }
-    ui->set_pin_mask(std::string(digits.size(), '*').c_str());
+    ui->set_pin_value(digits.c_str());
   });
   ui->on_lock_retry([] {
     if (locked && record.armed && !bike_confirmed)
@@ -372,12 +482,26 @@ void init(Dashboard &dashboard, const bike::Telemetry &data) {
     ui->set_screen_locked(true);
     open(Mode::Unlock);
     if (corrupt)
-      message("PIN storage could not be read. Service required.");
+      message("Lock storage could not be read. Service required.");
   }
+  if (!crypto_ready)
+    message("PIN verification unavailable. Please retry.");
   activity = now_ms();
 }
 
 void tick(uint64_t now) {
+  // Crypto and flash operations run outside the nested Slint pointer callbacks.
+  // Keep submitted input intact until this point, including pointer-exit cancellation.
+  if (submit_requested) {
+    submit_requested = false;
+    mode_requested = -1;
+    submit();
+  }
+  if (mode_requested >= 0) {
+    const int requested = mode_requested;
+    mode_requested = -1;
+    change_entry_mode(requested);
+  }
   const auto link = transport::snapshot();
   if (configured && !locked && mode == Mode::None && link.status == transport::Status::Ready && telemetry->bike_valid &&
       now - telemetry->bike_ms < 1500 && telemetry->state == 15) {
@@ -391,7 +515,7 @@ void tick(uint64_t now) {
     ble_proxy::set_paused(true);
     ui->set_screen_locked(true);
     open(Mode::Unlock);
-    message(saved ? "Bike reports disabled. Enter PIN to unlock." : "Bike disabled; could not save lock state.");
+    message(saved ? "Bike reports disabled. Enter your PIN or pattern." : "Bike disabled; could not save lock state.");
   }
   if (request.pending) {
     if (link.status != transport::Status::Ready || link.session != request.session || now - request.since > 5000) {
@@ -403,7 +527,7 @@ void tick(uint64_t now) {
       request.pending = false;
       if (desired) {
         bike_confirmed = true;
-        message("Bike reports disabled. Enter PIN to unlock.");
+        message("Bike reports disabled. Enter your PIN or pattern.");
       }
       else
         finish_unlock();
@@ -413,7 +537,7 @@ void tick(uint64_t now) {
       (link.status != transport::Status::Ready || !telemetry->bike_valid || now - telemetry->bike_ms >= 1500 ||
        telemetry->state != 15)) {
     bike_confirmed = false;
-    message("Bike lock state unconfirmed. Enter PIN or retry lock.");
+    message("Bike lock state unconfirmed. Unlock the screen or retry lock.");
   }
   ui->set_pin_ready(!corrupt && !request.pending && attempts.allowed(now));
   static uint64_t shown_cooldown = 0;
@@ -428,7 +552,7 @@ void tick(uint64_t now) {
   }
   else if (!corrupt && shown_cooldown) {
     shown_cooldown = 0;
-    message("Enter your six-digit PIN");
+    message(entry_pattern() ? "Connect six dots, then lift your finger." : "Enter your six-digit PIN");
   }
   ui->set_lock_retry_available(locked && record.armed && !bike_confirmed && !request.pending);
   if (take_slint_wake()) {

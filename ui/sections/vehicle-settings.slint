@@ -1,0 +1,111 @@
+import { SettingsRow, SectionTitle } from "../settings.slint";
+import { Action } from "../controls.slint";
+import { Theme } from "../theme.slint";
+import { Peer } from "../models.slint";
+
+export component VehicleSettings inherits Rectangle {
+    in property <string> controller-status;
+    in-out property <int> integration-choice;
+    in property <bool> link-present;
+    in property <[Peer]> peers;
+    in property <int> transport-kind;
+    in property <bool> can-available;
+    in property <bool> uart-available;
+    in property <bool> can-change-transport;
+    callback select-transport(int);
+    callback connect-peer(int);
+    callback connect-wired();
+    callback discover-controller();
+    callback forget-peer();
+    min-height: content.min-height;
+    max-height: content.min-height;
+    content := VerticalLayout {
+        spacing: 12px;
+        SectionTitle {
+            text: "VEHICLE";
+        }
+
+        if root.can-available || root.uart-available: SettingsRow {
+            label: "Vehicle connection";
+            detail: root.transport-kind == 1 ? "CAN" : root.transport-kind == 2 ? "UART" : "BLE";
+            enabled: root.can-change-transport;
+            activated => { root.select-transport(root.transport-kind == 0 ? (root.can-available ? 1 : 2) : root.transport-kind == 1 && root.uart-available ? 2 : 0); }
+        }
+        if root.controller-status != "": Text {
+            text: root.controller-status;
+            color: Theme.secondary;
+            font-size: 14px;
+            wrap: word-wrap;
+        }
+        if root.link-present: Action {
+            label: "Find main controller again";
+            activated => { root.discover-controller(); }
+        }
+        if !root.link-present && root.transport-kind != 0: Action {
+            label: root.transport-kind == 1 ? "Connect via CAN" : "Connect via UART";
+            activated => { root.connect-wired(); }
+        }
+
+        SettingsRow {
+            label: "Vehicle integration";
+            detail: root.integration-choice == -1 ? "Auto" : root.integration-choice == 1 ? "Wheelie Fun Bike" : root.integration-choice == 2 ? "wheel-e" : "VESC";
+            enabled: !root.link-present;
+            activated => { root.integration-choice = root.integration-choice == -1 ? 1 : root.integration-choice == 1 ? 2 : root.integration-choice == 2 ? 0 : -1; }
+        }
+
+        if root.link-present: Text {
+            text: "Disconnect the bike to choose another integration.";
+            color: Theme.secondary;
+            font-size: 14px;
+            wrap: word-wrap;
+        }
+        if root.link-present: Action {
+            label: root.transport-kind == 0 ? "Forget bike and scan" : "Disconnect bike";
+            activated => { root.forget-peer(); }
+        }
+        if !root.link-present && root.transport-kind == 0: Rectangle {
+            VerticalLayout {
+                spacing: 8px;
+                for peer[i] in root.peers: Rectangle {
+                    height: 72px;
+                    background: Theme.surface;
+                    border-radius: 12px;
+                    VerticalLayout {
+                        padding: 12px;
+                        Text {
+                            text: peer.name + "   " + peer.signal;
+                            color: Theme.text;
+                            font-size: 18px;
+                            overflow: elide;
+                        }
+
+                        Text {
+                            text: peer.address;
+                            color: Theme.secondary;
+                            font-size: 14px;
+                        }
+                    }
+
+                    TouchArea {
+                        clicked => { root.connect-peer(i); }
+                    }
+                }
+            }
+        }
+        if !root.link-present && root.transport-kind == 0 && root.peers.length == 0: Text {
+            text: "Power on your bike. Nearby VESC Bluetooth devices will appear here.";
+            color: Theme.secondary;
+            wrap: word-wrap;
+            font-size: 16px;
+        }
+        if !root.link-present && root.transport-kind == 0: Action {
+            label: "Clear saved bike";
+            activated => { root.forget-peer(); }
+        }
+        Text {
+            text: root.transport-kind == 0 ? "VESC Bluetooth UART" : root.transport-kind == 1 ? "VESC CAN packet transport" : "VESC serial UART";
+            color: Theme.secondary;
+            font-size: 14px;
+        }
+    }
+}

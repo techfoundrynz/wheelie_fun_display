@@ -29,7 +29,7 @@ public:
   }
 
   bool decode(std::span<const uint8_t> payload, uint64_t now, Telemetry &out) const override {
-    return !payload.empty() && payload[0] == 47 && decode_telemetry(payload, now, out);
+    return !payload.empty() && (payload[0] == 47 || payload[0] == 96) && decode_telemetry(payload, now, out);
   }
 };
 
@@ -120,7 +120,7 @@ public:
   }
 
   bool decode(std::span<const uint8_t> p, uint64_t now, Telemetry &out) const override {
-    if (!p.empty() && p[0] == 47)
+    if (!p.empty() && (p[0] == 47 || p[0] == 96))
       return VescIntegration::decode(p, now, out);
     if (p.size() != 28 || p[0] != 36 || p[1] != 101 || p[2] != 33 || p[3] != 1)
       return false;

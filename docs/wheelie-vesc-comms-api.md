@@ -312,7 +312,7 @@ Same prefix through `currentBattery`, then:
 | `voltage` | `readDouble16` | 10 |
 | `batteryLevel` | `readDouble16` | 1000 |
 | `ampHoursConsumed` … `wattHoursCharged` | `readDouble32` | 10000 |
-| `tachValue`, `tachAbs` | `readInt32` | — |
+| `distance`, `distanceAbs` (legacy labels `tachValue`, `tachAbs`) | `readDouble32` | 1000; metres |
 | `pidPos` | `readDouble32` | 1000000 |
 | `faultCode` | `readInt8` | — |
 | `controllerId` | `readInt8` | — |
@@ -320,6 +320,8 @@ Same prefix through `currentBattery`, then:
 | `wattHoursRemaining` | `readDouble32` | 10000 |
 | `odometer` | `readUInt32` | — |
 | `loopTime` | `readUInt32` | — |
+
+For distance reporting, the display follows the [upstream VESC serializer](https://github.com/vedderb/bldc/blob/master/comm/commands.c): the two setup-distance fields are scaled metres rather than raw tachometer counts. `distanceAbs` supplies the trip since controller boot; the optional unsigned `odometer` supplies lifetime metres. These common fields are used for both supported vehicle packages and generic VESC, independently of the inferred custom-package tail below.
 
 ### `COMM_GET_IMU_DATA` (65) response
 

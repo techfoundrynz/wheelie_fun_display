@@ -1,0 +1,50 @@
+import { Theme } from "theme.slint";
+
+component DistanceReading inherits Rectangle {
+    in property <string> label;
+    in property <string> value;
+    in property <bool> outer-edge;
+    min-width: 0px;
+    preferred-width: 0px;
+    horizontal-stretch: 1;
+    column := VerticalLayout {
+        // Anchor the column at the outer edge while keeping its label and value left aligned.
+        x: root.outer-edge ? max(0px, parent.width - max(caption.preferred-width, reading.preferred-width)) : 0px;
+        width: parent.width - self.x;
+        spacing: 2px;
+        caption := Text {
+            text: root.label;
+            color: Theme.secondary;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        reading := Text {
+            text: root.value;
+            color: Theme.text;
+            font-size: 16px;
+            font-weight: 700;
+            overflow: elide;
+        }
+    }
+}
+
+export component DistanceSummary inherits Rectangle {
+    in property <string> trip;
+    in property <string> odometer;
+    in property <bool> outer-edges;
+    height: 40px;
+    HorizontalLayout {
+        spacing: 12px;
+        trip-reading := DistanceReading {
+            label: "TRIP";
+            value: root.trip;
+        }
+
+        odo-reading := DistanceReading {
+            label: "ODO";
+            value: root.odometer;
+            outer-edge: root.outer-edges;
+        }
+    }
+}

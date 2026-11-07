@@ -1,109 +1,238 @@
 import { Theme } from "theme.slint";
 import { Action } from "controls.slint";
+import { PatternPad } from "pattern-pad.slint";
 import { SafeArea } from "safe-area.slint";
 
+component PinKey inherits Action {
+    label-size: 28px;
+    label-weight: 800;
+    min-width: 0px;
+    preferred-width: 0px;
+    horizontal-stretch: 1;
+    min-height: 0px;
+    preferred-height: 0px;
+    max-height: 1000px;
+    vertical-stretch: 1;
+}
+
+component PinIconKey inherits PinKey {
+    in property <image> icon;
+    label-visible: false;
+    Image {
+        source: root.icon;
+        width: 28px;
+        height: 28px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        colorize: root.enabled ? Theme.text : Theme.dim;
+    }
+}
+
+component DigitRow inherits Rectangle {
+    in property <int> first;
+    in property <bool> ready;
+    callback digit(int);
+    min-height: 0px;
+    preferred-height: 0px;
+    vertical-stretch: 1;
+    HorizontalLayout {
+        spacing: 8px;
+        PinKey {
+            label: "" + root.first;
+            enabled: root.ready;
+            activated => { root.digit(root.first); }
+        }
+
+        PinKey {
+            label: "" + (root.first + 1);
+            enabled: root.ready;
+            activated => { root.digit(root.first + 1); }
+        }
+
+        PinKey {
+            label: "" + (root.first + 2);
+            enabled: root.ready;
+            activated => { root.digit(root.first + 2); }
+        }
+    }
+}
+
 export component PinPad inherits Rectangle {
-    in property <length> safe-inset;
+    in property <length> safe-inset-x;
+    in property <length> safe-inset-y;
     in property <string> heading;
-    in property <string> masked;
+    in property <string> value;
     in property <string> message;
     in property <bool> ready;
+    in property <bool> pattern;
+    in property <bool> allow-mode-change: true;
+    callback mode-requested(bool);
+    in property <bool> auto-submit: true;
+    in property <int> min-digits: 6;
+    in property <int> max-digits: 6;
     in property <bool> show-keypad: true;
     in property <string> retry-label: "Retry bike lock";
     in property <bool> locked;
     in property <bool> retry-available;
     callback digit(int);
     callback backspace();
+    callback clear();
     callback submit();
     callback cancel();
     callback retry();
     background: Theme.bg;
     TouchArea { }
 
-    private property <bool> landscape: self.width > self.height;
+    // The owner updates value synchronously. Submit the sixth accepted digit
+    // exactly once for local PINs. BLE pairing requires explicit submission.
+    function enter-digit(number: int) {
+        if root.ready && root.value.character-count < root.max-digits {
+            root.digit(number);
+            if root.auto-submit && root.value.character-count == root.max-digits { root.submit(); }
+        }
+    }
+
+    private property <bool> side-by-side: self.width > self.height && self.show-keypad;
     SafeArea {
-        safe-inset: root.safe-inset;
-        minimum-padding: 20px;
-        VerticalLayout {
-            padding: 0px;
-            spacing: 6px;
-            alignment: center;
-            Text {
-                text: root.heading;
-                color: Theme.accent;
-                font-size: 24px;
-                font-weight: 800;
-                horizontal-alignment: center;
-            }
-
-            Text {
-                text: root.masked == "" ? "_ _ _ _ _ _" : root.masked;
-                color: Theme.text;
-                font-size: 24px;
-                horizontal-alignment: center;
-            }
-
-            Text {
-                text: root.message;
-                color: Theme.secondary;
-                font-size: 14px;
-                wrap: word-wrap;
-                horizontal-alignment: center;
-                min-height: 36px;
-            }
-
-            if root.show-keypad: VerticalLayout {
-                spacing: 6px;
-                for row in [0, 1, 2]: HorizontalLayout {
-                    spacing: 6px;
-                    for column in [0, 1, 2]: Action {
-                        label: "" + (row * 3 + column + 1);
-                        enabled: root.ready;
-                        min-height: root.landscape ? 40px : 48px;
-                        max-height: self.min-height;
-                        activated => { root.digit(row * 3 + column + 1); }
-                    }
-                }
-                HorizontalLayout {
-                    spacing: 6px;
-                    Action {
-                        label: "Back";
-                        enabled: root.ready;
-                        min-height: root.landscape ? 40px : 48px;
-                        max-height: self.min-height;
-                        activated => { root.backspace(); }
+        safe-inset-x: root.safe-inset-x;
+        safe-inset-y: root.safe-inset-y;
+        minimum-padding-x: 20px;
+        minimum-padding-y: 20px;
+        body := Rectangle {
+            details := Rectangle {
+                x: 0px;
+                y: 0px;
+                width: root.side-by-side ? parent.width * 0.38 : parent.width;
+                height: root.side-by-side || !root.show-keypad ? parent.height - footer.height - 8px : 144px;
+                VerticalLayout {
+                    padding: 0px;
+                    spacing: 8px;
+                    alignment: center;
+                    Text {
+                        text: root.heading;
+                        color: Theme.accent;
+                        font-size: root.side-by-side ? (root.pattern ? 18px : 20px) : 24px;
+                        font-weight: 800;
+                        horizontal-alignment: center;
+                        overflow: elide;
                     }
 
-                    Action {
-                        label: "0";
-                        enabled: root.ready;
-                        min-height: root.landscape ? 40px : 48px;
-                        max-height: self.min-height;
-                        activated => { root.digit(0); }
+                    entered-pin := Text {
+                        text: root.value == "" ? "------" : root.value;
+                        color: Theme.text;
+                        font-size: root.side-by-side ? 36px : 48px;
+                        font-weight: 800;
+                        letter-spacing: 2px;
+                        horizontal-alignment: center;
+                        accessible-label: "Entered PIN";
                     }
 
-                    Action {
-                        label: "OK";
-                        selected: true;
-                        enabled: root.ready && root.masked.character-count == 6;
-                        min-height: root.landscape ? 40px : 48px;
-                        max-height: self.min-height;
-                        activated => { root.submit(); }
+                    Text {
+                        text: root.message;
+                        color: Theme.secondary;
+                        font-size: 14px;
+                        wrap: word-wrap;
+                        horizontal-alignment: center;
+                        min-height: 36px;
                     }
                 }
             }
-            if !root.locked: Action {
-                label: "Cancel";
-                min-height: 40px;
-                max-height: 40px;
-                activated => { root.cancel(); }
+
+            if root.show-keypad: Rectangle {
+                x: root.side-by-side ? details.width + 16px : 0px;
+                y: root.side-by-side ? 0px : details.height + 8px;
+                width: parent.width - self.x;
+                height: parent.height - self.y - (root.side-by-side || footer.height == 0px ? 0px : footer.height + 8px);
+                if root.pattern: PatternPad {
+                    value: root.value;
+                    ready: root.ready;
+                    digit(number) => { root.digit(number); }
+                    clear => { root.clear(); }
+                    submit => { root.submit(); }
+                }
+                if !root.pattern: VerticalLayout {
+                    spacing: 8px;
+                    // Fixed rows avoid small repeater allocations for the keypad.
+                    DigitRow {
+                        first: 1;
+                        ready: root.ready;
+                        digit(number) => { root.enter-digit(number); }
+                    }
+
+                    DigitRow {
+                        first: 4;
+                        ready: root.ready;
+                        digit(number) => { root.enter-digit(number); }
+                    }
+
+                    DigitRow {
+                        first: 7;
+                        ready: root.ready;
+                        digit(number) => { root.enter-digit(number); }
+                    }
+
+                    Rectangle {
+                        min-height: 0px;
+                        preferred-height: 0px;
+                        vertical-stretch: 1;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            PinIconKey {
+                                label: "Backspace";
+                                icon: @image-url("assets/backspace.svg");
+                                enabled: root.ready && root.value.character-count > 0;
+                                activated => { root.backspace(); }
+                            }
+
+                            PinKey {
+                                label: "0";
+                                enabled: root.ready;
+                                activated => { root.enter-digit(0); }
+                            }
+
+                            PinIconKey {
+                                label: "Clear PIN";
+                                icon: @image-url("assets/x.svg");
+                                enabled: root.ready && root.value.character-count > 0;
+                                activated => { root.clear(); }
+                            }
+                        }
+                    }
+                }
             }
-            if root.retry-available: Action {
-                label: root.retry-label;
-                enabled: root.ready;
-                min-height: 40px;
-                max-height: 40px;
-                activated => { root.retry(); }
+            footer := Rectangle {
+                x: 0px;
+                y: parent.height - self.height;
+                width: details.width;
+                private property <bool> first: root.allow-mode-change || !root.locked;
+                private property <bool> second: root.allow-mode-change ? (!root.locked || root.retry-available) : ((!root.auto-submit && root.show-keypad) || root.retry-available);
+                height: self.first || self.second ? (root.side-by-side && self.first && self.second ? 88px : 40px) : 0px;
+                if footer.first: Action {
+                    x: 0px;
+                    y: 0px;
+                    width: root.side-by-side || !footer.second ? parent.width : (parent.width - 8px) / 2;
+                    height: 40px;
+                    min-width: 0px;
+                    min-height: 40px;
+                    max-height: 40px;
+                    label: root.allow-mode-change ? (root.pattern ? "Use PIN" : "Use pattern") : "Cancel";
+                    enabled: !root.allow-mode-change || root.ready;
+                    activated => { if root.allow-mode-change { root.mode-requested(!root.pattern); } else { root.cancel(); } }
+                }
+                if footer.second: Action {
+                    x: root.side-by-side || !footer.first ? 0px : (parent.width + 8px) / 2;
+                    y: root.side-by-side && footer.first ? 48px : 0px;
+                    width: root.side-by-side || !footer.first ? parent.width : (parent.width - 8px) / 2;
+                    height: 40px;
+                    min-width: 0px;
+                    min-height: 40px;
+                    max-height: 40px;
+                    private property <bool> is-submit: !root.allow-mode-change && !root.auto-submit && root.show-keypad;
+                    private property <bool> is-retry: !self.is-submit && root.retry-available;
+                    label: self.is-submit ? "Submit" : self.is-retry ? root.retry-label : "Cancel";
+                    enabled: self.is-submit ? root.ready && root.value.character-count >= root.min-digits && root.value.character-count <= root.max-digits : self.is-retry ? root.ready : true;
+                    activated => { if self.is-submit { root.submit(); } else if self.is-retry { root.retry(); } else { root.cancel(); } }
+                }
             }
         }
     }

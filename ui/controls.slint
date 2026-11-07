@@ -29,6 +29,9 @@ export component Action inherits Rectangle {
     accessible-role: button;
     accessible-label: root.label;
     in property <string> label;
+    in property <bool> label-visible: true;
+    in property <length> label-size: 16px;
+    in property <int> label-weight: 700;
     in property <bool> enabled: true;
     in property <bool> selected: false;
     callback activated();
@@ -39,10 +42,11 @@ export component Action inherits Rectangle {
     border-width: Theme.control-border;
     border-color: !enabled ? Theme.raised : selected ? Theme.accent : Theme.control;
     Text {
+        visible: root.label-visible;
         text: root.label;
         color: !root.enabled ? Theme.dim : Theme.text;
-        font-size: 16px;
-        font-weight: 700;
+        font-size: root.label-size;
+        font-weight: root.label-weight;
         horizontal-alignment: center;
         vertical-alignment: center;
         overflow: elide;

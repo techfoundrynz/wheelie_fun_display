@@ -6,7 +6,7 @@ export component Navigation inherits HorizontalLayout {
 
     height: 50px;
     spacing: 6px;
-    for label[i] in ["Ride", "Tune", "Config"]: Action {
+    for label[i] in ["Ride", "Stats", "Tune"]: Action {
         label: label;
         selected: root.page == i;
         activated => { root.page-requested(i); }

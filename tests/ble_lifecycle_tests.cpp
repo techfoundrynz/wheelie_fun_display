@@ -1,4 +1,6 @@
 #include "bike/ble_lifecycle.hpp"
+#include "bike/ble_signal.hpp"
+#include "bike/proxy_tx_drain.hpp"
 #include <cstdlib>
 #include <iostream>
 
@@ -11,6 +13,47 @@
   } while (false)
 
 int main() {
+  bike::ProxyTxDrain drain;
+  CHECK(drain.drained());
+  drain.reserve();
+  CHECK(!drain.drained());
+  drain.rejected(); // Failed enqueue must not leave phantom work.
+  CHECK(drain.drained());
+  drain.reserve();
+  drain.reserve();
+  {
+    bike::ProxyTxDrain::WriteGuard writing(drain, 7);
+    CHECK(!drain.drained());
+  }
+  CHECK(!drain.drained()); // Another queued batch remains.
+  {
+    bike::ProxyTxDrain::WriteGuard writing(drain, 7);
+    CHECK(!drain.drained()); // Queue is empty, but this batch is still writing.
+  }
+  CHECK(drain.drained());
+  drain.reserve();
+  {
+    // A canceled session/old epoch is discarded through exactly the same guard.
+    bike::ProxyTxDrain::WriteGuard stale(drain, 8);
+    CHECK(!drain.drained());
+  }
+  CHECK(drain.drained());
+  {
+    bike::ProxyTxDrain::WriteGuard dashboard(drain, 0);
+    CHECK(drain.drained()); // Uncounted dashboard messages do not underflow it.
+  }
+
+  CHECK(bike::ble_signal_level(-127) == 0);
+  CHECK(bike::ble_signal_level(-86) == 0);
+  CHECK(bike::ble_signal_level(-85) == 1);
+  CHECK(bike::ble_signal_level(-76) == 1);
+  CHECK(bike::ble_signal_level(-75) == 2);
+  CHECK(bike::ble_signal_level(-66) == 2);
+  CHECK(bike::ble_signal_level(-65) == 3);
+  CHECK(bike::ble_signal_level(-56) == 3);
+  CHECK(bike::ble_signal_level(-55) == 4);
+  CHECK(bike::ble_signal_level(0) == 4);
+
   using Status = bike::LinkStatus;
   bike::BleLifecycle fresh;
   fresh.restore(false);

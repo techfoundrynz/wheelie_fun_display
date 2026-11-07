@@ -61,3 +61,23 @@ fn integration_capabilities() {
 fn renderer_rotation_pixels() {
     check_layouts(Some("--rotation-fixtures"), &[(410, 502), (480, 800)]);
 }
+
+#[test]
+fn status_marquee() {
+    check_layouts(Some("--marquee-fixtures"), LAYOUTS);
+}
+
+#[test]
+fn safe_area_axes() {
+    check_layouts(Some("--safe-area-fixtures"), LAYOUTS);
+}
+
+#[test]
+fn pattern_unlock() {
+    check_layouts(Some("--pattern-fixtures"), LAYOUTS);
+}
+
+#[test]
+fn detailed_stats() {
+    check_layouts(Some("--stats-fixtures"), LAYOUTS);
+}

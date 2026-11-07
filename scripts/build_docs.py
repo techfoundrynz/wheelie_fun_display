@@ -35,7 +35,7 @@ PAGES = [
         "guide",
         "Using the display",
         "For riders",
-        "Ride, Tune, Bike, gestures and everyday settings.",
+        "Ride, Stats, Tune, gestures and grouped settings.",
     ),
     (
         "docs/connections.md",
@@ -47,9 +47,9 @@ PAGES = [
     (
         "docs/pins-and-locking.md",
         "pins",
-        "PINs & locking",
+        "PINs, patterns & pairing",
         "For riders",
-        "Separate upstream pairing from the local bike and proxy PIN.",
+        "Local PINs, patterns, upstream pairing and phone proxy bonds.",
     ),
     (
         "docs/maintenance.md",

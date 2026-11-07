@@ -5,7 +5,7 @@ import { ApplyConfirmation } from "dialogs/apply-confirmation.slint";
 import { AboutPage } from "pages/about.slint";
 import { UpdatesPage } from "pages/updates.slint";
 import { WifiPage } from "pages/wifi.slint";
-import { ConfigPage } from "pages/config.slint";
+import { StatsPage } from "pages/stats.slint";
 import { TunePage } from "pages/tune.slint";
 import { RidePage } from "pages/ride.slint";
 import { PageDeck, TransitionPage } from "page-transition.slint";
@@ -15,8 +15,8 @@ import { PinPad } from "pin-pad.slint";
 import { Theme } from "theme.slint";
 import { SafeArea } from "safe-area.slint";
 import "fonts/Roboto.ttf";
-import { Peer, WifiItem, AboutItem } from "models.slint";
-export { Peer, WifiItem, AboutItem } from "models.slint";
+import { Peer, WifiItem, AboutItem, StatItem } from "models.slint";
+export { Peer, WifiItem, AboutItem, StatItem } from "models.slint";
 
 export component Dashboard inherits Window {
     title: root.vehicle-brand;
@@ -24,7 +24,8 @@ export component Dashboard inherits Window {
     in property <length> initial-width: 410px;
     in property <length> initial-height: 502px;
     // Conservative 2.06-inch preview default; firmware sets this from its profile.
-    in property <length> display-safe-inset: 32px;
+    in property <length> display-safe-inset-x: 32px;
+    in property <length> display-safe-inset-y: 16px;
     background: Theme.bg;
     default-font-family: "Roboto";
     default-font-size: 16px;
@@ -32,6 +33,10 @@ export component Dashboard inherits Window {
 
     in property <string> connection: "Disconnected";
     in property <bool> connected: false;
+    in property <bool> connection-pending: false;
+    in property <bool> phone-connected: false;
+    in property <int> bike-ble-signal: -1;
+    in property <int> bike-ble-rssi;
     in property <bool> link-present: false;
     in property <int> transport-kind;
     in property <bool> can-available;
@@ -42,19 +47,33 @@ export component Dashboard inherits Window {
     callback connect-wired();
     callback discover-controller();
     in property <bool> fresh: false;
+    in property <bool> data-stale: false;
     in property <bool> can-configure: false;
     in property <string> speed: "--";
     in property <float> speed-progress: 0;
     in property <string> battery: "--";
     in property <float> battery-level: 80;
     in property <string> voltage: "--";
+    in property <string> trip: "--";
+    in property <string> odometer: "--";
     in property <string> power: "--";
+    in property <[StatItem]> vesc-stats;
+    in property <[StatItem]> bms-stats;
+    in property <[StatItem]> bms-cells;
+    in property <[StatItem]> bms-temperatures;
+    in property <string> bms-state: "No recent VESC BMS data.";
+    in property <string> motor-current: "--";
+    in property <string> battery-current: "--";
+    in property <string> roll: "--";
     in property <string> mosfet: "--";
     in property <string> motor: "--";
     in property <string> pitch: "--";
     in property <bool> hot: false;
     in property <string> fault-text: "";
     out property <bool> header-alert: root.fresh && root.fault-text != "";
+    out property <color> header-color: root.header-alert ? Theme.danger : root.connected && root.fresh && !root.data-stale ? Theme.success : root.connected || root.connection-pending ? Theme.warning : Theme.danger;
+    // Connection health colours the dot; only a current fault or thermal alert colours the label.
+    out property <color> header-text-color: root.header-alert ? Theme.danger : Theme.text;
     out property <string> header-status: root.header-alert ? root.fault-text : root.connection;
     in property <[Peer]> peers;
     in-out property <bool> metric: true;
@@ -62,14 +81,16 @@ export component Dashboard inherits Window {
     in-out property <bool> ble-proxy-enabled: false;
     in property <string> ble-proxy-status;
     in property <string> proxy-name: "WB Disp";
+    in property <bool> proxy-name-locked: false;
     callback edit-proxy-name();
     in property <bool> pairing-open;
     in property <bool> pairing-failed;
     in property <bool> pairing-ready;
     in property <bool> pairing-permitted: true;
-    in property <string> pairing-mask;
+    in property <string> pairing-value;
     callback pairing-type(int);
     callback pairing-backspace();
+    callback pairing-clear();
     callback pairing-submit();
     callback pairing-cancel();
     callback pairing-retry();
@@ -83,20 +104,27 @@ export component Dashboard inherits Window {
     callback screen-lock();
     in property <bool> pin-configured;
     in property <bool> screen-locked;
+    // The opaque locked entry screen does not need the covered page's item tree.
+    private property <bool> show-page-content: !(root.screen-locked && root.pin-open);
     in property <bool> screen-asleep;
     in property <bool> pin-open;
+    in property <bool> pin-pattern;
+    in property <int> unlock-method;
+    in property <string> proxy-pairing-code;
+    callback unlock-method-requested(int);
     in property <bool> pin-ready: true;
     in property <bool> lock-retry-available;
     in property <string> pin-heading;
-    in property <string> pin-mask;
+    in property <string> pin-value;
     in property <string> pin-message;
-    in property <string> bike-lock-status: "Set a PIN to enable bike locking.";
+    in property <string> bike-lock-status: "Set a screen lock to enable bike locking.";
     in property <int> lock-timeout: 30;
     callback pin-setup();
     callback pin-remove();
     callback bike-lock();
     callback pin-digit(int);
     callback pin-backspace();
+    callback pin-clear();
     callback pin-submit();
     callback pin-cancel();
     callback lock-retry();
@@ -170,17 +198,22 @@ export component Dashboard inherits Window {
     SafeArea {
         width: root.width;
         height: root.height;
-        safe-inset: root.display-safe-inset;
-        minimum-padding: root.gutter;
+        safe-inset-x: root.display-safe-inset-x;
+        safe-inset-y: root.display-safe-inset-y;
+        minimum-padding-x: root.gutter;
+        minimum-padding-y: 12px;
         VerticalLayout {
             padding: 0px;
             spacing: 0px;
             Header {
-                alert: root.header-alert;
                 status: root.header-status;
-                fresh: root.fresh;
-                connected: root.connected;
+                status-color: root.header-color;
+                status-text-color: root.header-text-color;
+                phone-connected: root.phone-connected;
+                bike-ble-signal: root.bike-ble-signal;
+                bike-ble-rssi: root.bike-ble-rssi;
                 settings-selected: root.page >= 3;
+                animate-status: root.animations-enabled && !root.screen-asleep && !root.pin-open && !root.editing && !root.confirming && !root.ota-confirming;
                 open-settings => { root.page = 3; }
             }
 
@@ -193,7 +226,7 @@ export component Dashboard inherits Window {
                 animations-enabled: root.animations-enabled;
                 swipe-enabled: root.page >= 0 && root.page <= 2 && !root.confirming && !root.ota-confirming && !root.editing && !root.pin-open;
                 page-requested(page) => { root.page = page; }
-                if pages.active-page == 0 || pages.previous-page == 0: RidePage {
+                if root.show-page-content && (pages.active-page == 0 || pages.previous-page == 0): RidePage {
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;
@@ -216,8 +249,41 @@ export component Dashboard inherits Window {
                     speed: root.speed;
                     speed-progress: root.speed-progress;
                     voltage: root.voltage;
+                    trip: root.trip;
+                    odometer: root.odometer;
                 }
-                if pages.active-page == 1 || pages.previous-page == 1: TunePage {
+                if root.show-page-content && (pages.active-page == 1 || pages.previous-page == 1): StatsPage {
+                    active-page: pages.active-page;
+                    animating: pages.animating;
+                    direction: pages.direction;
+                    progress: pages.progress;
+                    swiping: pages.swiping;
+                    swipe-origin: pages.swipe-origin;
+                    swipe-offset: pages.swipe-offset;
+                    connected: root.connected;
+                    fresh: root.fresh;
+                    metric: root.metric;
+                    drag-delta: pages.vertical-offset;
+                    scroll-active: pages.vertical-dragging;
+                    speed: root.speed;
+                    power: root.power;
+                    battery: root.battery;
+                    voltage: root.voltage;
+                    vesc-stats: root.vesc-stats;
+                    bms-stats: root.bms-stats;
+                    bms-cells: root.bms-cells;
+                    bms-temperatures: root.bms-temperatures;
+                    bms-state: root.bms-state;
+                    motor-current: root.motor-current;
+                    battery-current: root.battery-current;
+                    pitch: root.pitch;
+                    roll: root.roll;
+                    mosfet: root.mosfet;
+                    motor: root.motor;
+                    trip: root.trip;
+                    odometer: root.odometer;
+                }
+                if root.show-page-content && (pages.active-page == 2 || pages.previous-page == 2): TunePage {
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;
@@ -240,38 +306,7 @@ export component Dashboard inherits Window {
                     supports-presets: root.supports-presets;
                     vehicle-brand: root.vehicle-brand;
                 }
-                if pages.active-page == 2 || pages.previous-page == 2: ConfigPage {
-                    active-page: pages.active-page;
-                    animating: pages.animating;
-                    direction: pages.direction;
-                    progress: pages.progress;
-                    swiping: pages.swiping;
-                    swipe-origin: pages.swipe-origin;
-                    swipe-offset: pages.swipe-offset;
-                    bike-lock() => { root.bike-lock(); }
-                    bike-lock-status: root.bike-lock-status;
-                    can-configure: root.can-configure;
-                    connect-peer(arg0) => { root.connect-peer(arg0); }
-                    connect-wired() => { root.connect-wired(); }
-                    connected: root.connected;
-                    controller-status: root.controller-status;
-                    discover-controller() => { root.discover-controller(); }
-                    drag-delta: pages.vertical-offset;
-                    forget-peer() => { root.forget-peer(); }
-                    integration-choice <=> root.integration-choice;
-                    link-present: root.link-present;
-                    lock-timeout: root.lock-timeout;
-                    lock-timeout-changed(arg0) => { root.lock-timeout-changed(arg0); }
-                    peers: root.peers;
-                    pin-configured: root.pin-configured;
-                    pin-remove() => { root.pin-remove(); }
-                    pin-setup() => { root.pin-setup(); }
-                    screen-lock() => { root.screen-lock(); }
-                    scroll-active: pages.vertical-dragging;
-                    supports-lock: root.supports-lock;
-                    transport-kind: root.transport-kind;
-                }
-                if pages.active-page == 3 || pages.previous-page == 3: TransitionPage {
+                if root.show-page-content && (pages.active-page == 3 || pages.previous-page == 3): TransitionPage {
                     page-index: 3;
                     active-page: pages.active-page;
                     animating: pages.animating;
@@ -281,6 +316,26 @@ export component Dashboard inherits Window {
                     swipe-origin: pages.swipe-origin;
                     swipe-offset: pages.swipe-offset;
                     SettingsPage {
+                        bike-lock() => { root.bike-lock(); }
+                        bike-lock-status: root.bike-lock-status;
+                        can-configure: root.can-configure;
+                        connect-peer(arg0) => { root.connect-peer(arg0); }
+                        connect-wired() => { root.connect-wired(); }
+                        connected: root.connected;
+                        controller-status: root.controller-status;
+                        discover-controller() => { root.discover-controller(); }
+                        forget-peer() => { root.forget-peer(); }
+                        integration-choice <=> root.integration-choice;
+                        link-present: root.link-present;
+                        lock-timeout: root.lock-timeout;
+                        lock-timeout-changed(arg0) => { root.lock-timeout-changed(arg0); }
+                        peers: root.peers;
+                        pin-configured: root.pin-configured;
+                        proxy-pairing-code: root.proxy-pairing-code;
+                        pin-remove() => { root.pin-remove(); }
+                        pin-setup() => { root.pin-setup(); }
+                        screen-lock() => { root.screen-lock(); }
+                        supports-lock: root.supports-lock;
                         metric: root.metric;
                         celsius: root.celsius;
                         rotation: root.rotation;
@@ -293,6 +348,7 @@ export component Dashboard inherits Window {
                         ble-proxy-enabled: root.ble-proxy-enabled;
                         ble-proxy-status: root.ble-proxy-status;
                         proxy-name: root.proxy-name;
+                        proxy-name-locked: root.proxy-name-locked;
                         edit-proxy-name => { root.edit-proxy-name(); }
                         toggle-proxy => { root.ble-proxy-enabled = !root.ble-proxy-enabled; root.ble-proxy-changed(root.ble-proxy-enabled); }
                         toggle-units => { root.metric = !root.metric; root.preferences-changed(); }
@@ -305,7 +361,7 @@ export component Dashboard inherits Window {
                         about => { root.page = 6; }
                     }
                 }
-                if pages.active-page == 4 || pages.previous-page == 4: WifiPage {
+                if root.show-page-content && (pages.active-page == 4 || pages.previous-page == 4): WifiPage {
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;
@@ -323,7 +379,7 @@ export component Dashboard inherits Window {
                     wifi-select(arg0) => { root.wifi-select(arg0); }
                     wifi-status: root.wifi-status;
                 }
-                if pages.active-page == 5 || pages.previous-page == 5: UpdatesPage {
+                if root.show-page-content && (pages.active-page == 5 || pages.previous-page == 5): UpdatesPage {
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;
@@ -348,7 +404,7 @@ export component Dashboard inherits Window {
                     wifi-scan() => { root.wifi-scan(); }
                     wifi-status: root.wifi-status;
                 }
-                if pages.active-page == 6 || pages.previous-page == 6: AboutPage {
+                if root.show-page-content && (pages.active-page == 6 || pages.previous-page == 6): AboutPage {
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;
@@ -387,18 +443,21 @@ export component Dashboard inherits Window {
         confirm-change() => { root.confirm-change(); }
         confirm-text: root.confirm-text;
         connected: root.connected;
-        display-safe-inset: root.display-safe-inset;
+        display-safe-inset-x: root.display-safe-inset-x;
+        display-safe-inset-y: root.display-safe-inset-y;
     }
     if root.ota-confirming: UpdateConfirmation {
         can-maintain: root.can-maintain;
-        display-safe-inset: root.display-safe-inset;
+        display-safe-inset-x: root.display-safe-inset-x;
+        display-safe-inset-y: root.display-safe-inset-y;
         network-busy: root.network-busy;
         ota-confirming <=> root.ota-confirming;
         update-install() => { root.update-install(); }
         wifi-connected: root.wifi-connected;
     }
     if root.editing: Keyboard {
-        safe-inset: root.display-safe-inset;
+        safe-inset-x: root.display-safe-inset-x;
+        safe-inset-y: root.display-safe-inset-y;
         heading: root.editor-heading;
         value: root.editor-value;
         masked: root.editor-masked;
@@ -409,24 +468,33 @@ export component Dashboard inherits Window {
         cancel => { root.editor-cancel(); }
     }
     if root.pin-open: PinPad {
-        safe-inset: root.display-safe-inset;
+        safe-inset-x: root.display-safe-inset-x;
+        safe-inset-y: root.display-safe-inset-y;
         heading: root.pin-heading;
-        masked: root.pin-mask;
+        value: root.pin-value;
+        pattern: root.pin-pattern;
+        mode-requested(pattern) => { root.unlock-method-requested(pattern ? 1 : 0); }
         message: root.pin-message;
         ready: root.pin-ready;
         locked: root.screen-locked;
         retry-available: root.lock-retry-available;
         digit(value) => { root.pin-digit(value); }
         backspace => { root.pin-backspace(); }
+        clear => { root.pin-clear(); }
         submit => { root.pin-submit(); }
         cancel => { root.pin-cancel(); }
         retry => { root.lock-retry(); }
     }
     if root.pairing-open && root.pairing-permitted: PinPad {
-        safe-inset: root.display-safe-inset;
+        safe-inset-x: root.display-safe-inset-x;
+        safe-inset-y: root.display-safe-inset-y;
         heading: "BLUETOOTH PIN";
-        masked: root.pairing-mask;
-        message: root.pairing-failed ? "Pairing failed. Retry to enter the current Bluetooth PIN." : "Enter the six-digit PIN configured on your VESC Express.";
+        value: root.pairing-value;
+        pattern: false;
+        allow-mode-change: false;
+        auto-submit: false;
+        min-digits: 1;
+        message: root.pairing-failed ? "Pairing failed. Retry to enter the current Bluetooth PIN." : "Enter the numeric passkey configured on your VESC Express, then Submit.";
         ready: root.pairing-ready;
         show-keypad: !root.pairing-failed;
         locked: false;
@@ -434,6 +502,7 @@ export component Dashboard inherits Window {
         retry-label: "Retry pairing";
         digit(value) => { root.pairing-type(value); }
         backspace => { root.pairing-backspace(); }
+        clear => { root.pairing-clear(); }
         submit => { root.pairing-submit(); }
         cancel => { root.pairing-cancel(); }
         retry => { root.pairing-retry(); }

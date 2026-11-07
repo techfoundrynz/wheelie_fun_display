@@ -23,6 +23,9 @@ struct Device {
 struct Snapshot {
   Status status = Status::Disconnected;
   uint32_t session = 0;
+  int rssi = 0;
+  bool rssi_valid = false;
+  uint64_t rssi_sample_ms = 0;
   bike::IntegrationId integration = bike::IntegrationId::Vesc;
   bike::IntegrationId selection = bike::IntegrationId::Auto;
   std::array<uint8_t, 7> peer_identity{};
@@ -38,7 +41,8 @@ struct Packet {
   uint32_t session = 0;
   uint16_t size = 0;
   bool discontinuity = false;
-  int controller = -2; // -2: untagged serial reply; -1: direct controller.
+  bool passive_proxy = false; // Verified controller-ID setup from the phone's own query.
+  int controller = -2;        // -2: untagged serial reply; -1: direct controller.
   uint32_t proxy_epoch = 0;
   std::array<uint8_t, bike::max_payload> bytes{};
 };
@@ -92,6 +96,9 @@ Snapshot snapshot();
 
 bool send(std::span<const uint8_t> payload);
 
+// Read-only telemetry; arbitrated with the phone instead of being suspended.
+bool poll(std::span<const uint8_t> payload);
+
 bool receive(Packet &packet);
 
 void set_paused(bool paused);
@@ -109,5 +116,7 @@ void proxy_ownership(bool owned, uint32_t epoch);
 bool send_proxy_fragment(std::span<const uint8_t> bytes, uint32_t epoch);
 
 void reset_proxy_link(Kind source);
+
+bool proxy_drained(Kind source, uint32_t epoch);
 
 } // namespace transport

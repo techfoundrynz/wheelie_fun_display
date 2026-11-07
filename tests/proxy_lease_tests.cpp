@@ -31,6 +31,11 @@ int main() {
   CHECK(lease.connected && !lease.advertise() && !lease.subscribed);
   CHECK(!lease.begin_maintenance()); // A connected but unsubscribed phone owns UART too.
   CHECK(!lease.accepts(lease.generation, 12));
+  CHECK(lease.accepts_display(lease.generation, 12)); // Local read-only telemetry continues while pairing/unsubscribed.
+  lease.paused = true;
+  CHECK(!lease.accepts_display(lease.generation, 12));
+  lease.paused = false;
+  CHECK(!lease.accepts_display(lease.generation - 1, 12));
   lease.subscribed = true;
   CHECK(lease.accepts(lease.generation, 12));
   CHECK(!lease.accepts(before, 12));
@@ -49,6 +54,7 @@ int main() {
   CHECK(!lease.accepts(phone_epoch, 14)); // Reconnection never revives queued bytes.
   lease.enabled = false;
   CHECK(!lease.accepts(lease.generation, 14));
+  CHECK(!lease.accepts_display(lease.generation, 14));
   lease.detach();
   CHECK(lease.begin_maintenance());
   lease.enabled = true;

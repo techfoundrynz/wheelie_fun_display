@@ -1,5 +1,6 @@
 #include "transport.hpp"
 #include "bike/controller_discovery.hpp"
+#include "bike/telemetry_poll.hpp"
 #include "ble.hpp"
 #include "ble_proxy.hpp"
 #include "esp_timer.h"
@@ -51,6 +52,14 @@ class BleTransport final : public Interface {
 
 public:
 
+  void discard_input() {
+    ble::Received discarded;
+    for (unsigned i = 0; i < 32 && ble::receive(discarded); ++i) {
+    }
+    if (input)
+      input->reset(ble::snapshot().session);
+  }
+
   void activate(bike::IntegrationId) override {
     ble::set_paused(false);
   }
@@ -72,6 +81,9 @@ public:
     Snapshot result;
     result.status = source.status;
     result.session = source.session;
+    result.rssi = source.rssi;
+    result.rssi_valid = source.rssi_valid;
+    result.rssi_sample_ms = source.rssi_sample_ms;
     result.integration = source.integration;
     result.peer_identity = source.peer_identity;
     std::copy(std::begin(source.connected_name), std::end(source.connected_name), result.connected_name);
@@ -219,15 +231,34 @@ void save_hint(const bike::HintRecord &record) {
 
 struct Route {
   bike::ControllerDiscovery discovery;
+  bike::TelemetryPollCredits poll_credits;
+  Packet proxy_discard;
+  ble_proxy::DisplayReply proxy_reply;
+  Packet passive_setup;
+  bool have_passive_setup = false;
+  int solo_controller_id = -1;
+  uint64_t passive_setup_ms = 0;
+  bool proxy_seen = false;
+  uint32_t proxy_backend_session = 0;
   bool started = false, ready = false, hint_tried = false;
   bike::HintContext context;
   int destination = -1;
   uint64_t settle_until = 0, retry_at = 0;
+  uint64_t admission_started = 0, ready_at = 0;
+  uint64_t next_identity_probe = 0;
 };
 
 ExternalState<Route> route;
 
 void reset_route() {
+  route->poll_credits.reset();
+  route->solo_controller_id = -1;
+  route->have_passive_setup = false;
+  route->passive_setup_ms = 0;
+  route->admission_started = esp_timer_get_time() / 1000;
+  route->ready_at = 0;
+  route->next_identity_probe = 0;
+  ble_proxy::set_advertising_hold(true);
   route->started = route->ready = route->hint_tried = false;
   route->settle_until = route->retry_at = 0;
 }
@@ -257,21 +288,36 @@ Snapshot snapshot_locked() {
     if (!route->ready) {
       result.status = Status::Discovering;
       std::snprintf(result.controller_info, sizeof(result.controller_info), "%s",
-                    ble_proxy::phone_owns_link() ? "Phone owns link / display discovery waits"
-                    : route->discovery.running() ? "Finding main VESC / CAN ping and package discovery"
-                                                 : "No matching package controller found / retrying");
+                    route->discovery.running() ? "Finding main VESC | CAN ping and package discovery"
+                                               : "No matching package controller found | retrying");
     }
     else {
       const auto &controller = route->discovery.controller(route->discovery.chosen());
       result.integration = controller.integration;
       result.controller_id = controller.can_id;
-      std::snprintf(result.controller_info, sizeof(result.controller_info), "Direct main VESC / %s / %u.%u",
+      std::snprintf(result.controller_info, sizeof(result.controller_info), "Direct main VESC | %s | %u.%u",
                     controller.hardware, unsigned(controller.major), unsigned(controller.minor));
       if (route->destination >= 0)
-        std::snprintf(result.controller_info, sizeof(result.controller_info), "Main VESC CAN %d / %s / %u.%u",
+        std::snprintf(result.controller_info, sizeof(result.controller_info), "Main VESC CAN %d | %s | %u.%u",
                       route->destination, controller.hardware, unsigned(controller.major), unsigned(controller.minor));
     }
   }
+  if (!route->admission_started)
+    route->admission_started = now;
+  if (!paused && route->ready && !ble_proxy::phone_owns_link() && route->solo_controller_id < 0 &&
+      now >= route->next_identity_probe) {
+    route->next_identity_probe = now + 1000;
+    const std::array<uint8_t, 1> setup{47};
+    const auto key = *bike::telemetry_poll_key(setup);
+    ble_proxy::register_poll_key(key);
+    if (route->poll_credits.available(key, now) && active->send_to(setup, route->destination))
+      route->poll_credits.sent(key, now);
+  }
+  // Give the normal controller handshake a brief first opportunity, including
+  // a solo telemetry sample. A failed integration must never prevent the plain
+  // relay from becoming available after the bounded admission interval.
+  const bool hold = bike::relay_advertising_hold(now, route->admission_started, route->ready, route->ready_at);
+  ble_proxy::set_advertising_hold(hold);
   result.session = epoch;
   return result;
 }
@@ -302,6 +348,7 @@ void pump_discovery() {
       route->destination = controller.route;
       save_hint({route->context, {controller.route, controller.uuid}});
       route->ready = true;
+      route->ready_at = now;
       ++epoch;
     }
   }
@@ -352,6 +399,8 @@ void start() {
   configASSERT(mutex);
   route = make_external_state<Route>();
   ble::start();
+  ble_proxy::set_advertising_hold(true);
+  route->admission_started = esp_timer_get_time() / 1000;
   ble_proxy::select_upstream(Kind::Ble);
   uint8_t value = 0;
   nvs_handle_t h;
@@ -415,10 +464,97 @@ bool send(std::span<const uint8_t> payload) {
   return sent;
 }
 
+bool poll(std::span<const uint8_t> payload) {
+  // Never turn this bypass into a write path. These are the exact read-only
+  // requests used by the display's supported telemetry decoders.
+  const auto key = bike::telemetry_poll_key(payload);
+  if (!key)
+    return false;
+  ble_proxy::register_poll_key(*key);
+  xSemaphoreTake(mutex, portMAX_DELAY);
+  bool sent = false;
+  const auto now = uint64_t(esp_timer_get_time() / 1000);
+  if (!paused && route->ready && route->poll_credits.available(*key, now)) {
+    if (!ble_proxy::phone_owns_link())
+      sent = active->send_to(payload, route->destination);
+    else if (key->bytes[0] != 47 || bike::proxy_setup_poll_needed(now, route->passive_setup_ms)) {
+      std::array<uint8_t, 32> packet{};
+      const auto size = bike::frame(payload, packet, route->destination);
+      sent = size && ble_proxy::queue_display_poll({packet.data(), size}, *key, epoch);
+    }
+    if (sent)
+      route->poll_credits.sent(*key, now);
+  }
+  xSemaphoreGive(mutex);
+  return sent;
+}
+
 bool receive(Packet &packet) {
   xSemaphoreTake(mutex, portMAX_DELAY);
   snapshot_locked();
   pump_discovery();
+  if (ble_proxy::phone_owns_link()) {
+    // Phone replies can belong to any app-selected CAN controller and serial
+    // replies carry no source ID. Only our broker-correlated replies may feed
+    // dashboard telemetry; drain the passive tap without interpreting it.
+    if (!route->proxy_seen) {
+      route->proxy_seen = true;
+      route->proxy_backend_session = source_session;
+    }
+    auto &discarded = route->proxy_discard;
+    const int discovered_id = route->ready ? route->discovery.controller(route->discovery.chosen()).can_id : -1;
+    const int expected_id = discovered_id >= 0 ? discovered_id : route->solo_controller_id;
+    for (unsigned reads = 0; reads < 16 && active->receive(discarded); ++reads) {
+      if (!route->ready || discarded.session != source_session || discarded.discontinuity ||
+          !bike::proxy_setup_matches_controller({discarded.bytes.data(), discarded.size}, expected_id,
+                                                kind == Kind::Can, discarded.controller, route->destination))
+        continue;
+      // This remains the phone's reply, forwarded unchanged to it. Controller
+      // identity proof permits a second read-only view without claiming that
+      // the display sent the request or measuring a fabricated request RTT.
+      route->passive_setup = discarded;
+      route->passive_setup.session = epoch;
+      route->passive_setup.passive_proxy = true;
+      route->have_passive_setup = true;
+      route->passive_setup_ms = esp_timer_get_time() / 1000;
+    }
+    auto &reply = route->proxy_reply;
+    bool received = false;
+    while (!paused && ble_proxy::receive_display_reply(reply)) {
+      if (!route->ready || reply.token != epoch)
+        continue;
+      packet = {};
+      packet.session = epoch;
+      packet.controller = route->destination;
+      packet.size = reply.size;
+      std::copy_n(reply.bytes.begin(), reply.size, packet.bytes.begin());
+      route->poll_credits.reply({packet.bytes.data(), packet.size});
+      received = true;
+      break;
+    }
+    if (!received && route->have_passive_setup) {
+      packet = route->passive_setup;
+      route->have_passive_setup = false;
+      received = true;
+    }
+    if (received && !packet.discontinuity && packet.size)
+      ble_proxy::note_display_receive(packet.bytes[0], packet.passive_proxy);
+    xSemaphoreGive(mutex);
+    return received;
+  }
+  if (route->proxy_seen) {
+    // The relay's clean handoff drained accepted writes and late replies.
+    // Reset only our passive decoder, keeping the verified bike link/route.
+    if (kind == Kind::Ble)
+      bluetooth.discard_input();
+    else {
+      for (unsigned reads = 0; reads < 16 && active->receive(route->proxy_discard); ++reads) {
+      }
+    }
+    route->proxy_seen = false;
+    route->have_passive_setup = false;
+    route->poll_credits.reset();
+  }
   if (!route->ready) {
     xSemaphoreGive(mutex);
     return false;
@@ -429,10 +565,24 @@ bool receive(Packet &packet) {
       continue;
     if (kind == Kind::Can && packet.controller != route->destination)
       continue;
+    if (packet.discontinuity)
+      route->poll_credits.reset();
+    else {
+      const int discovered_id = route->discovery.controller(route->discovery.chosen()).can_id;
+      const int expected_id = discovered_id >= 0 && discovered_id < 255 ? discovered_id : route->solo_controller_id;
+      if (!bike::setup_reply_matches_controller({packet.bytes.data(), packet.size}, expected_id))
+        continue;
+      route->poll_credits.reply({packet.bytes.data(), packet.size});
+      const auto identity = bike::setup_controller_identity({packet.bytes.data(), packet.size});
+      if (identity && route->solo_controller_id < 0)
+        route->solo_controller_id = *identity;
+    }
     packet.session = epoch;
     received = true;
     break;
   }
+  if (received && !packet.discontinuity && packet.size)
+    ble_proxy::note_display_receive(packet.bytes[0], packet.passive_proxy);
   xSemaphoreGive(mutex);
   return received;
 }
@@ -509,6 +659,10 @@ void reset_proxy_link(Kind source) {
     ble::reset_link();
   else
     wired_reset_proxy_link();
+}
+
+bool proxy_drained(Kind source, uint32_t epoch) {
+  return source == Kind::Ble ? ble::proxy_drained(epoch) : wired_proxy_drained(epoch);
 }
 
 } // namespace transport

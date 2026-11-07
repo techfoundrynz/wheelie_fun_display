@@ -1,12 +1,16 @@
+import { MarqueeText } from "marquee-text.slint";
 import { Theme } from "theme.slint";
 import { IconAction } from "controls.slint";
 
 export component Header inherits HorizontalLayout {
-    in property <bool> alert;
+    in property <color> status-color: Theme.danger;
+    in property <color> status-text-color: Theme.text;
+    in property <bool> phone-connected;
+    in property <int> bike-ble-signal: -1;
+    in property <int> bike-ble-rssi;
     in property <string> status;
-    in property <bool> fresh;
-    in property <bool> connected;
     in property <bool> settings-selected;
+    in property <bool> animate-status: true;
     callback open-settings();
 
     height: 48px;
@@ -16,26 +20,83 @@ export component Header inherits HorizontalLayout {
         preferred-width: 0px;
         horizontal-stretch: 1;
         height: 48px;
-        Rectangle {
+        connection-indicator := Rectangle {
             x: 0px;
             width: 10px;
             height: 10px;
             y: (parent.height - self.height) / 2;
             border-radius: 5px;
-            background: root.alert ? Theme.danger : root.fresh ? Theme.accent : root.connected ? Theme.warning : Theme.danger;
+            background: root.status-color;
         }
 
-        Text {
+        status-text := MarqueeText {
             x: 20px;
             width: max(0px, parent.width - self.x);
             height: parent.height;
             text: root.status;
-            color: root.alert ? Theme.danger : Theme.secondary;
-            font-size: 18px;
-            font-weight: 700;
-            wrap: word-wrap;
-            overflow: elide;
-            vertical-alignment: center;
+            text-color: root.status-text-color;
+            enabled: root.animate-status;
+        }
+    }
+
+    if root.bike-ble-signal >= 0: Rectangle {
+        width: 24px;
+        height: 48px;
+        accessible-role: image;
+        accessible-label: "Bike BLE signal " + root.bike-ble-rssi + " dBm";
+        signal-bars := Rectangle {
+            width: 24px;
+            height: 24px;
+            y: (parent.height - self.height) / 2;
+            Rectangle {
+                x: 1px;
+                y: 16px;
+                width: 4px;
+                height: 6px;
+                border-radius: 1px;
+                background: root.bike-ble-signal >= 1 ? (root.bike-ble-signal <= 1 ? Theme.warning : Theme.secondary) : Theme.dim;
+            }
+
+            Rectangle {
+                x: 7px;
+                y: 12px;
+                width: 4px;
+                height: 10px;
+                border-radius: 1px;
+                background: root.bike-ble-signal >= 2 ? Theme.secondary : Theme.dim;
+            }
+
+            Rectangle {
+                x: 13px;
+                y: 8px;
+                width: 4px;
+                height: 14px;
+                border-radius: 1px;
+                background: root.bike-ble-signal >= 3 ? Theme.secondary : Theme.dim;
+            }
+
+            Rectangle {
+                x: 19px;
+                y: 4px;
+                width: 4px;
+                height: 18px;
+                border-radius: 1px;
+                background: root.bike-ble-signal >= 4 ? Theme.secondary : Theme.dim;
+            }
+        }
+    }
+
+    if root.phone-connected: Rectangle {
+        width: 24px;
+        height: 48px;
+        phone-indicator := Image {
+            x: 0px;
+            y: (parent.height - self.height) / 2;
+            width: 24px;
+            height: 24px;
+            source: @image-url("assets/smartphone.svg");
+            colorize: Theme.success;
+            accessible-label: "Phone connected to BLE proxy";
         }
     }
 

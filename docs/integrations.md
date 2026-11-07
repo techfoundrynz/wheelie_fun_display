@@ -8,7 +8,7 @@
 | wheel-e | 101 | VESC setup plus REALTIME_DATA 33 | Not exposed; use VESC Tool | LOCK 12 |
 | VESC | None | Standard VESC setup telemetry | Not exposed | Not exposed; local screen PIN still works |
 
-Choose **Bike > Vehicle integration** before selecting a device. **Auto** is the default and probes for both WFB and wheel-e packages on discovered motor controllers. A valid package reply determines the integration; BLE names only affect discovery ranking. Auto falls back to read-only generic VESC only after the supported package probes find no match. Explicit WFB or wheel-e selections still require a matching package reply.
+Choose **Settings > Vehicle > Vehicle integration** before selecting a device. **Auto** is the default and probes for both WFB and wheel-e packages on discovered motor controllers. A valid package reply determines the integration; BLE names only affect discovery ranking. Auto falls back to read-only generic VESC only after the supported package probes find no match. Explicit WFB or wheel-e selections still require a matching package reply.
 
 Forget the connected bike to select another integration; the decoder and pending writes are invalidated with the session. The BLE peer and selected policy are persisted together after UART notification subscription succeeds. Auto remains Auto after discovery and probes again on reconnect; the detected integration does not silently replace the selected policy. A saved BLE association proves the UART link, not package compatibility; failed package probes cannot enable custom features. Matching BLE names rank ahead of other UART candidates, rather than excluding them.
 

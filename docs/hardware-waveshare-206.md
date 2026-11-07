@@ -26,7 +26,7 @@ The profile runs the CPU at 240 MHz, flash and octal PSRAM at 80 MHz, and the pa
 
 CO5300 uses the managed SH8601-compatible QSPI transport with a 22-pixel column offset. FT3168 uses the compatible FT5x06 touch driver. Display and touch resets use direct GPIO control; there is no I/O expander.
 
-The rounded panel uses a 32-pixel safe inset. **Settings > Orientation** cycles through 0°, 90°, 180° and 270° and saves the preference. The layout and touch transform follow the selected orientation; the native panel dimensions remain 410 × 502.
+The rounded panel uses a 32-pixel horizontal safe inset and a 16-pixel vertical inset (`DISPLAY_SAFE_INSET_X` / `DISPLAY_SAFE_INSET_Y`). The axes follow the logical UI in every orientation. **Settings > Orientation** cycles through 0°, 90°, 180° and 270° and saves the preference. The layout and touch transform follow the selected orientation; the native panel dimensions remain 410 × 502.
 
 ## Board wiring
 

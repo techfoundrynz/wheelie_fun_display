@@ -21,6 +21,9 @@ struct Snapshot {
   Status status = Status::Disconnected;
   std::array<Device, 6> devices{};
   int count = 0;
+  int rssi = 0;
+  bool rssi_valid = false;
+  uint64_t rssi_sample_ms = 0; // Last successful connected-link HCI measurement.
   uint32_t session = 0;
   char connected_name[32]{};
   bike::IntegrationId integration = bike::IntegrationId::Auto;
@@ -57,6 +60,8 @@ void set_paused(bool paused);
 void set_proxy_owner(bool owned, uint32_t epoch);
 
 bool proxy_ready(uint32_t epoch);
+
+bool proxy_drained(uint32_t epoch);
 
 bool send_proxy_fragment(std::span<const uint8_t> bytes, uint32_t epoch);
 

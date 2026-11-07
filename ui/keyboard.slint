@@ -23,7 +23,8 @@ component Key inherits Rectangle {
 }
 
 export component Keyboard inherits Rectangle {
-    in property <length> safe-inset: 0px;
+    in property <length> safe-inset-x: 0px;
+    in property <length> safe-inset-y: 0px;
     in property <string> heading;
     in property <string> value;
     in property <string> masked;
@@ -35,7 +36,7 @@ export component Keyboard inherits Rectangle {
     private property <bool> shifted: false;
     private property <bool> symbols: false;
     private property <bool> revealed: false;
-    private property <bool> compact: self.height - 2 * max(8px, self.safe-inset) < 370px;
+    private property <bool> compact: self.height - 2 * max(8px, self.safe-inset-y) < 370px;
     private property <[string]> lower: [
         "1",
         "2",
@@ -165,8 +166,10 @@ export component Keyboard inherits Rectangle {
     private property <[string]> keys: self.symbols ? self.punctuation : self.shifted ? self.upper : self.lower;
     background: Theme.bg;
     SafeArea {
-        safe-inset: root.safe-inset;
-        minimum-padding: 8px;
+        safe-inset-x: root.safe-inset-x;
+        safe-inset-y: root.safe-inset-y;
+        minimum-padding-x: 8px;
+        minimum-padding-y: 8px;
         VerticalLayout {
             padding: 0px;
             spacing: 5px;

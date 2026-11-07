@@ -66,7 +66,7 @@ def main() -> None:
                 assert page.evaluate("window.wheelieFunDisplay.state('connected')")
                 assert (
                     page.evaluate("window.wheelieFunDisplay.state('connection')")
-                    == "Connected / BLE"
+                    == "Connected"
                 )
                 assert "simulated" in page.locator(".notice").inner_text().lower()
                 for field in ["feedback", "device-label", "connection"]:
@@ -103,9 +103,16 @@ def main() -> None:
             fresh("?integration=wheel-e")
             capture("wheel-e-portrait.png")
             fresh("?page=1")
-            capture("tune.png")
+            capture("stats.png")
+            page.evaluate("window.wheelieFunDisplay.scroll(205, 250, -1464)")
+            capture("stats-bms.png")
+            page.evaluate("window.wheelieFunDisplay.scroll(205, 250, -1512)")
+            capture("stats-cells.png")
             fresh("?page=2")
-            capture("bike.png")
+            capture("tune.png")
+            fresh("?page=3")
+            page.evaluate("window.wheelieFunDisplay.scroll(205, 250, -360)")
+            capture("vehicle-settings.png")
             fresh("?page=3")
             capture("settings-410x502.png")
             fresh("?page=4")
@@ -120,7 +127,7 @@ def main() -> None:
             page.evaluate("window.wheelieFunDisplay.show_pairing_demo()")
             assert page.evaluate("window.wheelieFunDisplay.state('pairing-open')")
             capture("ble-pairing.png")
-            fresh("?page=2")
+            fresh("?page=3")
             page.evaluate("window.wheelieFunDisplay.invoke('pin-setup')")
             assert page.evaluate("window.wheelieFunDisplay.state('pin-open')")
             assert (
@@ -130,6 +137,42 @@ def main() -> None:
                 ).lower()
             )
             capture("pin-entry.png")
+            fresh("?page=3")
+            page.evaluate("window.wheelieFunDisplay.invoke('pin-setup')")
+            page.evaluate("window.wheelieFunDisplay.set_control('unlock-method', 1)")
+            assert page.evaluate("window.wheelieFunDisplay.state('pin-pattern')")
+            # Exercise the real gesture and confirmation flow for these pictures.
+            # The documentation fixture is always the 410x502 portrait layout.
+            inset_x = max(
+                20, page.evaluate("window.wheelieFunDisplay.state('safe-inset-x')")
+            )
+            inset_y = max(
+                20, page.evaluate("window.wheelieFunDisplay.state('safe-inset-y')")
+            )
+            region_width = 410 - 2 * inset_x
+            side = min(region_width, 502 - 2 * inset_y - 152 - 48)
+            left = inset_x + (region_width - side) / 2
+            top = inset_y + 152
+            for confirmation in range(2):
+                for index, node in enumerate([1, 3, 9, 8]):
+                    x = left + ((node - 1) % 3 + 0.5) * side / 3
+                    y = top + ((node - 1) // 3 + 0.5) * side / 3
+                    kind = "down" if index == 0 else "move"
+                    page.evaluate(
+                        "([kind,x,y]) => window.wheelieFunDisplay.pointer(kind,x,y)",
+                        [kind, x, y],
+                    )
+                if confirmation == 0:
+                    capture("pattern-entry.png")
+                page.evaluate(
+                    "([x,y]) => window.wheelieFunDisplay.pointer('up',x,y)", [x, y]
+                )
+            assert (
+                page.evaluate("window.wheelieFunDisplay.state('proxy-pairing-code')")
+                == "123698"
+            )
+            page.evaluate("window.wheelieFunDisplay.scroll(205, 300, -10000)")
+            capture("proxy-pairing-code.png")
             assert not errors, "Browser errors: " + "\n".join(errors)
             browser.close()
     finally:

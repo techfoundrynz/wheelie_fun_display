@@ -8,6 +8,8 @@ use std::{
 };
 use wasm_bindgen::{JsCast, prelude::*};
 slint::include_modules!();
+#[path = "../../stats_fixture.rs"]
+mod stats_fixture;
 
 struct BrowserPlatform {
     window: Rc<MinimalSoftwareWindow>,
@@ -34,13 +36,18 @@ struct Demo {
     digits: String,
     candidate: String,
     pin_mode: u8,
+    entry_pattern: bool,
     last_touch: f64,
     editing_name: bool,
+    proxy_name_preference: String,
     pairing_digits: String,
 }
 
 fn integration(ui: &Dashboard, id: i32) {
     ui.set_active_integration(id);
+    presentation(ui, id);
+}
+fn presentation(ui: &Dashboard, id: i32) {
     ui.set_vehicle_brand(
         match id {
             2 => "wheel-e",
@@ -53,6 +60,30 @@ fn integration(ui: &Dashboard, id: i32) {
     ui.set_supports_limit(id == 1);
     ui.set_supports_lock(id != 0);
 }
+fn project_proxy_name(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
+    let id = if ui.get_connected() {
+        ui.get_active_integration()
+    } else {
+        ui.get_integration_choice()
+    };
+    presentation(ui, id.max(0));
+    let locked = id == 1;
+    let mut demo = state.borrow_mut();
+    ui.set_proxy_name_locked(locked);
+    ui.set_proxy_name(
+        if locked {
+            "WFB"
+        } else {
+            &demo.proxy_name_preference
+        }
+        .into(),
+    );
+    if locked && demo.editing_name {
+        demo.editing_name = false;
+        ui.set_editing(false);
+        editor_clear(ui);
+    }
+}
 fn editor_clear(ui: &Dashboard) {
     ui.set_editor_value("".into());
     ui.set_editor_masked("".into());
@@ -61,18 +92,25 @@ fn pin_open(ui: &Dashboard, state: &mut Demo, mode: u8) {
     state.digits.clear();
     state.pin_mode = mode;
     ui.set_pin_open(true);
-    ui.set_pin_mask("".into());
+    ui.set_pin_value("".into());
     ui.set_pin_ready(true);
+    let pattern = state.entry_pattern;
+    ui.set_pin_pattern(pattern);
     ui.set_pin_heading(
-        match mode {
-            1 => "CREATE PIN",
-            2 => "CONFIRM PIN",
+        match (mode, pattern) {
+            (1, true) => "CREATE PATTERN",
+            (2, true) => "CONFIRM PATTERN",
+            (_, true) => "ENTER PATTERN",
+            (1, false) => "CREATE PIN",
+            (2, false) => "CONFIRM PIN",
             _ => "ENTER PIN",
         }
         .into(),
     );
     ui.set_pin_message(
-        if state.documentation_fixture {
+        if pattern {
+            "Connect six dots, then lift your finger."
+        } else if state.documentation_fixture {
             "Choose a six-digit PIN to secure your display."
         } else {
             "Simulator only: use a demo PIN, not a real code."
@@ -81,14 +119,18 @@ fn pin_open(ui: &Dashboard, state: &mut Demo, mode: u8) {
     );
 }
 fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
+    project_proxy_name(ui, state);
     let weak = ui.as_weak();
     let demo = state.clone();
     ui.on_edit_proxy_name(move || {
         let ui = weak.unwrap();
+        if ui.get_proxy_name_locked() {
+            return;
+        }
         demo.borrow_mut().editing_name = true;
-        ui.set_editor_heading("Bluetooth name".into());
+        ui.set_editor_heading("BLE name | up to 29 bytes".into());
         ui.set_editor_secret(false);
-        ui.set_editor_value(ui.get_proxy_name());
+        ui.set_editor_value(demo.borrow().proxy_name_preference.clone().into());
         ui.set_editor_masked("".into());
         ui.set_editing(true);
     });
@@ -100,7 +142,13 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
             state.pairing_digits.push(char::from(b'0' + digit as u8));
         }
         weak.unwrap()
-            .set_pairing_mask("*".repeat(state.pairing_digits.len()).into());
+            .set_pairing_value(state.pairing_digits.clone().into());
+    });
+    let weak = ui.as_weak();
+    let demo = state.clone();
+    ui.on_pairing_clear(move || {
+        demo.borrow_mut().pairing_digits.clear();
+        weak.unwrap().set_pairing_value("".into());
     });
     let weak = ui.as_weak();
     let demo = state.clone();
@@ -108,7 +156,7 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
         let mut state = demo.borrow_mut();
         state.pairing_digits.pop();
         weak.unwrap()
-            .set_pairing_mask("*".repeat(state.pairing_digits.len()).into());
+            .set_pairing_value(state.pairing_digits.clone().into());
     });
     let weak = ui.as_weak();
     let demo = state.clone();
@@ -117,12 +165,12 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
         let correct = demo.borrow().pairing_digits == "123456";
         if correct {
             ui.set_pairing_open(false);
-            ui.set_feedback("Demo pairing complete / no radio traffic".into());
+            ui.set_feedback("Demo pairing complete | no radio traffic".into());
         } else {
             ui.set_pairing_failed(true);
         }
         demo.borrow_mut().pairing_digits.clear();
-        ui.set_pairing_mask("".into());
+        ui.set_pairing_value("".into());
     });
     let weak = ui.as_weak();
     let demo = state.clone();
@@ -135,18 +183,18 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
     ui.on_pairing_retry(move || {
         let ui = weak.unwrap();
         demo.borrow_mut().pairing_digits.clear();
-        ui.set_pairing_mask("".into());
+        ui.set_pairing_value("".into());
         ui.set_pairing_failed(false);
     });
-    ui.set_device_label("Browser simulator / 2.06-inch panel".into());
+    ui.set_device_label("Browser simulator | 2.06-inch panel".into());
     ui.set_firmware_version(env!("WFD_FIRMWARE_VERSION").into());
     ui.set_connected(true);
     ui.set_link_present(true);
     ui.set_fresh(true);
-    ui.set_connection("Demo / simulated telemetry".into());
+    ui.set_connection("Connected".into());
     ui.set_can_available(true);
     ui.set_uart_available(true);
-    ui.set_feedback("Demo only / no commands reach a real bike.".into());
+    ui.set_feedback("Demo only | no commands reach a real bike.".into());
     ui.set_peers(ModelRc::from(Rc::new(VecModel::from(vec![
         Peer {
             name: "WFB demo bike".into(),
@@ -182,7 +230,7 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
         ui.set_link_present(true);
         ui.set_fresh(true);
         ui.set_page(0);
-        ui.set_controller_status("Demo / main VESC discovered".into());
+        ui.set_controller_status("Demo | main VESC discovered".into());
     });
     let weak = ui.as_weak();
     let demo = state.clone();
@@ -192,7 +240,7 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
         ui.set_connected(false);
         ui.set_link_present(false);
         ui.set_fresh(false);
-        ui.set_connection("Demo / disconnected".into());
+        ui.set_connection("Disconnected".into());
     });
     let weak = ui.as_weak();
     let demo = state.clone();
@@ -202,7 +250,7 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
         ui.set_connected(false);
         ui.set_link_present(false);
         demo.borrow_mut().connected = false;
-        ui.set_controller_status("Demo / choose integration and connect".into());
+        ui.set_controller_status("Demo | choose integration and connect".into());
     });
     let weak = ui.as_weak();
     let demo = state.clone();
@@ -213,18 +261,18 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
         ui.set_connected(true);
         ui.set_link_present(true);
         demo.borrow_mut().connected = true;
-        ui.set_controller_status("Demo / main VESC CAN 7 / firmware 6.6".into());
+        ui.set_controller_status("Demo | main VESC CAN 7 | firmware 6.6".into());
     });
     let weak = ui.as_weak();
     ui.on_discover_controller(move || {
         weak.unwrap()
-            .set_controller_status("Demo / first matching package controller found".into())
+            .set_controller_status("Demo | first matching package controller found".into())
     });
     let weak = ui.as_weak();
     ui.on_ble_proxy_changed(move |on| {
         weak.unwrap().set_ble_proxy_status(
             if on {
-                "Demo / phone bridge enabled; no radio traffic"
+                "Demo | phone bridge enabled; no radio traffic"
             } else {
                 "Off"
             }
@@ -267,12 +315,12 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
     });
     ui.set_wifi_networks(ModelRc::from(Rc::new(VecModel::from(vec![WifiItem {
         ssid: "Workshop demo".into(),
-        detail: "-45 dBm / secured".into(),
+        detail: "-45 dBm | secured".into(),
     }]))));
     let weak = ui.as_weak();
     ui.on_wifi_scan(move || {
         weak.unwrap()
-            .set_wifi_status("Demo / choose a network".into())
+            .set_wifi_status("Demo | choose a network".into())
     });
     let weak = ui.as_weak();
     ui.on_wifi_manual(move || {
@@ -287,7 +335,7 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
         let ui = weak.unwrap();
         ui.set_wifi_saved("Workshop demo".into());
         ui.set_editor_secret(true);
-        ui.set_editor_heading("Wi-Fi password / demo only".into());
+        ui.set_editor_heading("Wi-Fi password | demo only".into());
         editor_clear(&ui);
         ui.set_editing(true);
     });
@@ -330,7 +378,12 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
     ui.on_editor_done(move || {
         let ui = weak.unwrap();
         if demo.borrow().editing_name {
-            if !ui.get_editor_value().trim().is_empty() {
+            if ui.get_proxy_name_locked() {
+                ui.set_editing(false);
+                demo.borrow_mut().editing_name = false;
+                editor_clear(&ui);
+            } else if !ui.get_editor_value().trim().is_empty() {
+                demo.borrow_mut().proxy_name_preference = ui.get_editor_value().to_string();
                 ui.set_proxy_name(ui.get_editor_value());
                 ui.set_editing(false);
                 demo.borrow_mut().editing_name = false;
@@ -341,11 +394,11 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
         if !ui.get_editor_secret() {
             ui.set_wifi_saved(ui.get_editor_value());
             ui.set_editor_secret(true);
-            ui.set_editor_heading("Wi-Fi password / demo only".into());
+            ui.set_editor_heading("Wi-Fi password | demo only".into());
         } else {
             ui.set_editing(false);
             ui.set_wifi_connected(true);
-            ui.set_wifi_status("Demo / Wi-Fi connected".into());
+            ui.set_wifi_status("Demo | Wi-Fi connected".into());
         }
         editor_clear(&ui);
     });
@@ -359,21 +412,21 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
     ui.on_wifi_connect_saved(move || {
         let ui = weak.unwrap();
         ui.set_wifi_connected(true);
-        ui.set_wifi_status("Demo / Wi-Fi connected".into());
+        ui.set_wifi_status("Demo | Wi-Fi connected".into());
     });
     let weak = ui.as_weak();
     ui.on_update_check(move || {
         let ui = weak.unwrap();
         ui.set_release_version("Demo release".into());
         ui.set_update_available(true);
-        ui.set_wifi_status("Demo only / no firmware is downloaded".into());
+        ui.set_wifi_status("Demo only | no firmware is downloaded".into());
     });
     let weak = ui.as_weak();
     ui.on_update_install(move || {
         let ui = weak.unwrap();
         ui.set_update_progress(100);
         ui.set_reboot_ready(true);
-        ui.set_wifi_status("Demo update verified locally / no real download".into());
+        ui.set_wifi_status("Demo update verified locally | no real download".into());
     });
     let weak = ui.as_weak();
     ui.on_update_cancel(move || weak.unwrap().set_updating(false));
@@ -386,7 +439,7 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
     ui.set_about_items(ModelRc::from(Rc::new(VecModel::from(vec![
         AboutItem {
             label: "Runtime".into(),
-            value: "Shared Slint UI / software renderer / WebAssembly".into(),
+            value: "Shared Slint UI | software renderer | WebAssembly".into(),
         },
         AboutItem {
             label: "Hardware".into(),
@@ -397,6 +450,19 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
             value: "This browser session only".into(),
         },
     ]))));
+    let weak = ui.as_weak();
+    let demo = state.clone();
+    ui.on_unlock_method_requested(move |method| {
+        let ui = weak.unwrap();
+        if !ui.get_pin_open() {
+            return;
+        }
+        let mut state = demo.borrow_mut();
+        state.entry_pattern = method == 1;
+        ui.set_unlock_method(method);
+        let mode = state.pin_mode;
+        pin_open(&ui, &mut state, mode);
+    });
     let weak = ui.as_weak();
     let demo = state.clone();
     ui.on_pin_setup(move || {
@@ -415,16 +481,20 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
         if state.digits.len() < 6 && (0..=9).contains(&digit) {
             state.digits.push(char::from(b'0' + digit as u8));
         }
-        weak.unwrap()
-            .set_pin_mask("*".repeat(state.digits.len()).into());
+        weak.unwrap().set_pin_value(state.digits.clone().into());
+    });
+    let weak = ui.as_weak();
+    let demo = state.clone();
+    ui.on_pin_clear(move || {
+        demo.borrow_mut().digits.clear();
+        weak.unwrap().set_pin_value("".into());
     });
     let weak = ui.as_weak();
     let demo = state.clone();
     ui.on_pin_backspace(move || {
         let mut state = demo.borrow_mut();
         state.digits.pop();
-        weak.unwrap()
-            .set_pin_mask("*".repeat(state.digits.len()).into());
+        weak.unwrap().set_pin_value(state.digits.clone().into());
     });
     let weak = ui.as_weak();
     ui.on_pin_cancel(move || weak.unwrap().set_pin_open(false));
@@ -444,10 +514,19 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
             }
             2 => {
                 if entered == state.candidate {
+                    ui.set_unlock_method(i32::from(state.entry_pattern));
+                    ui.set_proxy_pairing_code(entered.clone().into());
                     state.pin = entered;
                     ui.set_pin_configured(true);
                     ui.set_pin_open(false);
-                    ui.set_bike_lock_status("Demo PIN saved for this session.".into());
+                    ui.set_bike_lock_status(
+                        if state.documentation_fixture {
+                            "Screen lock saved."
+                        } else {
+                            "Demo screen lock saved for this session."
+                        }
+                        .into(),
+                    );
                 } else {
                     pin_open(&ui, &mut state, 1);
                     ui.set_pin_message("PINs did not match. Try again.".into());
@@ -456,14 +535,18 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
             _ => {
                 if entered != state.pin {
                     state.digits.clear();
-                    ui.set_pin_mask("".into());
+                    ui.set_pin_value("".into());
                     ui.set_pin_message("Incorrect demo PIN".into());
                 } else if state.pin_mode == 4 {
                     pin_open(&ui, &mut state, 1);
                 } else {
                     if state.pin_mode == 5 {
                         state.pin.clear();
+                        ui.set_unlock_method(i32::from(state.entry_pattern));
+                        ui.set_proxy_pairing_code("".into());
                         ui.set_pin_configured(false);
+                    } else {
+                        ui.set_proxy_pairing_code(entered.into());
                     }
                     ui.set_screen_locked(false);
                     ui.set_pin_open(false);
@@ -484,7 +567,7 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
         let ui = weak.unwrap();
         ui.set_screen_locked(true);
         pin_open(&ui, &mut demo.borrow_mut(), 3);
-        ui.set_pin_message("Demo bike disabled / enter your demo PIN".into());
+        ui.set_pin_message("Demo bike disabled | enter your demo PIN".into());
     });
     let weak = ui.as_weak();
     ui.on_lock_timeout_changed(move |seconds| weak.unwrap().set_lock_timeout(seconds));
@@ -533,6 +616,7 @@ impl WebSimulator {
             battery: 82.,
             temperature: 36.,
             connected: true,
+            proxy_name_preference: "WB Disp".into(),
             ..Default::default()
         }));
         configure(&ui, &state);
@@ -555,6 +639,7 @@ impl WebSimulator {
         })
     }
     pub fn frame(&mut self, milliseconds: f64) -> Result<(), JsValue> {
+        project_proxy_name(&self.ui, &self.state);
         self.clock
             .set(Duration::from_secs_f64(milliseconds.max(0.) / 1000.));
         self.ui.set_pairing_permitted(!self.ui.get_screen_locked());
@@ -587,13 +672,21 @@ impl WebSimulator {
         {
             let state = self.state.borrow();
             let live = state.connected;
+            self.ui.set_data_stale(false);
+            self.ui.set_bike_ble_rssi(-62);
+            self.ui.set_bike_ble_signal(if live && self.ui.get_transport_kind() == 0 { 3 } else { -1 });
             let metric = self.ui.get_metric();
             let speed = state.speed;
             if live {
                 self.ui
                     .set_speed(format!("{:.1}", speed * if metric { 1. } else { 0.621371 }).into());
                 self.ui.set_battery(format!("{:.0}%", state.battery).into());
-                self.ui.set_voltage("75.6 V".into());
+                self.ui.set_voltage("50.4 V".into());
+                let (divisor, unit) = if metric { (1., "km") } else { (1.609344, "mi") };
+                self.ui
+                    .set_trip(format!("{:.2} {unit}", 12.34 / divisor).into());
+                self.ui
+                    .set_odometer(format!("{:.1} {unit}", 12345.6 / divisor).into());
                 let power = state.power_override.unwrap_or(
                     speed
                         * if state.documentation_fixture {
@@ -603,6 +696,11 @@ impl WebSimulator {
                         },
                 );
                 self.ui.set_power(format!("{power:.0} W").into());
+                self.ui
+                    .set_motor_current(format!("{:.1} A", power / 28.).into());
+                self.ui
+                    .set_battery_current(format!("{:.1} A", power / 50.4).into());
+                self.ui.set_roll("0.8°".into());
                 self.ui.set_mosfet(
                     format!(
                         "{:.0}°{}",
@@ -628,9 +726,15 @@ impl WebSimulator {
                 self.ui.set_speed("--".into());
                 self.ui.set_battery("--".into());
                 self.ui.set_voltage("--".into());
+                self.ui.set_trip("--".into());
+                self.ui.set_odometer("--".into());
                 self.ui.set_power("--".into());
+                self.ui.set_motor_current("--".into());
+                self.ui.set_battery_current("--".into());
+                self.ui.set_roll("--".into());
                 self.ui.set_pitch("--".into());
             }
+            stats_fixture::project(&self.ui, live);
             self.ui.set_fresh(live);
             self.ui
                 .set_can_configure(live && speed < 0.72 && !self.ui.get_screen_locked());
@@ -714,6 +818,14 @@ impl WebSimulator {
         });
     }
     pub fn set_control(&self, name: &str, value: f32) {
+        if name == "unlock-method" {
+            self.ui.invoke_unlock_method_requested(value as i32);
+            return;
+        }
+        if name == "phone-connected" {
+            self.ui.set_phone_connected(value != 0.);
+            return;
+        }
         let mut state = self.state.borrow_mut();
         match name {
             "speed" => state.speed = value.clamp(0., 80.),
@@ -730,15 +842,16 @@ impl WebSimulator {
         self.ui.set_link_present(connected);
         self.ui.set_connection(
             if connected {
-                "Demo / simulated telemetry"
+                "Connected"
             } else {
-                "Demo / disconnected"
+                "Disconnected"
             }
             .into(),
         );
     }
     pub fn set_integration(&self, id: i32) {
         integration(&self.ui, id.clamp(0, 2));
+        project_proxy_name(&self.ui, &self.state);
     }
     pub fn set_rotation(&self, degrees: i32) {
         if matches!(degrees, 0 | 90 | 180 | 270) {
@@ -762,7 +875,7 @@ impl WebSimulator {
         state.pitch = if riding { 4.2 } else { 0.8 };
         self.ui.set_connected(true);
         self.ui.set_link_present(true);
-        self.ui.set_connection("Connected / BLE".into());
+        self.ui.set_connection("Connected".into());
         self.ui.set_controller_status("VESC · CAN ID 7".into());
         self.ui.set_feedback(
             if riding {
@@ -780,7 +893,7 @@ impl WebSimulator {
         self.ui
             .set_wifi_networks(ModelRc::from(Rc::new(VecModel::from(vec![WifiItem {
                 ssid: "Workshop".into(),
-                detail: "-45 dBm / secured".into(),
+                detail: "-45 dBm | secured".into(),
             }]))));
         self.ui
             .set_peers(ModelRc::from(Rc::new(VecModel::from(vec![Peer {
@@ -797,17 +910,17 @@ impl WebSimulator {
             .set_about_items(ModelRc::from(Rc::new(VecModel::from(vec![
                 AboutItem {
                     label: "Display profile".into(),
-                    value: "410 × 502 / CO5300 / FT3168".into(),
+                    value: "410 × 502 | CO5300 | FT3168".into(),
                 },
                 AboutItem {
                     label: "Platform".into(),
-                    value: "ESP32-S3 / ESP-IDF 6.1 / Slint".into(),
+                    value: "ESP32-S3 | ESP-IDF 6.1 | Slint".into(),
                 },
             ]))));
     }
     pub fn show_pairing_demo(&self) {
         self.state.borrow_mut().pairing_digits.clear();
-        self.ui.set_pairing_mask("".into());
+        self.ui.set_pairing_value("".into());
         self.ui.set_pairing_ready(true);
         self.ui.set_pairing_failed(false);
         self.ui.set_pairing_open(true);
@@ -828,6 +941,7 @@ impl WebSimulator {
         match name {
             "documentation-fixture" => self.state.borrow().documentation_fixture.into(),
             "connected" => self.ui.get_connected().into(),
+            "phone-connected" => self.ui.get_phone_connected().into(),
             "connection" => self.ui.get_connection().as_str().into(),
             "speed-progress" => self.ui.get_speed_progress().into(),
             "power" => self.ui.get_power().as_str().into(),
@@ -836,19 +950,28 @@ impl WebSimulator {
             "device-label" => self.ui.get_device_label().as_str().into(),
             "page" => self.ui.get_page().into(),
             "speed" => self.ui.get_speed().as_str().into(),
+            "trip" => self.ui.get_trip().as_str().into(),
+            "odometer" => self.ui.get_odometer().as_str().into(),
             "motor" => self.ui.get_motor().as_str().into(),
             "proxy-name" => self.ui.get_proxy_name().as_str().into(),
+            "proxy-name-locked" => self.ui.get_proxy_name_locked().into(),
+            "proxy-name-preference" => self.state.borrow().proxy_name_preference.as_str().into(),
             "pairing-open" => self.ui.get_pairing_open().into(),
             "pairing-failed" => self.ui.get_pairing_failed().into(),
             "rotation" => self.ui.get_rotation().into(),
+            "safe-inset-x" => self.ui.get_display_safe_inset_x().into(),
+            "safe-inset-y" => self.ui.get_display_safe_inset_y().into(),
             "landscape" => (self.ui.get_initial_width() > self.ui.get_initial_height()).into(),
             "metric" => self.ui.get_metric().into(),
             "celsius" => self.ui.get_celsius().into(),
             "editing" => self.ui.get_editing().into(),
             "wifi-connected" => self.ui.get_wifi_connected().into(),
             "pin-open" => self.ui.get_pin_open().into(),
-            "pin-mask" => self.ui.get_pin_mask().as_str().into(),
-            "pairing-mask" => self.ui.get_pairing_mask().as_str().into(),
+            "pin-pattern" => self.ui.get_pin_pattern().into(),
+            "unlock-method" => self.ui.get_unlock_method().into(),
+            "proxy-pairing-code" => self.ui.get_proxy_pairing_code().as_str().into(),
+            "pin-value" => self.ui.get_pin_value().as_str().into(),
+            "pairing-value" => self.ui.get_pairing_value().as_str().into(),
             "editor-value" => self.ui.get_editor_value().as_str().into(),
             "pin-configured" => self.ui.get_pin_configured().into(),
             "screen-locked" => self.ui.get_screen_locked().into(),

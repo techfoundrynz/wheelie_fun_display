@@ -1,3 +1,4 @@
+import { DistanceSummary } from "../distance-summary.slint";
 import { BatteryMeter } from "../battery-meter.slint";
 import { TransitionPage } from "../page-transition.slint";
 import { Metric } from "../controls.slint";
@@ -20,6 +21,8 @@ export component RidePage inherits TransitionPage {
     in property <string> speed;
     in property <float> speed-progress;
     in property <string> voltage;
+    in property <string> trip;
+    in property <string> odometer;
 
     if !root.landscape: VerticalLayout {
         spacing: 10px;
@@ -30,16 +33,34 @@ export component RidePage inherits TransitionPage {
             voltage: root.voltage;
         }
 
-        VerticalLayout {
+        dial-area := Rectangle {
+            min-height: 0px;
+            preferred-height: 0px;
             vertical-stretch: 1;
-            alignment: center;
+            portrait-speedo-box := Rectangle {
+                x: 0px;
+                y: max(0px, parent.height - self.height);
+                width: parent.width;
+                height: portrait-distance.height + 4px + portrait-dial.height;
+                portrait-distance := DistanceSummary {
+                    x: 0px;
+                    y: 0px;
+                    width: parent.width;
+                    outer-edges: true;
+                    trip: root.trip;
+                    odometer: root.odometer;
+                }
 
-            Speedometer {
-                height: root.compact ? 166px : 231px;
-                value: root.speed;
-                live: root.fresh;
-                progress: root.speed-progress;
-                unit: root.metric ? "km/h" : "mph";
+                portrait-dial := Speedometer {
+                    x: 0px;
+                    y: portrait-distance.height + 4px;
+                    width: parent.width;
+                    height-limit: max(0px, dial-area.height - portrait-distance.height - 4px);
+                    value: root.speed;
+                    live: root.fresh;
+                    progress: root.speed-progress;
+                    unit: root.metric ? "km/h" : "mph";
+                }
             }
         }
 
@@ -88,7 +109,7 @@ export component RidePage inherits TransitionPage {
 
             Speedometer {
                 align-bottom: true;
-                height: min(231px, max(0px, root.height - 35px - 20px));
+                height-limit: min(231px, max(0px, root.height - 35px - 20px));
                 value: root.speed;
                 live: root.fresh;
                 progress: root.speed-progress;
@@ -108,6 +129,11 @@ export component RidePage inherits TransitionPage {
             horizontal-stretch: 1;
             spacing: 12px;
             alignment: end;
+            DistanceSummary {
+                trip: root.trip;
+                odometer: root.odometer;
+            }
+
             HorizontalLayout {
                 vertical-stretch: 0;
                 spacing: 10px;
