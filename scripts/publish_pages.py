@@ -56,6 +56,9 @@ def validate_source(source):
         ".webmanifest",
         ".bin",
         ".zip",
+        ".step",
+        ".f3d",
+        ".f3z",
     }
     total = 0
     for entry in source.rglob("*"):

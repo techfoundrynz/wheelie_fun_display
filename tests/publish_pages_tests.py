@@ -78,6 +78,26 @@ class PagesPublicationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Unexpected static"):
             pages.assemble(self.site, self.source)
 
+    def test_cad_downloads_survive_production_and_preview_publication(self):
+        cad = self.source / "cad/waveshare-206"
+        cad.mkdir(parents=True)
+        files = {
+            "lower-clamp-cap.step": b"ISO-10303-21;\nEND-ISO-10303-21;\n",
+            "assembly.f3d": b"PK\x03\x04native archive",
+            "linked-assembly.f3z": b"PK\x03\x04linked archive",
+        }
+        for name, payload in files.items():
+            (cad / name).write_bytes(payload)
+        pages.assemble(self.site, self.source)
+        destination = "previews/pr-12/" + "a" * 40
+        pages.assemble(self.site, self.source, destination)
+        for prefix in (self.site, self.site / destination / "payload"):
+            for name, payload in files.items():
+                with self.subTest(destination=prefix, file=name):
+                    self.assertEqual(
+                        (prefix / "cad/waveshare-206" / name).read_bytes(), payload
+                    )
+
     def test_preview_cannot_bootstrap_over_an_existing_live_site(self):
         (self.site / "index.html").unlink()
         with self.assertRaisesRegex(ValueError, "initialized"):
