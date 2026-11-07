@@ -41,6 +41,7 @@ def validate_source(source):
         ".css",
         ".json",
         ".png",
+        ".gif",
         ".jpg",
         ".jpeg",
         ".svg",

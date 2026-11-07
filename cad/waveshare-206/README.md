@@ -46,6 +46,9 @@ The source model uses these nominal dimensions:
 | Rubber liner wall | 0.5 mm |
 | Clamp bore, including liner | 23.225 mm |
 | Clamp width along the handlebar | 16 mm |
+| Retained liner width along the handlebar | 14.3 mm |
+| Liner installation split | 0.5 mm, through the wall and full width |
+| Liner retaining lip width / radial depth | 0.75 / 0.2 mm |
 | Casing-to-saddle mounting pitch | 20 × 20 mm |
 | Cable bore | 6.5 mm |
 
@@ -59,11 +62,23 @@ The model shows the following hardware **per display assembly**:
 
 The upper saddle has modelled 3.3 mm M4 tap-drill holes; STEP geometry does not supply a machining or tapping operation. Confirm the actual display, insert fit, screw engagement and cable clearance before fabrication. The source display component is explicitly marked as reference geometry to verify, rather than a vendor-accurate manufacturing model.
 
+## Split liner installation
+
+![Close-up of the rubber liner showing its full-width installation split](../../docs/images/waveshare-206-liner.png)
+
+The rubber liner has a **0.5 mm longitudinal split** through its full **0.5 mm wall** and **14.3 mm width**. Open the flexible liner at this seam and wrap it around the handlebar; the grips do not need to be removed. Seat it between the clamp's retaining lips before fitting the lower cap. Use flexible rubber for the liner so it can open around the bar.
+
+## Assembly animation
+
+![Exploded-to-assembled CAD animation of the casing, clamp, liner and fasteners](../../docs/images/waveshare-206-assembly.gif)
+
+The animation separates the components and brings them together to show how they fit. It is an assembly overview, rather than a fastening or machining sequence; the handlebar and reference display, including its cover glass, are omitted for visibility. The M2 display screws approach upward from underneath. [View the static exploded image](../../docs/images/waveshare-206-exploded.png).
+
 ## Clamp detail
 
 ![Underside view of the saddle, split clamp, liner and mounting screws](../../docs/images/waveshare-206-clamp.png)
 
-The underside view omits the handlebar so the liner, split and fastener access are visible.
+The underside view omits the handlebar so the liner, split and fastener access are visible. The updated clamp has retaining lips for the narrower rubber liner, with 0.2 mm total axial clearance in its channel.
 
 ## Casing interior
 
@@ -71,6 +86,6 @@ The underside view omits the handlebar so the liner, split and fastener access a
 
 ## Source and updates
 
-Exported from **Wheelie Fun Display - Waveshare 2.06**, Fusion document version **9**, on **7 November 2026**. These STEP files are solid exports; they do not retain the Fusion parameter timeline. Re-export affected parts when the source design changes and update the views and dimensions here.
+Exported from **Wheelie Fun Display - Waveshare 2.06**, Fusion document version **12** with the current unsaved session state, on **7 November 2026**. These STEP files are solid exports; they do not retain the Fusion parameter timeline. Re-export affected parts when the source design changes and update the views and dimensions here.
 
 These project CAD exports use the repository's [GPL-3.0 license](../../LICENSE).

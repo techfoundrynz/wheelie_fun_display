@@ -88,10 +88,17 @@ class PagesPublicationTests(unittest.TestCase):
         }
         for name, payload in files.items():
             (cad / name).write_bytes(payload)
+        images = self.source / "assets/images"
+        images.mkdir(parents=True)
+        animation = b"GIF89a assembly animation"
+        (images / "assembly.gif").write_bytes(animation)
         pages.assemble(self.site, self.source)
         destination = "previews/pr-12/" + "a" * 40
         pages.assemble(self.site, self.source, destination)
         for prefix in (self.site, self.site / destination / "payload"):
+            self.assertEqual(
+                (prefix / "assets/images/assembly.gif").read_bytes(), animation
+            )
             for name, payload in files.items():
                 with self.subTest(destination=prefix, file=name):
                     self.assertEqual(
