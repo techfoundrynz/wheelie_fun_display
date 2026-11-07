@@ -19,14 +19,14 @@
 <button class="nav-overlay" type="button" aria-label="Close navigation"></button>
 <div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../../../">Overview</a><div class="nav-group"><span>Start here</span><a href="../../../getting-started/">Getting started</a><a href="../../../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../../../guide/">Using the display</a><a href="../../../connections/">Connections &amp; proxy</a><a href="../../../pins/">PINs, patterns &amp; pairing</a><a href="../../../maintenance/">Updates &amp; maintenance</a><a href="../../../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../">Waveshare S3 2.06-inch</a><a href="./" class="nav-child" aria-current="page">Case &amp; mount (CAD)</a><a href="../../guition-43/">GUITION P4 4.3-inch</a></div><div class="nav-group"><span>For developers</span><a href="../../../building/">Build &amp; install</a><a href="../../../contributing/">Contributing</a><a href="../../../architecture/">Architecture</a><a href="../../../performance/">Performance</a><a href="../../../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../../../integrations/">Vehicle integrations</a><a href="../../../locking/">Locking internals</a><a href="../../../bluetooth/">Bluetooth internals</a><a href="../../../transports/">Transport internals</a><a href="../../../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../../../reference/vesc-protocol/">WFB protocol notes</a><a href="../../../reference/wfb-bike-layer/">WFB bike layer</a><a href="../../../reference/theme/">Theme guide</a><a href="../../../reference/wfb-ride-controls/">WFB ride controls</a><a href="../../../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
 <main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">Hardware</div><h1>Waveshare case and mount</h1><p>STEP downloads, assembly views and hardware for the 2.06-inch casing and clamp.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/cad/waveshare-206/README.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>Part of the <a href="../">Waveshare 2.06 hardware guide</a>.</p>
-<p>A compact casing and split handlebar clamp for the Waveshare ESP32-S3 Touch AMOLED 2.06 module. The Fusion assembly shows portrait and landscape installations of the same custom parts.</p>
+<p>A compact casing and split handlebar clamp for the Waveshare ESP32-S3 Touch AMOLED 2.06 module. The Fusion assembly shows portrait and landscape installations of the same custom parts, including a flexible cable-entry grommet.</p>
 <p><img alt="Portrait and landscape display casings mounted on a handlebar" src="../../../assets/images/waveshare-206-mounted.png" /></p>
 <p>These are shaded CAD views of the current design. Display glass and the handlebar are reference geometry; the screen is shown blank.</p>
 <h2 id="editable-fusion-design">Editable Fusion design</h2>
-<p>Download the <a href="../../../cad/waveshare-206/wheelie-fun-display-waveshare-206.f3d">complete Fusion archive</a> to edit the assembly, user parameters and feature timeline. It includes both mounting orientations, standard hardware and the reference display and handlebar components.</p>
+<p>Download the <a href="../../../cad/waveshare-206/wheelie-fun-display-waveshare-206.f3d">complete Fusion archive</a> to edit the assembly, user parameters and feature timeline. It includes both mounting orientations, standard hardware and the reference display, handlebar and 6 mm cable-jacket components.</p>
 <p>This is an <strong>F3D</strong> archive because all components are local to one Fusion design. <strong>F3Z</strong> is Fusion's package format for designs with external linked references; this design does not need that container. See <a href="https://help.autodesk.com/view/fusion360/ENU/?caas=caas%2Fsfdcarticles%2Fsfdcarticles%2FHow-to-make-a-local-archive-back-up-file-in-Fusion-360.html">Autodesk's archive format guide</a>.</p>
 <h2 id="download-the-parts">Download the parts</h2>
-<p>Each STEP file contains one solid component at its modelled size, in millimetres. Import at 1:1 scale. Standard fasteners, reference display geometry and the handlebar are excluded.</p>
+<p>Each STEP file contains one solid component at its modelled size, in millimetres. Import at 1:1 scale. Standard fasteners, reference display geometry, the handlebar and the reference cable jacket are excluded. The casing export contains only the shell; its nested grommet is supplied separately.</p>
 <div class="table-scroll" tabindex="0"><table>
 <thead>
 <tr>
@@ -56,9 +56,14 @@
 <td><a href="../../../cad/waveshare-206/rubber-liner.step">rubber-liner.step</a></td>
 <td><code>HW_split_rubber_liner_0p5</code> — 0.5 mm wall</td>
 </tr>
+<tr>
+<td>Cable-entry grommet</td>
+<td><a href="../../../cad/waveshare-206/cable-grommet.step">cable-grommet.step</a></td>
+<td><code>06_One_piece_grommet_TPU75A</code> — flexible TPU, nominal Shore 75A</td>
+</tr>
 </tbody>
 </table></div>
-<p>The clamp parts are designated aluminium in the source model. The casing is the part designated for printing; no slicer profile or machining toolpaths are included.</p>
+<p>The clamp parts are designated aluminium in the source model. The casing and TPU grommet are intended for printing; no slicer profile or machining toolpaths are included.</p>
 <h2 id="portrait-or-landscape-mounting">Portrait or landscape mounting</h2>
 <p>The same casing and clamp can be assembled in <strong>portrait or landscape</strong>. Rotate the casing 90° relative to the upper saddle before fastening it; the square 20 × 20 mm mounting pattern supports both orientations without different printed parts. The mounted view above shows both arrangements side by side.</p>
 <p>On the display, open <strong>Settings &gt; Orientation</strong> to match the UI to the physical mounting. The firmware cycles through <strong>0°, 90°, 180° and 270°</strong>, so either portrait or landscape direction is available. The layout and touch coordinates rotate together.</p>
@@ -117,8 +122,24 @@
 <td>20 × 20 mm</td>
 </tr>
 <tr>
-<td>Cable bore</td>
-<td>6.5 mm</td>
+<td>Casing cable-entry hole</td>
+<td>7.8 mm</td>
+</tr>
+<tr>
+<td>Cable jacket outside diameter</td>
+<td>6 mm</td>
+</tr>
+<tr>
+<td>Grommet bore / barrel outside diameter</td>
+<td>5.8 / 7.9 mm</td>
+</tr>
+<tr>
+<td>Grommet panel grip length</td>
+<td>3.8 mm</td>
+</tr>
+<tr>
+<td>Grommet inner / outer flange diameter</td>
+<td>9.4 / 8.6 mm</td>
 </tr>
 </tbody>
 </table></div>
@@ -129,21 +150,34 @@
 <li>Two M4 × 12 DIN 7984 low-head socket screws for the clamp.</li>
 <li>Two M2 × 5 countersunk display screws, modelled with a reference drive.</li>
 <li>One split rubber liner.</li>
+<li>One one-piece cable-entry grommet in flexible TPU, nominal Shore 75A.</li>
 </ul>
 <p>The upper saddle has modelled 3.3 mm M4 tap-drill holes; STEP geometry does not supply a machining or tapping operation. Confirm the actual display, insert fit, screw engagement and cable clearance before fabrication. The source display component is explicitly marked as reference geometry to verify, rather than a vendor-accurate manufacturing model.</p>
 <h2 id="split-liner-installation">Split liner installation</h2>
 <p><img alt="Close-up of the rubber liner showing its full-width installation split" src="../../../assets/images/waveshare-206-liner.png" /></p>
 <p>The rubber liner has a <strong>0.5 mm longitudinal split</strong> through its full <strong>0.5 mm wall</strong> and <strong>14.3 mm width</strong>. Open the flexible liner at this seam and wrap it around the handlebar; the grips do not need to be removed. Seat it between the clamp's retaining lips before fitting the lower cap. Use flexible rubber for the liner so it can open around the bar.</p>
+<h2 id="cable-grommet-installation">Cable grommet installation</h2>
+<p><img alt="One-piece snap-in cable grommet with its flanges, panel groove and cable bore" src="../../../assets/images/waveshare-206-grommet.png" /></p>
+<p>The wiring entry uses a <strong>one-piece snap-in grommet</strong>, modelled for <strong>TPU 75A</strong> and a <strong>6 mm outside-diameter cable jacket</strong>. Download <a href="../../../cad/waveshare-206/cable-grommet.step">cable-grommet.step</a>. The views use the grommet material and appearance from the Fusion source. Fusion now assigns the physical material <strong>Rubber</strong>; the component designation and nominal Shore 75A parameter still provide the <strong>TPU75A</strong> printing reference.</p>
+<p>Its nominal <strong>5.8 mm bore</strong> provides 0.2 mm diametral interference with the cable jacket. Its <strong>7.9 mm barrel</strong> fits the casing's <strong>7.8 mm hole</strong>, with a <strong>3.8 mm grip length</strong> matching the modelled panel stack. The <strong>9.4 mm inner flange</strong> stays inside the casing; the <strong>8.6 mm outer flange</strong> sits outside. These are design dimensions, so test the printed fit with your actual material and cable before final assembly.</p>
+<ol>
+<li>Print the grommet in flexible TPU appropriate to the model's nominal Shore 75A hardness. Check that the bore and retaining groove are open and free of print defects.</li>
+<li>Thread the cable through the grommet before fitting any connector that cannot pass through the bore. This grommet is <strong>not split</strong>, so it cannot wrap around an already terminated cable like the handlebar liner wraps around the bar. The 6 mm dimension refers to the complete cable jacket, not an individual wire.</li>
+<li>With the display still out of the casing, feed the cable through the casing opening. Seat the grommet from inside the casing, pushing the smaller outer flange through the hole until the panel sits in the groove between the flanges. Check both flanges are fully seated without a folded lip.</li>
+<li>Route the wiring clear of the display, insert bosses, mounting screws and clamp. Leave enough slack for the chosen portrait or landscape orientation without pulling on PCB connections. Check the cable's bend and clamp clearance in that orientation before fastening the display.</li>
+<li>Fit the display with the M2 screws approaching from underneath, then complete the casing-to-saddle and handlebar-clamp assembly shown below. Check the grommet stays seated as the wiring is gently moved.</li>
+</ol>
+<p>The CAD fit has not been qualified for a particular printed material, cable pull load or water-ingress rating. Verify retention and any required sealing on the finished assembly.</p>
 <h2 id="assembly-animation">Assembly animation</h2>
-<p><img alt="Exploded-to-assembled CAD animation of the casing, clamp, liner and fasteners" src="../../../assets/images/waveshare-206-assembly.gif" /></p>
-<p>The animation separates the components and brings them together to show how they fit. It is an assembly overview, rather than a fastening or machining sequence; the handlebar and reference display, including its cover glass, are omitted for visibility. The M2 display screws approach upward from underneath. <a href="../../../assets/images/waveshare-206-exploded.png">View the static exploded image</a>.</p>
+<p><img alt="Exploded-to-assembled CAD animation of the casing, cable grommet, clamp, liner and fasteners" src="../../../assets/images/waveshare-206-assembly.gif" /></p>
+<p>The animation separates the components and brings them together to show how they fit. It is an assembly overview, rather than a fastening or machining sequence; the handlebar and reference display, including its cover glass, are omitted for visibility. The cable grommet moves independently into the casing, with its larger flange inside. The M2 display screws approach upward from underneath. <a href="../../../assets/images/waveshare-206-exploded.png">View the static exploded image</a>.</p>
 <h2 id="clamp-detail">Clamp detail</h2>
 <p><img alt="Underside view of the saddle, split clamp, liner and mounting screws" src="../../../assets/images/waveshare-206-clamp.png" /></p>
 <p>The underside view omits the handlebar so the liner, split and fastener access are visible. The updated clamp has retaining lips for the narrower rubber liner, with 0.2 mm total axial clearance in its channel.</p>
 <h2 id="casing-interior">Casing interior</h2>
 <p><img alt="Isolated printed casing showing the display cavity, mounting islands and cable opening" src="../../../assets/images/waveshare-206-casing.png" /></p>
 <h2 id="source-and-updates">Source and updates</h2>
-<p>Exported from <strong>Wheelie Fun Display - Waveshare 2.06</strong>, Fusion document version <strong>12</strong> with the current unsaved session state, on <strong>7 November 2026</strong>. These STEP files are solid exports; they do not retain the Fusion parameter timeline. Re-export affected parts when the source design changes and update the views and dimensions here.</p>
+<p>Exported from <strong>Wheelie Fun Display - Waveshare 2.06</strong>, Fusion document version <strong>15</strong> (saved source, with no unsaved changes), on <strong>8 November 2026</strong>. These STEP files are solid exports; they do not retain the Fusion parameter timeline. Re-export affected parts when the source design changes and update the views and dimensions here.</p>
 <p>These project CAD exports use the repository's <a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0 license</a>.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../../../reference/notices/">Notices</a></span></footer></main>
 <aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
 <ul>
@@ -152,6 +186,7 @@
 <li><a href="#portrait-or-landscape-mounting">Portrait or landscape mounting</a></li>
 <li><a href="#fit-and-assembly">Fit and assembly</a></li>
 <li><a href="#split-liner-installation">Split liner installation</a></li>
+<li><a href="#cable-grommet-installation">Cable grommet installation</a></li>
 <li><a href="#assembly-animation">Assembly animation</a></li>
 <li><a href="#clamp-detail">Clamp detail</a></li>
 <li><a href="#casing-interior">Casing interior</a></li>

@@ -83,7 +83,46 @@ cargo test --locked --manifest-path simulator/Cargo.toml
 ctest --test-dir .cache/host-tests --output-on-failure
 </code></pre>
 <p>Add Python unit tests as <code>tests/*_tests.py</code> and Node suites as <code>tests/*_tests.cjs</code>. Cargo automatically discovers <code>#[test]</code> cases under <code>simulator/tests/</code>; display scenarios share the supported viewport list and launch isolated fixture processes to avoid sharing Slint platform state. Register C++ suites with CTest in <code>tests/CMakeLists.txt</code>. New test cases do not require workflow edits. Browser acceptance checks run in the Pages build after its simulator and installer artifacts exist.</p>
-<p>The P4 board profile explicitly selects <code>build.toolchain = riscv32-esp</code>. A pre-build hook applies it immediately before framework build environments are created, and the matching compiler package is pinned in the common configuration. This compensates for espressif32 8.0.0's incomplete MCU architecture table; do not patch the locally installed platform builder.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../reference/notices/">Notices</a></span></footer></main>
+<p>The P4 board profile explicitly selects <code>build.toolchain = riscv32-esp</code>. A pre-build hook applies it immediately before framework build environments are created, and the matching compiler package is pinned in the common configuration. This compensates for espressif32 8.0.0's incomplete MCU architecture table; do not patch the locally installed platform builder.</p>
+<h2 id="vesc-tool-updates">VESC Tool updates</h2>
+<p>You can install an application firmware <code>.bin</code> from <strong>VESC Tool → Firmware → Custom File</strong>.
+Use the file for your exact display target, not the merged browser-install image,
+bootloader, partition table or GUITION C6 firmware.</p>
+<ul>
+<li><strong>Direct BLE with CAN selected:</strong> enable Phone connection and connect VESC Tool to the display.
+  Its local Custom Module identity represents the display. Selecting another CAN controller
+  in VESC Tool addresses that controller instead.</li>
+<li><strong>Through another VESC on CAN:</strong> connect VESC Tool to that VESC, scan the bus and select
+  the display's CAN ID (default <strong>254</strong>, configured per target). The display answers CAN
+  discovery and firmware requests whenever its CAN transport is active.</li>
+<li><strong>Update-only BLE:</strong> open <strong>Settings → Firmware update → Start BLE update mode</strong>.
+  Disconnect an existing phone session first. Connect VESC Tool to <strong>Wheelie Fun Display OTA</strong>.
+  This mode needs neither a bike nor Wi-Fi and keeps the usual phone pairing/bonding policy
+  and screen-lock code. Exit the mode to restore normal operation. The saved Phone connection
+  preference and advertised name are unchanged; reboot also exits the mode.</li>
+</ul>
+<p>Unlock the display and stop the bike before starting. During a transfer, bike polling and
+tuning writes pause. The updater binds each transfer to its originating connection/CAN
+sender; a BLE disconnect, CAN transport/session change, screen lock, cancellation
+or 60-second inactivity aborts it. Loss of a remote CAN sender is detected by that timeout.
+Native CAN has no Bluetooth authentication: keep physical bus access trusted.</p>
+<p>Uploads go to the inactive OTA partition. Size, CRC16, ESP image validity and the hardware
+project identity are checked before selecting it for the next boot. Failed uploads retain
+current firmware. A verified upload restarts automatically and uses the same boot-validation
+and rollback mechanism as Wi-Fi OTA. A cancellation after activation cannot undo that restart.
+Compressed uploads, bootloader writes and broadcast/all-controller flashing are not provided.</p>
+<p>The command compatibility follows <a href="https://github.com/vedderb/vesc_express/blob/main/main/commands.c">VESC Express</a>
+and <a href="https://github.com/vedderb/vesc_tool/blob/master/vescinterface.cpp">VESC Tool</a>.
+Physical VESC Tool uploads over both routes still require hardware acceptance testing.</p>
+<h2 id="update-progress-on-the-display">Update progress on the display</h2>
+<p>Wi-Fi OTA downloads and VESC Tool uploads over BLE or native CAN automatically
+open a progress panel over the current screen. It shows the transfer source,
+percentage and status, and blocks navigation while the update is active.
+Cancel is available during transfer and disabled while verification/activation is
+finishing. A stopped or rejected update keeps its status visible until closed.
+Verified Wi-Fi updates offer <strong>Restart into update</strong>; verified VESC Tool uploads
+show their restart state and reboot automatically. Screen-lock and pairing prompts
+retain priority over the progress panel.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../reference/notices/">Notices</a></span></footer></main>
 <aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
 <ul>
 <li><a href="#update-from-the-display">Update from the display</a></li>
@@ -93,6 +132,8 @@ ctest --test-dir .cache/host-tests --output-on-failure
 <li><a href="#hardware-acceptance">Hardware acceptance</a></li>
 <li><a href="#documentation-and-pages">Documentation and Pages</a></li>
 <li><a href="#test-discovery">Test discovery</a></li>
+<li><a href="#vesc-tool-updates">VESC Tool updates</a></li>
+<li><a href="#update-progress-on-the-display">Update progress on the display</a></li>
 </ul>
 </div>
 </aside></div>
