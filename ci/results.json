@@ -4,7 +4,7 @@
     "Root and project-prefix routes",
     "Shared UI software rendering",
     "Telemetry controls",
-    "Ride/Tune/Bike swipes",
+    "Ride/Stats/Tune swipes",
     "Four-angle rotation and touch mapping",
     "Independent speed and temperature units",
     "Upstream BLE pairing PIN",

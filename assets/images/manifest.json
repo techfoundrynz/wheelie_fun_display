@@ -5,14 +5,19 @@
     "ride-portrait.png",
     "ride-landscape.png",
     "wheel-e-portrait.png",
+    "stats.png",
+    "stats-bms.png",
+    "stats-cells.png",
     "tune.png",
-    "bike.png",
+    "vehicle-settings.png",
     "settings-410x502.png",
     "connections-settings.png",
     "wifi-keyboard.png",
     "updates.png",
     "about.png",
     "ble-pairing.png",
-    "pin-entry.png"
+    "pin-entry.png",
+    "pattern-entry.png",
+    "proxy-pairing-code.png"
   ]
 }

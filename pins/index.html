@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PINs &amp; locking · Wheelie Fun Display</title><meta name="description" content="Separate upstream pairing from the local bike and proxy PIN."><meta name="theme-color" content="#080b0e">
+<title>PINs, patterns &amp; pairing · Wheelie Fun Display</title><meta name="description" content="Local PINs, patterns, upstream pairing and phone proxy bonds."><meta name="theme-color" content="#080b0e">
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../assets/style.css">
 <script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head>
 <body data-site-root="../" class="docs-page">
@@ -17,8 +17,8 @@
 </svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
 <div class="header-actions"><a class="installer-link" href="../install/">Install firmware</a><a class="simulator-link" href="../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
 <button class="nav-overlay" type="button" aria-label="Close navigation"></button>
-<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../">Overview</a><div class="nav-group"><span>Start here</span><a href="../getting-started/">Getting started</a><a href="../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../guide/">Using the display</a><a href="../connections/">Connections &amp; proxy</a><a href="./" aria-current="page">PINs &amp; locking</a><a href="../maintenance/">Updates &amp; maintenance</a><a href="../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../hardware/guition-43/">GUITION P4 4.3-inch</a></div><div class="nav-group"><span>For developers</span><a href="../building/">Build &amp; install</a><a href="../contributing/">Contributing</a><a href="../architecture/">Architecture</a><a href="../performance/">Performance</a><a href="../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../integrations/">Vehicle integrations</a><a href="../locking/">Locking internals</a><a href="../bluetooth/">Bluetooth internals</a><a href="../transports/">Transport internals</a><a href="../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../reference/vesc-protocol/">WFB protocol notes</a><a href="../reference/wfb-bike-layer/">WFB bike layer</a><a href="../reference/theme/">Theme guide</a><a href="../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
-<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">For riders</div><h1>PINs &amp; locking</h1><p>Separate upstream pairing from the local bike and proxy PIN.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/pins-and-locking.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>There are two separate PIN purposes: connecting this display to a secured BLE device, and protecting this display plus its phone proxy.</p>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../">Overview</a><div class="nav-group"><span>Start here</span><a href="../getting-started/">Getting started</a><a href="../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../guide/">Using the display</a><a href="../connections/">Connections &amp; proxy</a><a href="./" aria-current="page">PINs, patterns &amp; pairing</a><a href="../maintenance/">Updates &amp; maintenance</a><a href="../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../hardware/guition-43/">GUITION P4 4.3-inch</a></div><div class="nav-group"><span>For developers</span><a href="../building/">Build &amp; install</a><a href="../contributing/">Contributing</a><a href="../architecture/">Architecture</a><a href="../performance/">Performance</a><a href="../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../integrations/">Vehicle integrations</a><a href="../locking/">Locking internals</a><a href="../bluetooth/">Bluetooth internals</a><a href="../transports/">Transport internals</a><a href="../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../reference/vesc-protocol/">WFB protocol notes</a><a href="../reference/wfb-bike-layer/">WFB bike layer</a><a href="../reference/theme/">Theme guide</a><a href="../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">For riders</div><h1>PINs, patterns &amp; pairing</h1><p>Local PINs, patterns, upstream pairing and phone proxy bonds.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/pins-and-locking.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>There are two separate credentials: the upstream device passkey used to connect to VESC Express, and your own local PIN or pattern used to protect the display and its phone BLE proxy.</p>
 <div class="table-scroll" tabindex="0"><table>
 <thead>
 <tr>
@@ -34,34 +34,56 @@
 <td>This display's encrypted connection to that device.</td>
 </tr>
 <tr>
-<td>Bike lock PIN</td>
-<td>Six digits set in the Bike menu</td>
+<td>Local screen lock</td>
+<td>Six-digit code entered as a PIN or six-dot pattern</td>
 <td>Local lock screen, supported bike lock requests and the display's phone BLE proxy.</td>
 </tr>
 </tbody>
 </table></div>
 <p>The upstream pairing PIN never becomes the proxy PIN.</p>
-<h2 id="set-or-change-the-bike-pin">Set or change the bike PIN</h2>
-<p>Open <strong>Bike &gt; Set lock PIN</strong>, enter six digits and confirm them. If a PIN already exists, Change PIN and Remove PIN require the current code first. No default PIN or recovery-code screen is provided.</p>
-<p>The persistent record uses a salted PIN digest. The numeric proxy passkey is held in RAM after PIN setup or successful local unlock. Boot with a configured PIN requires local unlock before the secured proxy becomes available; the upstream pairing PIN itself is not saved.</p>
+<h2 id="set-or-change-the-screen-lock">Set or change the screen lock</h2>
+<p>Open <strong>Settings &gt; Screen lock &gt; Set screen lock</strong> and enter the new credential twice. Use <strong>Use PIN</strong> or <strong>Use pattern</strong> on the entry screen to choose how to enter it; the display remembers that entry mode in NVS. The entry screen owns this mode choice. <strong>Change screen lock</strong> and <strong>Remove screen lock</strong> require the current credential first. There is no default code or recovery-code screen.</p>
+<p>Both entry modes use the same six-digit credential. A pattern can be entered numerically using its dot numbers. Codes containing zeroes or repeated digits require PIN entry. Switching entry mode clears only the partial entry; it does not change the credential, reset the retry counter or revoke phone bonds.</p>
+<p>A PIN always has six digits and submits automatically on the sixth digit. The backspace icon removes one digit; X clears the current entry. The entered digits are visible in large type.</p>
+<p>A pattern always uses six different dots on a 3 × 3 grid. Draw in one continuous gesture, then lift your finger to submit. Crossing directly over an unvisited middle dot includes it automatically, as on Android. Dots cannot be reused; short gestures clear without counting as an incorrect credential. Wrong six-dot patterns and wrong PINs clear for another attempt, with a 30-second cooldown after five failures.</p>
+<p><img alt="Six-dot pattern entry with numbered dots" src="../assets/images/pattern-entry.png" /></p>
+<p>The dots are numbered left to right, top to bottom:</p>
+<pre><code class="language-text">1 2 3
+4 5 6
+7 8 9
+</code></pre>
+<p>For example, drawing 1 → 3 → 9 → 8 includes 2 and 6 automatically, producing the six-dot sequence <strong>123698</strong>. This is also the phone proxy's numeric BLE pairing code.</p>
+<p>NVS stores the entry-mode preference and a salted credential digest, preserving existing six-digit PIN records. Plaintext PINs and patterns are not stored or logged. The numeric proxy passkey is held in RAM after setup or successful local unlock. Boot with a configured lock requires local unlock before the secured proxy becomes available.</p>
 <h2 id="lock-only-the-screen">Lock only the screen</h2>
 <p><strong>Lock screen</strong> protects the local controls without sending a bike lock command. The locked-screen timeout can be 15, 30, 60 or 120 seconds, with 30 seconds as the default.</p>
-<p>When it times out, the panel becomes black. Tap once to restore your brightness setting, lift your finger, and enter the PIN. That first tap cannot activate a hidden control. Partial PIN input is cleared across sleep and wake.</p>
+<p>When it times out, the panel becomes black. Tap once to restore your brightness setting, lift your finger, and enter the PIN or draw the pattern. That first tap cannot activate a hidden control. Partial PIN or pattern input is cleared across sleep and wake.</p>
 <h2 id="lock-the-bike-and-screen">Lock the bike and screen</h2>
 <p>When supported, <strong>Lock bike and screen</strong> requests the package's explicit LOCK command. The bike must have fresh stationary telemetry, no controller fault and a ready exclusive connection. The screen stays locked while the display waits for matching telemetry from the same connection.</p>
 <p>A command being queued is not proof that propulsion is disabled. If the controller does not confirm the state, the interface reports it as unconfirmed. Validate lock behavior on the exact bike firmware before relying on it. The supplied WFB protocol notes do not establish vendor firmware compatibility by themselves.</p>
-<h2 id="pair-the-phone">Pair the phone</h2>
-<p>With no bike PIN, the enabled proxy has no PIN requirement. With a bike PIN, the phone must complete authenticated BLE pairing using that code. Changing or removing the code disconnects old security sessions and removes old phone bonds; pair again when prompted.</p>
-<p>Upstream bike bonds are independent. Changing the local PIN does not change the PIN configured on VESC Express.</p>
+<h2 id="pair-the-phone-to-the-display">Pair the phone to the display</h2>
+<p>Enable <strong>Settings &gt; Phone connection &gt; BLE proxy</strong>. The active WFB integration advertises as <strong>WFB</strong> and hides the name editor. Wheel-e and generic VESC use your editable saved <strong>BLE name</strong>, initially <strong>WB Disp</strong>. Leaving WFB restores that saved preference without writing a new NVS value. Connect the phone app to the name currently advertised by the display. With a screen lock configured, the proxy requires authenticated BLE pairing using your own credential:</p>
+<ul>
+<li>For a PIN, enter the same six digits on the phone.</li>
+<li>For a pattern, enter its six dot numbers in order, including automatically inserted middle dots.</li>
+<li>After setting up or unlocking, <strong>Settings &gt; Phone BLE code</strong> shows the exact numeric code to enter. This is a numeric phone pairing prompt even when the display itself unlocks with a pattern.</li>
+</ul>
+<p><img alt="Phone BLE pairing code shown in Settings" src="../assets/images/proxy-pairing-code.png" /></p>
+<p>The proxy stays paused while the display is locked. This policy applies whether the display connects to the bike over BLE, CAN or UART. With no screen-lock credential, the enabled proxy has no PIN requirement.</p>
+<p>Successful pairing creates a remembered bond on the phone and display. Changing the credential disconnects old proxy sessions and clears old phone bonds. Switching entry mode for the same credential preserves the bonds. Removing the lock does the same. If the phone retains an old bond, forget the display in the phone's Bluetooth settings and pair again with the current code. Restarting the display preserves valid bonds, but local unlock is still required before the secured proxy is available.</p>
+<h2 id="pair-the-display-to-vesc-express">Pair the display to VESC Express</h2>
+<p>The VESC Express pairing screen always uses numeric entry and hides the mode switch, regardless of the remembered local entry mode. Enter the passkey configured on that device, then press <strong>Submit</strong>. Entry accepts 1–6 digits representing the BLE passkey range 000000–999999; leading zeroes can be entered or omitted. It never submits automatically on the sixth digit.</p>
+<p><img alt="Upstream BLE passkey screen with explicit submission" src="../assets/images/ble-pairing.png" /></p>
+<p>This upstream passkey never replaces the display's own proxy code. The upstream bond is remembered independently; the entered passkey itself is cleared after submission and is not saved as a credential. Changing your local PIN or pattern does not change the PIN configured on VESC Express or remove its independent upstream bond.</p>
 <h2 id="keep-the-security-boundaries-clear">Keep the security boundaries clear</h2>
 <p>The local code protects this display's controls and its proxy. It does not prevent another client from talking directly to the bike's separate interface, and it is not a hardware immobilizer. Physical flash access is outside this local access-control mechanism.</p>
 <p>See <a href="../locking/">locking internals</a> for implementation details and <a href="../todo/">open work</a> for remaining hardware acceptance checks.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../reference/notices/">Notices</a></span></footer></main>
 <aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
 <ul>
-<li><a href="#set-or-change-the-bike-pin">Set or change the bike PIN</a></li>
+<li><a href="#set-or-change-the-screen-lock">Set or change the screen lock</a></li>
 <li><a href="#lock-only-the-screen">Lock only the screen</a></li>
 <li><a href="#lock-the-bike-and-screen">Lock the bike and screen</a></li>
-<li><a href="#pair-the-phone">Pair the phone</a></li>
+<li><a href="#pair-the-phone-to-the-display">Pair the phone to the display</a></li>
+<li><a href="#pair-the-display-to-vesc-express">Pair the display to VESC Express</a></li>
 <li><a href="#keep-the-security-boundaries-clear">Keep the security boundaries clear</a></li>
 </ul>
 </div>

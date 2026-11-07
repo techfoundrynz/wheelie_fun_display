@@ -17,7 +17,7 @@
 </svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
 <div class="header-actions"><a class="installer-link" href="../../install/">Install firmware</a><a class="simulator-link" href="../../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
 <button class="nav-overlay" type="button" aria-label="Close navigation"></button>
-<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../../">Overview</a><div class="nav-group"><span>Start here</span><a href="../../getting-started/">Getting started</a><a href="../../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../../guide/">Using the display</a><a href="../../connections/">Connections &amp; proxy</a><a href="../../pins/">PINs &amp; locking</a><a href="../../maintenance/">Updates &amp; maintenance</a><a href="../../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../../hardware/guition-43/">GUITION P4 4.3-inch</a></div><div class="nav-group"><span>For developers</span><a href="../../building/">Build &amp; install</a><a href="../../contributing/">Contributing</a><a href="../../architecture/">Architecture</a><a href="../../performance/">Performance</a><a href="../../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../../integrations/">Vehicle integrations</a><a href="../../locking/">Locking internals</a><a href="../../bluetooth/">Bluetooth internals</a><a href="../../transports/">Transport internals</a><a href="../wheel-e-protocol/">wheel-e protocol notes</a><a href="./" aria-current="page">WFB protocol notes</a><a href="../wfb-bike-layer/">WFB bike layer</a><a href="../theme/">Theme guide</a><a href="../notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../../">Overview</a><div class="nav-group"><span>Start here</span><a href="../../getting-started/">Getting started</a><a href="../../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../../guide/">Using the display</a><a href="../../connections/">Connections &amp; proxy</a><a href="../../pins/">PINs, patterns &amp; pairing</a><a href="../../maintenance/">Updates &amp; maintenance</a><a href="../../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../../hardware/guition-43/">GUITION P4 4.3-inch</a></div><div class="nav-group"><span>For developers</span><a href="../../building/">Build &amp; install</a><a href="../../contributing/">Contributing</a><a href="../../architecture/">Architecture</a><a href="../../performance/">Performance</a><a href="../../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../../integrations/">Vehicle integrations</a><a href="../../locking/">Locking internals</a><a href="../../bluetooth/">Bluetooth internals</a><a href="../../transports/">Transport internals</a><a href="../wheel-e-protocol/">wheel-e protocol notes</a><a href="./" aria-current="page">WFB protocol notes</a><a href="../wfb-bike-layer/">WFB bike layer</a><a href="../theme/">Theme guide</a><a href="../notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
 <main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">Reference</div><h1>WFB protocol notes</h1><p>VESC transport, telemetry and configuration reference for WFB.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/wheelie-vesc-comms-api.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>VESC communications reference for Wheelie app version 1.0.0.</p>
 <div class="table-scroll" tabindex="0"><table>
 <thead>
@@ -920,9 +920,9 @@ u8[] uuid (remaining bytes)
 <td>10000</td>
 </tr>
 <tr>
-<td><code>tachValue</code>, <code>tachAbs</code></td>
-<td><code>readInt32</code></td>
-<td>—</td>
+<td><code>distance</code>, <code>distanceAbs</code> (legacy labels <code>tachValue</code>, <code>tachAbs</code>)</td>
+<td><code>readDouble32</code></td>
+<td>1000; metres</td>
 </tr>
 <tr>
 <td><code>pidPos</code></td>
@@ -961,6 +961,7 @@ u8[] uuid (remaining bytes)
 </tr>
 </tbody>
 </table></div>
+<p>For distance reporting, the display follows the <a href="https://github.com/vedderb/bldc/blob/master/comm/commands.c">upstream VESC serializer</a>: the two setup-distance fields are scaled metres rather than raw tachometer counts. <code>distanceAbs</code> supplies the trip since controller boot; the optional unsigned <code>odometer</code> supplies lifetime metres. These common fields are used for both supported vehicle packages and generic VESC, independently of the inferred custom-package tail below.</p>
 <h3 id="comm_get_imu_data-65-response"><code>COMM_GET_IMU_DATA</code> (65) response</h3>
 <pre><code>u16 mask
 </code></pre>
