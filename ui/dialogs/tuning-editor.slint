@@ -1,0 +1,157 @@
+import { TuneField } from "../models.slint";
+import { Action } from "../controls.slint";
+import { Theme } from "../theme.slint";
+import { ModalFrame } from "modal-frame.slint";
+import { TuningSlider } from "../tuning-slider.slint";
+
+component EditorControls inherits Rectangle {
+    in property <TuneField> field;
+    in property <bool> enabled;
+    callback adjust(int);
+    callback set-value(float);
+    min-width: 0px;
+    min-height: 244px;
+    VerticalLayout {
+        spacing: 8px;
+        alignment: center;
+        Text {
+            text: root.field.label;
+            color: Theme.text;
+            font-size: 22px;
+            font-weight: 800;
+            wrap: word-wrap;
+        }
+
+        Text {
+            text: root.field.value;
+            color: root.field.changed ? Theme.accent : Theme.text;
+            font-size: root.width < 300px ? 22px : 28px;
+            font-weight: 800;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+
+        HorizontalLayout {
+            height: 48px;
+            spacing: 10px;
+            Action {
+                height: 48px;
+                label: "Decrease value";
+                label-visible: false;
+                enabled: root.enabled && !root.field.read-only && root.field.can-decrease;
+                Text {
+                    text: "-";
+                    color: parent.enabled ? Theme.text : Theme.dim;
+                    font-size: 30px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+
+                activated => { root.adjust(-1); }
+            }
+
+            Action {
+                height: 48px;
+                label: "Increase value";
+                label-visible: false;
+                enabled: root.enabled && !root.field.read-only && root.field.can-increase;
+                Text {
+                    text: "+";
+                    color: parent.enabled ? Theme.text : Theme.dim;
+                    font-size: 30px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+
+                activated => { root.adjust(1); }
+            }
+        }
+        // This editor lives outside PageDeck, so the track receives presses
+        // directly and never competes with page swipes or vertical scrolling.
+        TuningSlider {
+            height: 96px;
+            label: root.field.label;
+            enabled: root.enabled && !root.field.read-only;
+            minimum: root.field.minimum;
+            maximum: root.field.maximum;
+            value: root.field.position;
+            step: root.field.step;
+            default-position: root.field.default-position;
+            has-default: root.field.has-default;
+            tick-every: root.field.tick-every;
+            selected(value) => { root.set-value(value); }
+        }
+    }
+}
+
+component EditorNotes inherits Rectangle {
+    in property <TuneField> field;
+    callback closed();
+    min-width: 0px;
+    min-height: 136px;
+    VerticalLayout {
+        spacing: 12px;
+        alignment: center;
+        Text {
+            text: "Read from bike: " + root.field.saved;
+            color: root.field.changed ? Theme.warning : Theme.secondary;
+            font-size: 14px;
+            wrap: word-wrap;
+        }
+
+        Text {
+            text: root.field.read-only ? root.field.read-only-reason : root.field.off-grid ?
+                "The bike reports a custom value. Moving the slider selects one of the supported steps." :
+                "Drag to adjust. The amber marker shows the default. Changes stay in your draft until saved.";
+            color: root.field.read-only || root.field.off-grid ? Theme.warning : Theme.secondary;
+            font-size: 14px;
+            wrap: word-wrap;
+        }
+
+        Action {
+            label: "Done";
+            height: 48px;
+            selected: true;
+            activated => { root.closed(); }
+        }
+    }
+}
+
+export component TuningEditor inherits ModalFrame {
+    in property <TuneField> field;
+    in property <bool> enabled: true;
+    callback adjust(int);
+    callback set-value(float);
+    callback closed();
+    if root.width > root.height: landscape := HorizontalLayout {
+        spacing: 20px;
+        EditorControls {
+            width: max(0px, landscape.width - 20px) * 0.60;
+            field: root.field;
+            enabled: root.enabled;
+            adjust(delta) => { root.adjust(delta); }
+            set-value(value) => { root.set-value(value); }
+        }
+
+        EditorNotes {
+            width: max(0px, landscape.width - 20px) * 0.40;
+            field: root.field;
+            closed => { root.closed(); }
+        }
+    }
+    if root.width <= root.height: VerticalLayout {
+        spacing: 12px;
+        alignment: center;
+        EditorControls {
+            field: root.field;
+            enabled: root.enabled;
+            adjust(delta) => { root.adjust(delta); }
+            set-value(value) => { root.set-value(value); }
+        }
+
+        EditorNotes {
+            field: root.field;
+            closed => { root.closed(); }
+        }
+    }
+}

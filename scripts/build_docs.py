@@ -178,6 +178,13 @@ PAGES = [
         "Colours, typography and component styling for the display.",
     ),
     (
+        "docs/wheelie-ride-controls.md",
+        "reference/wfb-ride-controls",
+        "WFB ride controls",
+        "Reference",
+        "Control types, rider-facing ranges, presets and configuration limits.",
+    ),
+    (
         "THIRD_PARTY.md",
         "reference/notices",
         "Third-party notices",

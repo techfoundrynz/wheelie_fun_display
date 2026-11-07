@@ -1,8 +1,8 @@
 import { Action } from "../controls.slint";
 import { Theme } from "../theme.slint";
-import { SafeArea } from "../safe-area.slint";
+import { ModalFrame } from "modal-frame.slint";
 
-export component UpdateConfirmation inherits Rectangle {
+export component UpdateConfirmation inherits ModalFrame {
     in property <bool> can-maintain;
     in property <length> display-safe-inset-x;
     in property <length> display-safe-inset-y;
@@ -12,39 +12,34 @@ export component UpdateConfirmation inherits Rectangle {
 
     callback update-install();
 
-    background: Theme.bg;
-    SafeArea {
-        safe-inset-x: root.display-safe-inset-x;
-        safe-inset-y: root.display-safe-inset-y;
-        minimum-padding-x: 20px;
-        minimum-padding-y: 20px;
-        VerticalLayout {
-            padding: 0px;
-            spacing: 12px;
-            alignment: center;
-            Text {
-                text: "INSTALL UPDATE?";
-                color: Theme.accent;
-                font-size: 24px;
-            }
+    safe-inset-x: root.display-safe-inset-x;
+    safe-inset-y: root.display-safe-inset-y;
+    VerticalLayout {
+        padding: 0px;
+        spacing: 12px;
+        alignment: center;
+        Text {
+            text: "INSTALL UPDATE?";
+            color: Theme.accent;
+            font-size: 24px;
+        }
 
-            Text {
-                text: "Bluetooth will disconnect during installation. Keep the display powered. Restart after verification to use the new firmware.";
-                color: Theme.text;
-                wrap: word-wrap;
-                font-size: 16px;
-            }
+        Text {
+            text: "Bluetooth will disconnect during installation. Keep the display powered. Restart after verification to use the new firmware.";
+            color: Theme.text;
+            wrap: word-wrap;
+            font-size: 16px;
+        }
 
-            Action {
-                label: "Install now";
-                enabled: root.can-maintain && root.wifi-connected && !root.network-busy;
-                activated => { root.ota-confirming = false; root.update-install(); }
-            }
+        Action {
+            label: "Install now";
+            enabled: root.can-maintain && root.wifi-connected && !root.network-busy;
+            activated => { root.ota-confirming = false; root.update-install(); }
+        }
 
-            Action {
-                label: "Cancel";
-                activated => { root.ota-confirming = false; }
-            }
+        Action {
+            label: "Cancel";
+            activated => { root.ota-confirming = false; }
         }
     }
 }

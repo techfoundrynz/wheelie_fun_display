@@ -1,5 +1,6 @@
 #include "bike/can_bridge.hpp"
 #include "bike/can_packet.hpp"
+#include "bike/configuration_write.hpp"
 #include "bike/controller_discovery.hpp"
 #include "bike/security_policy.hpp"
 #include <cstdlib>
@@ -553,6 +554,36 @@ void presentation_integration_tests() {
 }
 
 int main() {
+  bike::ConfigurationWriteContext guard{true, true, true, false, true, true, 7, 7, 1000, 500};
+  CHECK(bike::configuration_write_allowed(guard));
+  auto invalid_guard = guard;
+  invalid_guard.session = 8;
+  CHECK(!bike::configuration_write_allowed(invalid_guard));
+  invalid_guard = guard;
+  invalid_guard.now_ms = 30500;
+  CHECK(!bike::configuration_write_allowed(invalid_guard));
+  invalid_guard = guard;
+  invalid_guard.now_ms = 499;
+  CHECK(!bike::configuration_write_allowed(invalid_guard));
+  for (int reason = 0; reason < 7; ++reason) {
+    invalid_guard = guard;
+    if (reason == 0)
+      invalid_guard.ready = false;
+    if (reason == 1)
+      invalid_guard.integration_verified = false;
+    if (reason == 2)
+      invalid_guard.unlocked = false;
+    if (reason == 3)
+      invalid_guard.phone_present = true;
+    if (reason == 4)
+      invalid_guard.telemetry_permits = false;
+    if (reason == 5)
+      invalid_guard.has_candidate = false;
+    if (reason == 6)
+      invalid_guard.confirmed_session = 6;
+    CHECK(!bike::configuration_write_allowed(invalid_guard));
+  }
+
   presentation_integration_tests();
   codec_tests();
   bridge_tests();

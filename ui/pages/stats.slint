@@ -1,3 +1,4 @@
+import { WideStatsOverview } from "stats/wide-overview.slint";
 import { StatItem } from "../models.slint";
 import { TransitionPage } from "../page-transition.slint";
 import { SwipeScroll } from "../swipe-scroll.slint";
@@ -98,66 +99,84 @@ export component StatsPage inherits TransitionPage {
                 color: Theme.secondary;
                 font-size: 14px;
             }
-            SectionTitle {
-                text: "RIDE";
+            if root.width >= 640px: WideStatsOverview {
+                metric: root.metric;
+                speed: root.speed;
+                power: root.power;
+                battery: root.battery;
+                voltage: root.voltage;
+                motor-current: root.motor-current;
+                battery-current: root.battery-current;
+                pitch: root.pitch;
+                roll: root.roll;
+                mosfet: root.mosfet;
+                motor: root.motor;
+                trip: root.trip;
+                odometer: root.odometer;
             }
+            if root.width < 640px: VerticalLayout {
+                spacing: 12px;
+                SectionTitle {
+                    text: "RIDE";
+                }
 
-            StatRow {
-                first-label: "SPEED";
-                first-value: root.speed == "--" ? "--" : root.speed + (root.metric ? " km/h" : " mph");
-                second-label: "POWER";
-                second-value: root.power;
-            }
+                StatRow {
+                    first-label: "SPEED";
+                    first-value: root.speed == "--" ? "--" : root.speed + (root.metric ? " km/h" : " mph");
+                    second-label: "POWER";
+                    second-value: root.power;
+                }
 
-            SectionTitle {
-                text: "DISTANCE";
-            }
+                SectionTitle {
+                    text: "DISTANCE";
+                }
 
-            StatRow {
-                first-label: "TRIP";
-                first-value: root.trip;
-                second-label: "ODOMETER";
-                second-value: root.odometer;
-            }
+                StatRow {
+                    first-label: "TRIP";
+                    first-value: root.trip;
+                    second-label: "ODOMETER";
+                    second-value: root.odometer;
+                }
 
-            SectionTitle {
-                text: "ELECTRICAL";
-            }
+                SectionTitle {
+                    text: "ELECTRICAL";
+                }
 
-            StatRow {
-                first-label: "VOLTAGE";
-                first-value: root.voltage;
-                second-label: "BATTERY";
-                second-value: root.battery;
-            }
+                StatRow {
+                    first-label: "VOLTAGE";
+                    first-value: root.voltage;
+                    second-label: "BATTERY";
+                    second-value: root.battery;
+                }
 
-            StatRow {
-                first-label: "INPUT CURRENT";
-                first-value: root.battery-current;
-                second-label: "MOTOR CURRENT";
-                second-value: root.motor-current;
-            }
+                StatRow {
+                    first-label: "INPUT CURRENT";
+                    first-value: root.battery-current;
+                    second-label: "MOTOR CURRENT";
+                    second-value: root.motor-current;
+                }
 
-            SectionTitle {
-                text: "TEMPERATURES";
-            }
+                SectionTitle {
+                    text: "TEMPERATURES";
+                }
 
-            StatRow {
-                first-label: "CONTROLLER";
-                first-value: root.mosfet;
-                second-label: "MOTOR";
-                second-value: root.motor;
-            }
+                StatRow {
+                    first-label: "CONTROLLER";
+                    first-value: root.mosfet;
+                    second-label: "MOTOR";
+                    second-value: root.motor;
+                }
 
-            SectionTitle {
-                text: "ATTITUDE";
-            }
+                SectionTitle {
+                    text: "ATTITUDE";
+                }
 
-            StatRow {
-                first-label: "PITCH";
-                first-value: root.pitch;
-                second-label: "ROLL";
-                second-value: root.roll;
+                StatRow {
+                    first-label: "PITCH";
+                    first-value: root.pitch;
+                    second-label: "ROLL";
+                    second-value: root.roll;
+                }
             }
 
             SectionTitle {

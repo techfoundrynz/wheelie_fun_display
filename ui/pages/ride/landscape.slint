@@ -1,0 +1,83 @@
+import { DistanceSummary } from "../../distance-summary.slint";
+import { BatteryMeter } from "../../battery-meter.slint";
+import { Metric } from "../../controls.slint";
+import { Speedometer } from "../../speedometer.slint";
+import { RideLayout } from "model.slint";
+
+export component LandscapeRide inherits RideLayout {
+    HorizontalLayout {
+        spacing: 16px;
+        VerticalLayout {
+            alignment: end;
+            min-width: 0px;
+            preferred-width: 0px;
+            horizontal-stretch: 1;
+            spacing: 20px;
+
+            Speedometer {
+                align-bottom: true;
+                height-limit: min(231px, max(0px, root.height - 35px - 20px));
+                value: root.data.speed;
+                live: root.data.fresh;
+                progress: root.data.speed-progress;
+                unit: root.data.metric ? "km/h" : "mph";
+            }
+
+            BatteryMeter {
+                level: root.data.battery-level;
+                charge: root.data.battery;
+                voltage: root.data.voltage;
+            }
+        }
+
+        VerticalLayout {
+            min-width: 0px;
+            preferred-width: 0px;
+            horizontal-stretch: 1;
+            spacing: 12px;
+            alignment: end;
+            DistanceSummary {
+                trip: root.data.trip;
+                odometer: root.data.odometer;
+            }
+
+            HorizontalLayout {
+                vertical-stretch: 0;
+                spacing: 10px;
+                Metric {
+                    compact: root.short-landscape;
+                    height: root.short-landscape ? 64px : 76px;
+                    label: "POWER";
+                    value: root.data.power;
+                }
+
+                Metric {
+                    compact: root.short-landscape;
+                    height: root.short-landscape ? 64px : 76px;
+                    label: "PITCH";
+                    value: root.data.pitch;
+                }
+            }
+
+            HorizontalLayout {
+                vertical-stretch: 0;
+                spacing: 10px;
+                Metric {
+                    compact: root.short-landscape;
+                    height: root.short-landscape ? 64px : 76px;
+                    label: "ESC TEMP";
+                    value: root.data.mosfet;
+                    warning: root.data.hot;
+                }
+
+                Metric {
+                    compact: root.short-landscape;
+                    height: root.short-landscape ? 64px : 76px;
+                    label: "MOTOR";
+                    value: root.data.motor;
+                    warning: root.data.hot;
+                }
+            }
+        }
+    }
+}

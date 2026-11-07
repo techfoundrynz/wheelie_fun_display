@@ -1,0 +1,120 @@
+import { TuneField } from "../../models.slint";
+import { Action } from "../../controls.slint";
+import { Theme } from "../../theme.slint";
+
+export component TuningField inherits Rectangle {
+    in property <TuneField> field;
+    in property <bool> enabled;
+    callback adjust(int);
+    callback set-value(float);
+    callback edit();
+    height: root.field.kind == 3 ? 166px : root.field.kind == 2 ? 176px : 112px;
+    background: Theme.surface;
+    border-radius: 12px;
+    VerticalLayout {
+        padding: 10px;
+        spacing: 4px;
+        HorizontalLayout {
+            Text {
+                text: root.field.label;
+                color: Theme.text;
+                font-size: 16px;
+                font-weight: 700;
+                overflow: elide;
+            }
+
+            Text {
+                text: root.field.changed ? "Unsaved" : "";
+                color: Theme.accent;
+                font-size: 14px;
+                horizontal-alignment: right;
+            }
+        }
+
+        if root.field.kind == 1: Action {
+            label: (root.field.value == "Enabled" ? "Disable " : "Enable ") + root.field.label;
+            label-visible: false;
+            selected: root.field.value == "Enabled";
+            enabled: root.enabled && !root.field.read-only;
+            Text {
+                text: root.field.value;
+                color: parent.enabled ? Theme.text : Theme.dim;
+                font-size: 18px;
+                font-weight: 700;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+
+            activated => { root.adjust(root.field.value == "Enabled" ? -1 : 1); }
+        }
+        if root.field.kind == 2: GridLayout {
+            spacing: 6px;
+            for option[i] in root.field.options: Action {
+                row: floor(i / 2);
+                col: mod(i, 2);
+                label: option;
+                label-size: 14px;
+                selected: round(root.field.position) == i;
+                enabled: root.enabled && !root.field.read-only && i >= root.field.minimum && i <= root.field.maximum;
+                activated => { root.set-value(i); }
+            }
+        }
+        if root.field.kind == 0 || root.field.kind == 3: HorizontalLayout {
+            spacing: 10px;
+            Action {
+                width: 48px;
+                label: "Decrease " + root.field.label;
+                label-visible: false;
+                enabled: root.enabled && !root.field.read-only && root.field.can-decrease;
+                Text {
+                    text: "-";
+                    color: parent.enabled ? Theme.text : Theme.dim;
+                    font-size: 24px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+
+                activated => { root.adjust(-1); }
+            }
+
+            Text {
+                text: root.field.value;
+                color: root.field.changed ? Theme.accent : Theme.text;
+                font-size: 20px;
+                font-weight: 800;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+
+            Action {
+                width: 48px;
+                label: "Increase " + root.field.label;
+                label-visible: false;
+                enabled: root.enabled && !root.field.read-only && root.field.can-increase;
+                Text {
+                    text: "+";
+                    color: parent.enabled ? Theme.text : Theme.dim;
+                    font-size: 24px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+
+                activated => { root.adjust(1); }
+            }
+        }
+
+        if root.field.kind == 3: Action {
+            label: "Adjust " + root.field.label;
+            enabled: root.enabled && !root.field.read-only;
+            activated => { root.edit(); }
+        }
+
+        Text {
+            text: root.field.read-only ? root.field.read-only-reason : "Read from bike: " + root.field.saved + (root.field.off-grid ? " · custom value" : "");
+            color: root.field.changed || root.field.off-grid ? Theme.warning : Theme.secondary;
+            font-size: 14px;
+            overflow: elide;
+        }
+    }
+}

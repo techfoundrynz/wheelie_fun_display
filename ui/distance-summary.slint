@@ -4,6 +4,7 @@ component DistanceReading inherits Rectangle {
     in property <string> label;
     in property <string> value;
     in property <bool> outer-edge;
+    in property <bool> expanded;
     min-width: 0px;
     preferred-width: 0px;
     horizontal-stretch: 1;
@@ -15,14 +16,14 @@ component DistanceReading inherits Rectangle {
         caption := Text {
             text: root.label;
             color: Theme.secondary;
-            font-size: 14px;
+            font-size: root.expanded ? 16px : 14px;
             font-weight: 700;
         }
 
         reading := Text {
             text: root.value;
             color: Theme.text;
-            font-size: 16px;
+            font-size: root.expanded ? 24px : 16px;
             font-weight: 700;
             overflow: elide;
         }
@@ -33,15 +34,18 @@ export component DistanceSummary inherits Rectangle {
     in property <string> trip;
     in property <string> odometer;
     in property <bool> outer-edges;
-    height: 40px;
+    in property <bool> expanded;
+    height: root.expanded ? 56px : 40px;
     HorizontalLayout {
         spacing: 12px;
         trip-reading := DistanceReading {
+            expanded: root.expanded;
             label: "TRIP";
             value: root.trip;
         }
 
         odo-reading := DistanceReading {
+            expanded: root.expanded;
             label: "ODO";
             value: root.odometer;
             outer-edge: root.outer-edges;

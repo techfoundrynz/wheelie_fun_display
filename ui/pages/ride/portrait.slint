@@ -1,0 +1,90 @@
+import { DistanceSummary } from "../../distance-summary.slint";
+import { BatteryMeter } from "../../battery-meter.slint";
+import { Metric } from "../../controls.slint";
+import { Speedometer } from "../../speedometer.slint";
+import { RideLayout } from "model.slint";
+
+export component PortraitRide inherits RideLayout {
+    in property <bool> expanded;
+    VerticalLayout {
+        spacing: root.expanded ? 14px : 10px;
+
+        BatteryMeter {
+            height: root.expanded ? 44px : 35px;
+            level: root.data.battery-level;
+            charge: root.data.battery;
+            voltage: root.data.voltage;
+        }
+
+        dial-area := Rectangle {
+            min-height: 0px;
+            preferred-height: 0px;
+            vertical-stretch: 1;
+            portrait-speedo-box := Rectangle {
+                x: 0px;
+                y: max(0px, parent.height - self.height);
+                width: parent.width;
+                height: portrait-distance.height + 4px + portrait-dial.height;
+                portrait-distance := DistanceSummary {
+                    x: 0px;
+                    y: 0px;
+                    width: parent.width;
+                    outer-edges: true;
+                    expanded: root.expanded;
+                    trip: root.data.trip;
+                    odometer: root.data.odometer;
+                }
+
+                portrait-dial := Speedometer {
+                    x: 0px;
+                    y: portrait-distance.height + 4px;
+                    width: parent.width;
+                    height-limit: max(0px, dial-area.height - portrait-distance.height - 4px);
+                    unit-size: root.expanded ? 24px : 18px;
+                    value: root.data.speed;
+                    live: root.data.fresh;
+                    progress: root.data.speed-progress;
+                    unit: root.data.metric ? "km/h" : "mph";
+                }
+            }
+        }
+
+        HorizontalLayout {
+            vertical-stretch: 0;
+            spacing: root.expanded ? 14px : 10px;
+            Metric {
+                height: root.expanded ? 88px : 60px;
+                expanded: root.expanded;
+                label: "POWER";
+                value: root.data.power;
+            }
+
+            Metric {
+                height: root.expanded ? 88px : 60px;
+                expanded: root.expanded;
+                label: "PITCH";
+                value: root.data.pitch;
+            }
+        }
+
+        if !root.compact: HorizontalLayout {
+            vertical-stretch: 0;
+            spacing: root.expanded ? 14px : 10px;
+            Metric {
+                height: root.expanded ? 88px : 60px;
+                expanded: root.expanded;
+                label: "CONTROLLER";
+                value: root.data.mosfet;
+                warning: root.data.hot;
+            }
+
+            Metric {
+                height: root.expanded ? 88px : 60px;
+                expanded: root.expanded;
+                label: "MOTOR";
+                value: root.data.motor;
+                warning: root.data.hot;
+            }
+        }
+    }
+}

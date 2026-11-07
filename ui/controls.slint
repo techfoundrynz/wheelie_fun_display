@@ -63,6 +63,7 @@ export component Metric inherits Rectangle {
     in property <string> value;
     in property <bool> warning: false;
     in property <bool> compact: false;
+    in property <bool> expanded: false;
     min-width: 0px;
     preferred-width: 0px;
     horizontal-stretch: 1;
@@ -80,7 +81,7 @@ export component Metric inherits Rectangle {
         Text {
             text: root.value;
             color: root.warning ? Theme.danger : Theme.text;
-            font-size: root.compact ? 18px : 24px;
+            font-size: root.expanded ? 28px : root.compact ? 18px : 24px;
             font-weight: 800;
             overflow: elide;
         }

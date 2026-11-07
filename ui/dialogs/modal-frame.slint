@@ -1,0 +1,33 @@
+import { Theme } from "../theme.slint";
+import { SafeArea } from "../safe-area.slint";
+
+export component ModalFrame inherits Rectangle {
+    in property <length> safe-inset-x;
+    in property <length> safe-inset-y;
+    in property <length> content-padding: 16px;
+    background: Theme.modal-backdrop;
+    TouchArea { }
+
+    area := SafeArea {
+        safe-inset-x: root.safe-inset-x;
+        safe-inset-y: root.safe-inset-y;
+        minimum-padding-x: 24px;
+        minimum-padding-y: 24px;
+        panel := Rectangle {
+            width: min(720px, max(0px, area.width - 2 * area.content-inset-x));
+            height: max(0px, area.height - 2 * area.content-inset-y);
+            x: (max(0px, area.width - 2 * area.content-inset-x) - self.width) / 2;
+            background: Theme.surface;
+            border-radius: Theme.panel-radius;
+            border-color: Theme.control;
+            border-width: Theme.control-border;
+            Rectangle {
+                x: root.content-padding;
+                y: root.content-padding;
+                width: max(0px, parent.width - 2 * root.content-padding);
+                height: max(0px, parent.height - 2 * root.content-padding);
+                @children
+            }
+        }
+    }
+}

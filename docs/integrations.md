@@ -14,6 +14,12 @@ Forget the connected bike to select another integration; the decoder and pending
 
 The header, window title and About page use the selected vehicle brand. WFB retains its supplied artwork; wheel-e and generic VESC use text wordmarks. Wheel-e does not display or send WFB's proprietary commands 100/103.
 
+## Tuning backends
+
+WFB has a schema-verified tuning backend using standard VESC custom-configuration read/write commands. It exposes response presets and custom response, speed limit, wheelie/button/anti-loop controls and advanced gains. Unsupported schemas remain read-only/unavailable; the display does not manufacture a default profile to send. See [Tune](user-guide.md#tune) for the user flow.
+
+Tuning is a separate capability from live telemetry, lock, presets and speed limit. The shared `TuningBackend` interface supplies schema decoding, preserved-byte encoding, sections, presets and control metadata. A future wheel-e implementation can supply its own backend and enable that capability without adopting WFB field names or changing BLE/CAN/UART transport. Until that implementation is verified, wheel-e and generic VESC return no tuning backend.
+
 ## wheel-e protocol reference
 
 See the dedicated [wheel-e protocol notes](wheel-e-protocol.md) for identity verification, byte layouts, state flags, locking and compatibility limits.

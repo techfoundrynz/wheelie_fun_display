@@ -1,0 +1,22 @@
+export struct RideTelemetry {
+    battery: string,
+    battery-level: float,
+    fresh: bool,
+    hot: bool,
+    metric: bool,
+    mosfet: string,
+    motor: string,
+    pitch: string,
+    power: string,
+    speed: string,
+    speed-progress: float,
+    voltage: string,
+    trip: string,
+    odometer: string,
+}
+
+export component RideLayout inherits Rectangle {
+    in property <RideTelemetry> data;
+    in property <bool> compact;
+    in property <bool> short-landscape;
+}

@@ -84,14 +84,28 @@ OTA selects the matching environment.bin asset and validates its GitHub SHA256 d
 
 The first USB installation must include the new two-slot partition table and OTA initialization image. Later application-only OTA preserves the running slot until commit. The device uses certificate-verified HTTPS and digest checks; a separate firmware signing authority and secure boot are not configured.
 
+## Integration-specific tuning
+
+`bike::TuningBackend` separates each integration's schema, editable controls, presets and presentation from the shared transport and UI. `WfbTuningBackend` implements WFB; `make_tuning_backend()` returns no implementation for wheel-e and generic VESC. The independent `VehicleFeatures::tuning` flag allows a future integration to expose generic profile controls without inheriting WFB response presets or speed-limit assumptions. A new backend supplies section/preset labels and descriptions as models; the page does not hardcode WFB choices.
+
+Control metadata selects numeric steppers, boolean switches, enum pickers or discrete sliders. Position-to-wire mappings, defaults, tick spacing, conditional read-only reasons and schema-intersected limits belong to the backend. WFB uses the supplied [ride-controls reference](wheelie-ride-controls.md), including the nonlinear ten-stop ramp and musical-note tables. The UI never snaps raw readback simply to fit a slider. Focused slider editors sit above the page deck, avoiding competition with its swipe recognizer. Their values bind to the live field model; closing the editor never writes configuration. Locking, losing configuration readiness, rotating or navigating dismisses the editor.
+
+`firmware/main/tuning.cpp` owns the common session-bound exchange: chunked command-92 schema reads, bounded Qt/qCompress decompression, command-93 profile reads, confirmation, preflight conflict detection, one command-95 write and full command-93 verification. Configuration work yields while the phone owns the relay; the telemetry scheduler remains independent. XML and decompressor state are allocated in PSRAM, outside pointer callbacks. Profile changes are UI-thread drafts, with no local NVS writes for individual edits.
+
+The WFB codec validates runtime CRC32C, serialization order, field types/scales/ranges, package identity and exact binary length. It retains the original packet and patches only selected fields, preserving unknown supported fields and values the UI does not expose. A schema's editor step is not a wire quantization rule. Unsupported schemas, unknown wire types, malformed or oversized replies fail closed. The legacy 13-field live command is not used for these profile edits, avoiding its horn-strength conversion ambiguity.
+
+Confirmation is bound to a 30-second session ticket. A fresh profile must still match the original baseline, and fresh stationary, fault-free telemetry, verified integration, unlocked state and absence of phone ownership are checked again immediately before transmission. Locking, changing session or cancelling before transmission invalidates the candidate; an already transmitted candidate retains its verification fingerprint. Only matching full readback is called verified. No actual WFB schema/configuration capture has yet been validated on hardware; host fixtures cover serialization, malformed input, quantization, unknown-byte preservation and write-guard predicates.
+
 ## Shared UI components
 
 `ui/dashboard.slint` is the window and application-facing API: it owns shared state, responsive breakpoints, navigation transitions and modal ordering. Page components receive explicit properties and callbacks; mutable drafts and selections use two-way bindings. Firmware, native and browser simulators all use this same window.
 
 | UI source | Responsibility |
 |---|---|
-| `ui/pages/ride.slint` | Portrait and landscape telemetry layouts |
-| `ui/pages/tune.slint` | Ride presets and speed-limit drafts |
+| `ui/pages/ride.slint` | Ride property adapter and responsive layout selection |
+| `ui/pages/ride/` | Shared telemetry model, portrait, compact landscape and wide landscape layouts |
+| `ui/pages/stats/wide-overview.slint` | Three-column overview for wider Stats viewports |
+| `ui/pages/tune.slint`, `ui/pages/tune/field.slint` | Integration-supplied tuning sections, saved/draft values and guarded profile saves |
 | `ui/pages/stats.slint` | Read-only controller and optional BMS telemetry |
 | `ui/pages/settings.slint` | Display, units, vehicle, screen lock, phone connection and system sections |
 | `ui/pages/wifi.slint` | Network discovery and saved connections |
@@ -103,7 +117,7 @@ The first USB installation must include the new two-slot partition table and OTA
 | `ui/settings.slint`, `ui/controls.slint` | Shared rows, steppers, actions and metric cards |
 | `ui/dialogs/` | Bike-change and firmware-install confirmations |
 
-Ride, Stats, Tune, Wi-Fi, Updates and About inherit `TransitionPage`, retaining the same incoming/outgoing-page lifecycle without adding a layout wrapper. Settings uses its scrolling `Page` inside a `TransitionPage`. Gesture offsets remain owned by `PageDeck` and are forwarded to scrolling content. New Slint files are included automatically by the recursive firmware UI dependency scan.
+Ride, Stats, Tune, Wi-Fi, Updates and About inherit `TransitionPage`, retaining the same incoming/outgoing-page lifecycle without adding a layout wrapper. Settings uses its scrolling `Page` inside a `TransitionPage`. Gesture offsets remain owned by `PageDeck` and are forwarded to scrolling content. New Slint files are included automatically by the recursive firmware UI dependency scan. Ride chooses its wide layout from available logical space (at least 640 × 260 px in landscape); a portrait content area of at least 400 × 560 px gets larger cards and distance readings. Smaller layouts retain compact geometry. Only the selected variant is instantiated, and all variants share `RideTelemetry`. Expanded typography reuses the existing embedded font sizes.
 
 Page provides a vertically scrolling content layout. Action, Metric, SettingsRow, Stepper, SectionTitle and InfoRow are reusable themed components. Keyboard provides case/symbol modes, password masking/reveal, space and delete, with bounded SSID/password editors in the application. Settings links to Wi-Fi, Updates and About; About has separate version and live-diagnostics views. Speed and temperature preferences are independent, while fault/overheat decisions use native protocol units.
 

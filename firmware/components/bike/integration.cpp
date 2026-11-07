@@ -45,7 +45,7 @@ public:
   }
 
   VehicleFeatures features() const override {
-    return {true, true, true};
+    return {true, true, true, true};
   }
 
   std::span<const uint8_t> poll() const override {

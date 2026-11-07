@@ -65,6 +65,12 @@ document
     simulator?.set_connected(event.target.checked),
   );
 document
+  .getElementById("display-model")
+  .addEventListener("change", (event) =>
+    simulator?.set_display_model(Number(event.target.value)),
+  );
+
+document
   .getElementById("integration")
   .addEventListener("change", (event) =>
     simulator?.set_integration(Number(event.target.value)),
@@ -98,6 +104,10 @@ try {
   window.wheelieFunDisplay = simulator;
   started = performance.now();
   const params = new URLSearchParams(location.search);
+  if (params.get("display") === "guition") {
+    simulator.set_display_model(1);
+    document.getElementById("display-model").value = "1";
+  }
   if (params.get("orientation") === "landscape") simulator.set_rotation(90);
   else if (params.has("orientation"))
     simulator.set_rotation(Number(params.get("orientation")));
@@ -117,6 +127,9 @@ try {
       document
         .querySelector(".display-frame")
         .classList.toggle("landscape", landscape);
+      document
+        .querySelector(".display-frame")
+        .classList.toggle("large-display", simulator.state("display-model"));
       document.getElementById("orientation").textContent =
         `Rotate: ${simulator.state("rotation")}°`;
       requestAnimationFrame(frame);

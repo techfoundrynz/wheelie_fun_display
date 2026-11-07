@@ -407,6 +407,25 @@ def main() -> None:
             touch_page.wait_for_timeout(300)
             assert touch_page.evaluate("window.wheelieFunDisplay.state('page')") == 3
             mobile.close()
+            # Changing hardware size must survive all four runtime rotations.
+            page.goto(
+                f"http://127.0.0.1:{server.server_port}/wheelie_fun_display/simulator/"
+            )
+            page.wait_for_function(
+                "window.wheelieFunDisplay && document.querySelector('#status').textContent.startsWith('Ready')"
+            )
+            page.locator("#display-model").select_option("1")
+            for rotation in (0, 90, 180, 270):
+                page.evaluate("r => window.wheelieFunDisplay.set_rotation(r)", rotation)
+                expected = [800, 480] if rotation in (90, 270) else [480, 800]
+                page.wait_for_function(
+                    "size => { const c = document.querySelector('#display'); return c.width === size[0] && c.height === size[1]; }",
+                    arg=expected,
+                )
+            page.locator("#display-model").select_option("0")
+            page.wait_for_function(
+                "document.querySelector('#display').width === 502 && document.querySelector('#display').height === 410"
+            )
             assert not errors, "Browser errors: " + "\n".join(errors)
             browser.close()
     finally:

@@ -8,11 +8,13 @@ The main screens keep the ride information close and the configuration controls 
 
 Speed uses your saved km/h or mph preference. Temperature units are configured separately. Pitch is shown with the degree symbol. In portrait, TRIP and ODOMETER occupy the upper-left and upper-right corners of the speedometer area. The gauge's layout box follows its actual painted and text bounds rather than a full-circle placeholder. The dashboard uses the selected integration's live VESC data; it does not calculate a substitute speed when messages are missing.
 
+On larger displays such as the GUITION 4.3-inch, landscape Ride places a full-width battery gauge at the top, then a larger speed dial on the left and trip and odometer above the four telemetry cards on the right. Portrait uses larger telemetry cards and distance readings. The arrangement follows the available screen space and selected orientation.
+
 Connection setup and data freshness are separate. A Bluetooth or wired link can be established before valid telemetry arrives. Readings become `--` when they expire, and configuration controls stay unavailable until their requirements are met.
 
 ## Stats
 
-The bottom tabs are **Ride**, **Stats** and **Tune**. Stats is a read-only, vertically scrolling view. It follows your independent speed and temperature units; missing or expired values show `--`.
+The bottom tabs are **Ride**, **Stats** and **Tune**. Stats is a read-only, vertically scrolling view. Wide screens use a three-column overview so more readings fit together; narrower screens keep the grouped two-column cards. It follows your independent speed and temperature units; missing or expired values show `--`.
 
 | Group | Available controller values |
 | --- | --- |
@@ -33,11 +35,32 @@ Scroll further to inspect optional BMS details and cell values:
 
 ## Tune
 
-WFB offers Eco, Cruise and Sport ride-response presets plus speed-limit controls. Select a draft, tap Apply, review the confirmation and apply the change while the bike is stopped. The firmware checks connection identity, freshness, speed and controller fault again before enqueueing the command.
+WFB tuning begins by reading the bike's configuration schema and profile. The display verifies the schema signature and supported encodings before enabling changes. **Read from bike** values remain separate from your drafts; an initially selected preset is never treated as a configuration readback. An unsupported or unreadable schema leaves tuning disabled with a status message and a retry button.
 
-A queued tuning command is not a readback. The current protocol does not document an acknowledgement for these writes. Selecting a preset in the UI does not prove it is the bike's stored preset.
+The quick response choices are **Eco**, **Cruise** and **Sport**. Eco sets a 90 A motor-current limit; Cruise and Sport use 150 A, with different throttle ramps. Eco also has a different braking ramp. A read profile that does not match these exact values is labelled **Custom**. The speed-limit slider covers 5–35 mph and a final **No limit** position, restricted by the bike's reported schema. It shows your preferred units, while the bike stores whole mph; km/h steps can therefore vary by one or two.
 
-Wheel-e and generic VESC do not show WFB-only tuning controls. Use VESC Tool for configuration that this display does not expose.
+For individual controls, choose a section:
+
+- **Response:** ten-stop throttle/brake strength sliders cover 60–150 A, with braking stored as a negative current. Responsiveness has ten documented stops, ending with Instant.
+- **Button:** choose Wheelie, Turbo, Horn or Disabled. Wheelie angle covers 5–55°; maintain-on-throttle and maintain-on-brake switches apply to the wheelie button.
+- **Throttle:** throttle/brake tilt, signed tilt angles (−20 to +20°), anti-loop angle, linked button angle and wheel lift resistance. Linked or disabled controls remain visible with an explanation. Lift resistance is shown as 0–10 and stored as 0–3.
+- **Horn:** when Horn is selected as the button action, set strength (1–10) and a musical note from G#3 to B5; the display also shows its frequency.
+
+Tap **Adjust** to open a focused slider editor; quick −/+ controls also work on the Tune card. The editor keeps slider drags separate from page swipes and blocks taps on the page behind it. **Done** returns to Tune without sending changes. Sliders have tick marks and an amber reference-default marker. The readback label remains separate from the draft. A custom value outside the documented stops is shown unchanged; moving its slider explicitly selects a supported stop. The [WFB ride-controls reference](wheelie-ride-controls.md) records the mappings and limits. All controls also respect narrower limits reported by the bike.
+
+![Wheelie tuning controls](images/tune-wheelie.png)
+
+![Focused wheelie angle slider editor](images/tune-slider.png)
+
+Edits stay in the display's draft until you tap Apply or **Save tuning changes** and confirm. **Discard tuning draft** restores the last read profile. Re-reading the bike replaces unsaved drafts with its reported configuration. The save prompt lists the changed values and scrolls when needed; its buttons stay visible inside a solid rounded panel over a dimmed backdrop. Tuning editors and update confirmations use the same panel styling.
+
+![Bike tuning save confirmation](images/tune-confirmation.png)
+
+Before sending, the firmware reads the profile again. If another client changed it, the save is cancelled and the new values are shown for review. Saving requires the same verified vehicle session, an unlocked display, fresh fault-free telemetry and a stopped bike. The display then compares the entire returned profile with the requested settings. **Saved profile verified by readback** confirms those reported values; it is not a power-cycle retention test. A queued write, acknowledgment, timeout or mismatching response is never presented as a verified save.
+
+The phone must be disconnected while reading or saving tuning; ordinary display telemetry continues while the phone proxy is connected. Connecting a phone or changing vehicle session invalidates pending tuning work. An interrupted save that was already transmitted may still have reached the bike; re-read its profile before trying again.
+
+Wheel-e and generic VESC currently have no tuning backend, so these controls remain unavailable for them. The shared tuning UI and transport can support another integration once its schema and write semantics have been implemented and verified.
 
 ## Vehicle settings
 

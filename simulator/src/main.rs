@@ -5,6 +5,8 @@ use std::time::{Duration, Instant};
 slint::include_modules!();
 #[path = "../stats_fixture.rs"]
 mod stats_fixture;
+#[path = "../tuning_fixture.rs"]
+mod tuning_fixture;
 
 fn project_proxy_name(ui: &Dashboard, preference: &str) {
     let id = if ui.get_connected() {
@@ -20,6 +22,7 @@ fn project_proxy_name(ui: &Dashboard, preference: &str) {
         }
         .into(),
     );
+    ui.set_supports_tuning(id == 1);
     ui.set_supports_presets(id == 1);
     ui.set_supports_limit(id == 1);
     ui.set_supports_lock(id == 1 || id == 2);
@@ -360,6 +363,7 @@ fn main() -> Result<(), slint::PlatformError> {
     }
     let weak = ui.as_weak();
     let started = Instant::now();
+    tuning_fixture::configure(&ui);
     let timer = Timer::default();
     timer.start(TimerMode::Repeated, Duration::from_millis(100), move || {
         let ui = weak.unwrap();

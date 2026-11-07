@@ -76,7 +76,7 @@ def main() -> None:
                     assert not any(
                         word in value for word in ["demo", "simulator", "simulated"]
                     ), (field, value)
-                if not query or "orientation=" in query or "integration=" in query:
+                if "page=" not in query:
                     assert (
                         page.evaluate("window.wheelieFunDisplay.state('speed')")
                         == "24.6"
@@ -100,6 +100,12 @@ def main() -> None:
             capture("ride-portrait.png")
             fresh("?orientation=landscape")
             capture("ride-landscape.png")
+            fresh("?display=guition&orientation=landscape")
+            capture("ride-guition-landscape.png")
+            fresh("?display=guition")
+            capture("ride-guition-portrait.png")
+            fresh("?display=guition&orientation=landscape&page=1")
+            capture("stats-guition-landscape.png")
             fresh("?integration=wheel-e")
             capture("wheel-e-portrait.png")
             fresh("?page=1")
@@ -110,6 +116,17 @@ def main() -> None:
             capture("stats-cells.png")
             fresh("?page=2")
             capture("tune.png")
+            page.evaluate("window.wheelieFunDisplay.set_tuning_section(1)")
+            capture("tune-wheelie.png")
+            page.evaluate("window.wheelieFunDisplay.edit_tuning(5)")
+            assert page.evaluate("window.wheelieFunDisplay.state('tuning-editor-open')")
+            capture("tune-slider.png")
+            page.evaluate("window.wheelieFunDisplay.invoke('tuning-editor-done')")
+            page.evaluate("window.wheelieFunDisplay.adjust_tuning(5, 1)")
+            page.evaluate("window.wheelieFunDisplay.invoke('tuning-save')")
+            assert page.evaluate("window.wheelieFunDisplay.state('confirming')")
+            capture("tune-confirmation.png")
+            page.evaluate("window.wheelieFunDisplay.invoke('cancel-change')")
             fresh("?page=3")
             page.evaluate("window.wheelieFunDisplay.scroll(205, 250, -360)")
             capture("vehicle-settings.png")

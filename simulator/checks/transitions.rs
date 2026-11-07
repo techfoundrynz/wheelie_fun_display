@@ -11,6 +11,8 @@ thread_local! { static SCROLL_TIME: Cell<u64> = const { Cell::new(0) }; }
 slint::include_modules!();
 #[path = "../stats_fixture.rs"]
 mod stats_fixture;
+#[path = "../tuning_fixture.rs"]
+mod tuning_fixture;
 
 struct Lines<'a> {
     pixels: &'a mut [Rgb8Pixel],
@@ -79,7 +81,13 @@ fn control(ui: &Dashboard, label: &str) -> i_slint_backend_testing::ElementHandl
     let controls: Vec<_> =
         i_slint_backend_testing::ElementHandle::find_by_accessible_label(ui, label)
             .filter(|control| {
-                control.accessible_role() == Some(i_slint_backend_testing::AccessibleRole::Button)
+                matches!(
+                    control.accessible_role(),
+                    Some(
+                        i_slint_backend_testing::AccessibleRole::Button
+                            | i_slint_backend_testing::AccessibleRole::Slider
+                    )
+                )
             })
             .collect();
     assert_eq!(controls.len(), 1, "Expected one control labelled {label:?}");
@@ -130,6 +138,7 @@ fn click_control(
         || ui.get_pairing_open()
         || ui.get_editing()
         || ui.get_confirming()
+        || ui.get_tuning_editor_open()
         || ui.get_ota_confirming();
     let navigation = ["Settings", "Ride", "Stats", "Tune"].contains(&label);
     let size = window.window().size();
@@ -150,7 +159,13 @@ fn click_control(
                 ui, label,
             )
             .find(|item| {
-                item.accessible_role() == Some(i_slint_backend_testing::AccessibleRole::Button)
+                matches!(
+                    item.accessible_role(),
+                    Some(
+                        i_slint_backend_testing::AccessibleRole::Button
+                            | i_slint_backend_testing::AccessibleRole::Slider
+                    )
+                )
             });
             let center = visible
                 .as_ref()
@@ -210,6 +225,7 @@ fn main() {
     }))
     .unwrap();
     let ui = Dashboard::new().unwrap();
+    tuning_fixture::configure(&ui);
     ui.set_fresh(true);
     ui.set_speed("24.8".into());
     ui.set_speed_progress(0.44);
@@ -740,11 +756,11 @@ fn main() {
             }
             capture(name, &pixels, width, height);
             if width < height && name == "ride-live" {
-                let area = element(&ui, "RidePage::dial-area");
-                let distance = element(&ui, "RidePage::portrait-distance");
+                let area = element(&ui, "PortraitRide::dial-area");
+                let distance = element(&ui, "PortraitRide::portrait-distance");
                 let face = element(&ui, "Speedometer::dial-face");
-                let dial = element(&ui, "RidePage::portrait-dial");
-                let box_bounds = element(&ui, "RidePage::portrait-speedo-box");
+                let dial = element(&ui, "PortraitRide::portrait-dial");
+                let box_bounds = element(&ui, "PortraitRide::portrait-speedo-box");
                 let origin = area.absolute_position();
                 let bounds = area.size();
                 assert!(
@@ -813,7 +829,44 @@ fn main() {
                     "Unused height leaked below the portrait arc instead of above the speedometer group"
                 );
             }
-            if width > height && name == "ride-live" {
+            if width >= 700 && width > height && name == "ride-live" {
+                let face = element(&ui, "Speedometer::dial-face");
+                let dial = element(&ui, "WideRide::dial-area");
+                let battery = element(&ui, "WideRide::battery");
+                let telemetry = element(&ui, "WideRide::telemetry");
+                let distance = element(&ui, "WideRide::distance");
+                let deck = element(&ui, "Dashboard::pages");
+                assert!(
+                    face.size().width >= 280.,
+                    "Large screen retained a small dial"
+                );
+                assert!(
+                    distance.absolute_position().x
+                        >= dial.absolute_position().x + dial.size().width + 27.,
+                    "Wide distance readings overlap the speed dial"
+                );
+                assert!(
+                    (battery.absolute_position().x - deck.absolute_position().x).abs() < 1.
+                        && (battery.size().width - deck.size().width).abs() < 1.,
+                    "Wide battery must span the content width"
+                );
+                assert!(
+                    distance.absolute_position().y + distance.size().height
+                        <= telemetry.absolute_position().y + telemetry.size().height - 180.,
+                    "Wide distance readings must stay above the stat cards"
+                );
+                assert!(
+                    dial.absolute_position().y
+                        >= battery.absolute_position().y + battery.size().height + 15.,
+                    "Wide battery overlaps the dial and telemetry area"
+                );
+                assert!(
+                    telemetry.absolute_position().y + telemetry.size().height
+                        <= deck.absolute_position().y + deck.size().height + 1.,
+                    "Wide telemetry cards escape the page viewport"
+                );
+            }
+            if width > height && width < 700 && name == "ride-live" {
                 let mut gauge_bottom = None;
                 let mut battery_top = None;
                 let mut battery_bottom = None;
@@ -905,7 +958,6 @@ fn main() {
     let deck = element(&ui, "Dashboard::pages");
     let header_rows = deck.absolute_position().y.round() as usize;
     let footer_start = (deck.absolute_position().y + deck.size().height).round() as usize;
-    let preset_y = header_rows as f32 + 88.;
     let apply_y = header_rows as f32 + 148.;
     if args.get(2).is_some_and(|arg| arg == "--stats-fixtures") {
         ui.set_animations_enabled(false);
@@ -927,6 +979,25 @@ fn main() {
         click_control(&window, &ui, &clock, &mut pixels, "Stats");
         frame(&window, &clock, 0, &mut pixels, width);
         assert_eq!(ui.get_page(), 1);
+        if width >= 700 {
+            let captions: Vec<_> = ["SPEED", "POWER", "BATTERY"]
+                .iter()
+                .map(|label| {
+                    i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui, label)
+                        .next()
+                        .expect("Wide overview caption missing")
+                })
+                .collect();
+            for pair in captions.windows(2) {
+                let first = pair[0].absolute_position();
+                let second = pair[1].absolute_position();
+                assert!(
+                    (first.y - second.y).abs() < 1.,
+                    "Wide Stats is not three columns"
+                );
+                assert!(second.x > first.x + 150., "Wide Stats columns overlap");
+            }
+        }
         assert!(
             i_slint_backend_testing::ElementHandle::find_by_accessible_label(
                 &ui,
@@ -1129,6 +1200,191 @@ fn main() {
         );
         return;
     }
+    if args
+        .get(2)
+        .is_some_and(|arg| arg == "--wfb-tuning-fixtures")
+    {
+        ui.set_animations_enabled(false);
+        ui.set_connected(true);
+        ui.set_fresh(true);
+        ui.set_connection("Connected".into());
+        ui.set_can_configure(true);
+        ui.set_page(2);
+        frame(&window, &clock, 0, &mut pixels, width);
+        click_control(&window, &ui, &clock, &mut pixels, "Button");
+        click_control(&window, &ui, &clock, &mut pixels, "Increase Wheelie angle");
+        let angle = || {
+            (0..ui.get_tuning_fields().row_count())
+                .filter_map(|i| ui.get_tuning_fields().row_data(i))
+                .find(|item| item.label == "Wheelie angle")
+                .expect("Wheelie angle field missing")
+        };
+        assert_eq!(angle().value, "30.5°");
+        assert_eq!(angle().saved, "30.0°", "Draft overwrote readback");
+        assert!(ui.get_tuning_dirty());
+        click_control(&window, &ui, &clock, &mut pixels, "Throttle");
+        click_control(
+            &window,
+            &ui,
+            &clock,
+            &mut pixels,
+            "Disable Anti-loop throttle",
+        );
+        assert!(
+            (0..ui.get_tuning_fields().row_count())
+                .filter_map(|i| ui.get_tuning_fields().row_data(i))
+                .any(|item| item.label == "Same angle as button" && item.read_only)
+        );
+        click_control(
+            &window,
+            &ui,
+            &clock,
+            &mut pixels,
+            "Enable Anti-loop throttle",
+        );
+        click_control(
+            &window,
+            &ui,
+            &clock,
+            &mut pixels,
+            "Disable Same angle as button",
+        );
+        assert!(
+            (0..ui.get_tuning_fields().row_count())
+                .filter_map(|i| ui.get_tuning_fields().row_data(i))
+                .any(|item| item.label == "Anti-loop angle")
+        );
+        capture("wfb-wheelie-draft", &pixels, width, height);
+        ui.set_can_configure(false);
+        click_control(&window, &ui, &clock, &mut pixels, "Save tuning changes");
+        assert!(
+            !ui.get_confirming(),
+            "Moving bike opened a write confirmation"
+        );
+        ui.set_can_configure(true);
+        frame(&window, &clock, SCROLL_TIME.get() + 5, &mut pixels, width);
+        click_control(&window, &ui, &clock, &mut pixels, "Save tuning changes");
+        frame(&window, &clock, SCROLL_TIME.get() + 10, &mut pixels, width);
+        assert!(ui.get_confirming());
+        assert!(ui.get_confirm_text().contains("Wheelie angle"));
+        let panel = element(&ui, "ModalFrame::panel");
+        let position = panel.absolute_position();
+        let fill = pixels[(position.y as usize + 20) * width + position.x as usize + 6];
+        assert_eq!(
+            fill,
+            Rgb8Pixel {
+                r: 29,
+                g: 29,
+                b: 29
+            },
+            "Confirmation panel must have an opaque theme surface fill"
+        );
+        let settings = control_center(&ui, "Settings");
+        click(&window, settings.0, settings.1);
+        frame(&window, &clock, SCROLL_TIME.get() + 15, &mut pixels, width);
+        assert_eq!(
+            ui.get_page(),
+            2,
+            "Confirmation allowed a background Settings tap"
+        );
+        assert!(ui.get_confirming());
+        capture("wfb-save-confirmation", &pixels, width, height);
+        click_control(&window, &ui, &clock, &mut pixels, "Cancel");
+        assert!(!ui.get_confirming());
+        assert!(ui.get_tuning_dirty());
+        click_control(&window, &ui, &clock, &mut pixels, "Save tuning changes");
+        click_control(&window, &ui, &clock, &mut pixels, "Apply now");
+        assert!(!ui.get_tuning_dirty());
+        click_control(&window, &ui, &clock, &mut pixels, "Button");
+        assert_eq!(angle().saved, "30.5°");
+        click_control(&window, &ui, &clock, &mut pixels, "Adjust Wheelie angle");
+        frame(&window, &clock, SCROLL_TIME.get() + 20, &mut pixels, width);
+        assert!(ui.get_tuning_editor_open());
+        let panel = element(&ui, "ModalFrame::panel");
+        let panel_position = panel.absolute_position();
+        let panel_size = panel.size();
+        assert!(
+            panel_position.x >= 24.
+                && panel_position.y >= 24.
+                && panel_position.x + panel_size.width <= width as f32 - 24.
+                && panel_position.y + panel_size.height <= height as f32 - 24.,
+            "Tuning panel exceeds its safe margins"
+        );
+        capture("wfb-tuning-editor", &pixels, width, height);
+        let slider = control(&ui, "Wheelie angle");
+        let p = slider.absolute_position();
+        let size = slider.size();
+        assert!(
+            size.width >= 180. && size.height >= 48.,
+            "Tuning editor compressed the slider's touch target"
+        );
+        for (offset, value) in [5.0, 30.0, 55.0].into_iter().enumerate() {
+            ui.invoke_tuning_set(5, value);
+            frame(
+                &window,
+                &clock,
+                SCROLL_TIME.get() + 21 + offset as u64,
+                &mut pixels,
+                width,
+            );
+            let rail = element(&ui, "TuningSlider::rail");
+            let fill = element(&ui, "TuningSlider::fill");
+            let thumb = element(&ui, "TuningSlider::thumb");
+            let expected = (value - 5.0) / 50.0 * rail.size().width;
+            assert!(
+                (fill.absolute_position().x - rail.absolute_position().x).abs() < 0.1,
+                "Slider fill must begin at the start of the rail"
+            );
+            assert!(
+                (fill.size().width - expected).abs() < 0.1,
+                "Slider fill does not represent its displayed value"
+            );
+            assert!(
+                (thumb.absolute_position().x + thumb.size().width / 2.0
+                    - rail.absolute_position().x
+                    - expected)
+                    .abs()
+                    < 0.1,
+                "Slider thumb and fill disagree"
+            );
+        }
+        ui.invoke_tuning_set(5, 30.5);
+        frame(&window, &clock, SCROLL_TIME.get() + 24, &mut pixels, width);
+        let x = p.x + size.width * 0.35;
+        let y = p.y + size.height / 2.;
+        pointer(&window, "down", x, y);
+        pointer(&window, "move", p.x + size.width * 0.7, y);
+        frame(&window, &clock, SCROLL_TIME.get() + 25, &mut pixels, width);
+        pointer(&window, "up", p.x + size.width * 0.7, y);
+        frame(&window, &clock, SCROLL_TIME.get() + 50, &mut pixels, width);
+        assert_eq!(ui.get_page(), 2, "Slider drag navigated away from Tune");
+        assert!(angle().position > 35., "Slider did not follow the finger");
+        assert_eq!(angle().saved, "30.5°", "Slider overwrote saved readback");
+        let cog = control_center(&ui, "Settings");
+        click(&window, cog.0, cog.1);
+        assert_eq!(ui.get_page(), 2, "Slider editor allowed a background tap");
+        click_control(&window, &ui, &clock, &mut pixels, "Done");
+        assert!(!ui.get_tuning_editor_open());
+        ui.set_ota_confirming(true);
+        frame(&window, &clock, SCROLL_TIME.get() + 80, &mut pixels, width);
+        let update_panel = element(&ui, "ModalFrame::panel");
+        let p = update_panel.absolute_position();
+        let size = update_panel.size();
+        assert!(
+            p.x >= 24.
+                && p.y >= 24.
+                && p.x + size.width <= width as f32 - 24.
+                && p.y + size.height <= height as f32 - 24.,
+            "Update confirmation exceeds safe margins"
+        );
+        capture("update-confirmation-panel", &pixels, width, height);
+        click_control(&window, &ui, &clock, &mut pixels, "Cancel");
+        assert!(!ui.get_ota_confirming());
+        println!(
+            "{width}x{height}: WFB draft/readback, conditional controls, guards, opaque modal and save fixtures passed"
+        );
+        return;
+    }
     if args.get(2).is_some_and(|arg| arg == "--tuning-fixtures") {
         ui.set_animations_enabled(false);
         ui.set_page(2);
@@ -1140,25 +1396,25 @@ fn main() {
         ui.on_apply_mode(move |_| writes.set(writes.get() + 1));
         frame(&window, &clock, 0, &mut pixels, width);
         capture("tuning-disconnected", &pixels, width, height);
-        click(&window, 80., preset_y);
-        click(&window, width as f32 / 2., apply_y);
+        click_control(&window, &ui, &clock, &mut pixels, "Eco");
+        click_control(&window, &ui, &clock, &mut pixels, "Apply ride response");
         assert_eq!(ui.get_draft_mode(), 1, "Disconnected preset accepted a tap");
         assert_eq!(applied.get(), 0, "Disconnected tuning accepted a write");
         ui.set_connected(true);
         ui.set_can_configure(false);
         frame(&window, &clock, 20, &mut pixels, width);
-        click(&window, 80., preset_y);
+        click_control(&window, &ui, &clock, &mut pixels, "Eco");
         assert_eq!(
             ui.get_draft_mode(),
             0,
             "Connected preset could not be selected"
         );
-        click(&window, width as f32 / 2., apply_y);
+        click_control(&window, &ui, &clock, &mut pixels, "Apply ride response");
         assert_eq!(applied.get(), 0, "Telemetry/stationary guard was bypassed");
         ui.set_can_configure(true);
         frame(&window, &clock, 40, &mut pixels, width);
         capture("tuning-connected", &pixels, width, height);
-        click(&window, width as f32 / 2., apply_y);
+        click_control(&window, &ui, &clock, &mut pixels, "Apply ride response");
         assert_eq!(applied.get(), 1, "Ready tuning write stopped working");
         println!("{width}x{height}: disconnected tuning, preset selection and write guards passed");
         return;
@@ -1304,6 +1560,7 @@ fn main() {
             applied.set(0);
             ui.set_active_integration(id);
             ui.set_vehicle_brand(name.into());
+            ui.set_supports_tuning(id == 1);
             ui.set_supports_presets(id == 1);
             ui.set_supports_limit(id == 1);
             ui.set_supports_lock(id != 0);
@@ -1761,7 +2018,7 @@ fn main() {
     let mut swipe = |dx: f32, dy: f32, expected: i32| {
         let start_page = ui.get_page();
         let start_x = width as f32 / 2.;
-        let start_y = apply_y; // Start on Tune Apply to verify drags never submit it.
+        let start_y = apply_y; // Start within page content; drags must never submit a change.
         pointer(&window, "down", start_x, start_y);
         frame(&window, &clock, time, &mut pixels, width);
         let before = pixels.clone();
@@ -1838,7 +2095,7 @@ fn main() {
     ui.set_page(2);
     frame(&window, &clock, time, &mut pixels, width);
     frame(&window, &clock, time + 280, &mut pixels, width);
-    click(&window, width as f32 / 2., apply_y);
+    click_control(&window, &ui, &clock, &mut pixels, "Apply ride response");
     frame(&window, &clock, time + 300, &mut pixels, width);
     assert_eq!(applied.get(), 1);
     ui.set_page(0);

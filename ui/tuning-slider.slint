@@ -1,0 +1,84 @@
+import { Theme } from "theme.slint";
+
+export component TuningSlider inherits Rectangle {
+    in property <string> label;
+    in property <bool> enabled: true;
+    in property <float> minimum;
+    in property <float> maximum: 10;
+    in property <float> value;
+    in property <float> step: 1;
+    in property <float> default-position;
+    in property <bool> has-default;
+    in property <int> tick-every: 1;
+    callback selected(float);
+    height: 48px;
+    accessible-role: slider;
+    accessible-label: root.label;
+    accessible-value: root.value;
+    accessible-value-minimum: root.minimum;
+    accessible-value-maximum: root.maximum;
+    accessible-enabled: root.enabled;
+    accessible-value-step: root.step;
+    accessible-action-increment => { if root.enabled { root.selected(min(root.maximum, root.shown + root.step)); } }
+    accessible-action-decrement => { if root.enabled { root.selected(max(root.minimum, root.shown - root.step)); } }
+    private property <float> shown: clamp(root.value, root.minimum, root.maximum);
+    private property <length> usable: max(1px, root.width - 28px);
+    private property <float> span: max(0.0001, root.maximum - root.minimum);
+    private property <float> tick-step: max(1, root.tick-every) * max(0.0001, root.step);
+    private property <int> ticks: min(41, floor(root.span / root.tick-step) + 1);
+    function pick(x: length) {
+        let fraction = clamp((x - 14px) / root.usable, 0, 1);
+        root.selected(clamp(root.minimum + round(fraction * root.span / max(0.0001, root.step)) * root.step, root.minimum, root.maximum));
+    }
+    rail := Rectangle {
+        x: 14px;
+        y: (root.height - 6px) / 2;
+        width: root.usable;
+        height: 6px;
+        border-radius: 3px;
+        background: Theme.control;
+        fill := Rectangle {
+            x: 0px;
+            y: 0px;
+            width: (root.shown - root.minimum) / root.span * rail.width;
+            height: rail.height;
+            border-radius: 3px;
+            background: root.enabled ? Theme.accent : Theme.dim;
+        }
+    }
+
+    for tick in root.ticks: Rectangle {
+        x: 13px + min(1, tick * root.tick-step / root.span) * root.usable;
+        y: (root.height - 10px) / 2;
+        width: 2px;
+        height: 10px;
+        background: Theme.secondary;
+    }
+    if root.has-default && root.default-position >= root.minimum && root.default-position <= root.maximum: Rectangle {
+        x: 13px + (root.default-position - root.minimum) / root.span * root.usable;
+        y: (root.height - 24px) / 2;
+        width: 2px;
+        height: 24px;
+        background: Theme.warning;
+    }
+    thumb := Rectangle {
+        x: (root.shown - root.minimum) / root.span * root.usable;
+        y: (root.height - 28px) / 2;
+        width: 28px;
+        height: 28px;
+        border-radius: 14px;
+        background: root.enabled ? Theme.accent : Theme.dim;
+        border-color: Theme.bg;
+        border-width: 2px;
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled && root.maximum > root.minimum;
+        pointer-event(event) => {
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
+                root.pick(self.mouse-x);
+            }
+        }
+        moved => { if self.pressed { root.pick(self.mouse-x); } }
+    }
+}

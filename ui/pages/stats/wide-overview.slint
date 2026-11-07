@@ -1,0 +1,99 @@
+import { Metric } from "../../controls.slint";
+import { SectionTitle } from "../../settings.slint";
+
+// Four rows keep the core readings visible together on a wide display.
+export component WideStatsOverview inherits VerticalLayout {
+    in property <string> speed;
+    in property <string> power;
+    in property <string> battery;
+    in property <string> voltage;
+    in property <string> motor-current;
+    in property <string> battery-current;
+    in property <string> pitch;
+    in property <string> roll;
+    in property <string> mosfet;
+    in property <string> motor;
+    in property <string> trip;
+    in property <string> odometer;
+    in property <bool> metric;
+    spacing: 12px;
+    SectionTitle {
+        text: "OVERVIEW";
+    }
+
+    HorizontalLayout {
+        height: 80px;
+        spacing: 12px;
+        Metric {
+            label: "SPEED";
+            value: root.speed == "--" ? "--" : root.speed + (root.metric ? " km/h" : " mph");
+        }
+
+        Metric {
+            label: "POWER";
+            value: root.power;
+        }
+
+        Metric {
+            label: "BATTERY";
+            value: root.battery;
+        }
+    }
+
+    HorizontalLayout {
+        height: 80px;
+        spacing: 12px;
+        Metric {
+            label: "VOLTAGE";
+            value: root.voltage;
+        }
+
+        Metric {
+            label: "INPUT CURRENT";
+            value: root.battery-current;
+        }
+
+        Metric {
+            label: "MOTOR CURRENT";
+            value: root.motor-current;
+        }
+    }
+
+    HorizontalLayout {
+        height: 80px;
+        spacing: 12px;
+        Metric {
+            label: "CONTROLLER";
+            value: root.mosfet;
+        }
+
+        Metric {
+            label: "MOTOR";
+            value: root.motor;
+        }
+
+        Metric {
+            label: "PITCH";
+            value: root.pitch;
+        }
+    }
+
+    HorizontalLayout {
+        height: 80px;
+        spacing: 12px;
+        Metric {
+            label: "ROLL";
+            value: root.roll;
+        }
+
+        Metric {
+            label: "TRIP";
+            value: root.trip;
+        }
+
+        Metric {
+            label: "ODOMETER";
+            value: root.odometer;
+        }
+    }
+}

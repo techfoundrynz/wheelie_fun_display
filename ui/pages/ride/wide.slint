@@ -1,0 +1,79 @@
+import { DistanceSummary } from "../../distance-summary.slint";
+import { BatteryMeter } from "../../battery-meter.slint";
+import { Metric } from "../../controls.slint";
+import { Speedometer } from "../../speedometer.slint";
+import { RideLayout } from "model.slint";
+
+export component WideRide inherits RideLayout {
+    VerticalLayout {
+        spacing: 16px;
+        battery := BatteryMeter {
+            height: 40px;
+            level: root.data.battery-level;
+            charge: root.data.battery;
+            voltage: root.data.voltage;
+        }
+
+        HorizontalLayout {
+            spacing: 28px;
+            dial-area := Rectangle {
+                width: (root.width - 28px) * 0.44;
+                min-height: 0px;
+                large-dial := Speedometer {
+                    y: max(0px, (parent.height - self.height) / 2);
+                    width: parent.width;
+                    height-limit: parent.height;
+                    value: root.data.speed;
+                    unit: root.data.metric ? "km/h" : "mph";
+                    unit-size: 24px;
+                    live: root.data.fresh;
+                    progress: root.data.speed-progress;
+                }
+            }
+
+            telemetry := VerticalLayout {
+                spacing: 12px;
+                alignment: end;
+                distance := DistanceSummary {
+                    expanded: true;
+                    trip: root.data.trip;
+                    odometer: root.data.odometer;
+                }
+
+                HorizontalLayout {
+                    height: 86px;
+                    spacing: 12px;
+                    Metric {
+                        expanded: true;
+                        label: "POWER";
+                        value: root.data.power;
+                    }
+
+                    Metric {
+                        expanded: true;
+                        label: "PITCH";
+                        value: root.data.pitch;
+                    }
+                }
+
+                HorizontalLayout {
+                    height: 86px;
+                    spacing: 12px;
+                    Metric {
+                        expanded: true;
+                        label: "CONTROLLER";
+                        value: root.data.mosfet;
+                        warning: root.data.hot;
+                    }
+
+                    Metric {
+                        expanded: true;
+                        label: "MOTOR";
+                        value: root.data.motor;
+                        warning: root.data.hot;
+                    }
+                }
+            }
+        }
+    }
+}

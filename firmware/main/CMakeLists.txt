@@ -11,7 +11,7 @@ else()
     message(FATAL_ERROR "Select a supported custom_board_driver in the PlatformIO hardware profile")
 endif()
 
-idf_component_register(SRCS "main.cpp" ${board_source} "ble.cpp" "ble_proxy.cpp" "slint_backend.cpp" "${renderer_source}" "network.cpp" "security.cpp" "ble_security.cpp" "transport.cpp" "wired_transport.cpp" "can_driver.cpp"
+idf_component_register(SRCS "main.cpp" "tuning.cpp" ${board_source} "ble.cpp" "ble_proxy.cpp" "slint_backend.cpp" "${renderer_source}" "network.cpp" "security.cpp" "ble_security.cpp" "transport.cpp" "wired_transport.cpp" "can_driver.cpp"
     INCLUDE_DIRS "." "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}/.pio/generated/${WFD_HARDWARE_ID}"
     REQUIRES bike slint_runtime bt nvs_flash esp_timer esp_lcd esp_driver_spi esp_driver_i2c esp_driver_twai esp_driver_uart
     esp_wifi esp_netif esp_event esp_http_client app_update mbedtls espressif__cjson

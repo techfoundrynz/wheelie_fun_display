@@ -1,8 +1,8 @@
 import { Action } from "../controls.slint";
 import { Theme } from "../theme.slint";
-import { SafeArea } from "../safe-area.slint";
+import { ModalFrame } from "modal-frame.slint";
 
-export component ApplyConfirmation inherits Rectangle {
+export component ApplyConfirmation inherits ModalFrame {
     in property <bool> can-configure;
     in property <string> confirm-text;
     in property <bool> connected;
@@ -12,48 +12,49 @@ export component ApplyConfirmation inherits Rectangle {
     callback cancel-change();
     callback confirm-change();
 
-    background: #000000b3;
-    SafeArea {
-        safe-inset-x: root.display-safe-inset-x;
-        safe-inset-y: root.display-safe-inset-y;
-        minimum-padding-x: 24px;
-        minimum-padding-y: 24px;
-        VerticalLayout {
-            padding: 0px;
-            alignment: center;
-            spacing: 16px;
-            Text {
-                text: "APPLY TO BIKE?";
-                color: Theme.accent;
-                font-size: 24px;
-                font-weight: 800;
-            }
+    safe-inset-x: root.display-safe-inset-x;
+    safe-inset-y: root.display-safe-inset-y;
+    VerticalLayout {
+        padding: 0px;
+        alignment: center;
+        spacing: 12px;
+        Text {
+            text: "APPLY TO BIKE?";
+            color: Theme.accent;
+            font-size: 24px;
+            font-weight: 800;
+        }
 
-            Text {
+        Flickable {
+            height: min(220px, max(64px, root.height - 340px));
+            content-width: self.width;
+            content-height: summary.preferred-height;
+            summary := Text {
+                width: parent.width;
                 text: root.confirm-text;
                 color: Theme.text;
                 font-size: 18px;
                 wrap: word-wrap;
             }
+        }
 
-            Text {
-                text: "This changes the live bike configuration. The bike must remain stopped.";
-                color: Theme.secondary;
-                wrap: word-wrap;
-                font-size: 16px;
-            }
+        Text {
+            text: "This saves bike configuration. The bike must remain stopped; values are checked again before sending.";
+            color: Theme.secondary;
+            wrap: word-wrap;
+            font-size: 14px;
+        }
 
-            Action {
-                label: "Apply now";
-                enabled: root.connected && root.can-configure;
-                selected: true;
-                activated => { root.confirm-change(); }
-            }
+        Action {
+            label: "Apply now";
+            enabled: root.connected && root.can-configure;
+            selected: true;
+            activated => { root.confirm-change(); }
+        }
 
-            Action {
-                label: "Cancel";
-                activated => { root.cancel-change(); }
-            }
+        Action {
+            label: "Cancel";
+            activated => { root.cancel-change(); }
         }
     }
 }

@@ -81,3 +81,8 @@ fn pattern_unlock() {
 fn detailed_stats() {
     check_layouts(Some("--stats-fixtures"), LAYOUTS);
 }
+
+#[test]
+fn wfb_configuration_drafts() {
+    check_layouts(Some("--wfb-tuning-fixtures"), LAYOUTS);
+}

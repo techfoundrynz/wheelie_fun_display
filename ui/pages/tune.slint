@@ -1,3 +1,5 @@
+import { TuneField } from "../models.slint";
+import { TuningField } from "tune/field.slint";
 import { TransitionPage } from "../page-transition.slint";
 import { SwipeScroll } from "../swipe-scroll.slint";
 import { Action } from "../controls.slint";
@@ -18,10 +20,35 @@ export component TunePage inherits TransitionPage {
     in property <bool> supports-presets;
     in property <string> vehicle-brand;
 
+    in property <bool> supports-tuning;
+    in property <[string]> tuning-presets;
+    in property <[string]> tuning-preset-descriptions;
+    in property <[string]> tuning-sections;
+    in property <bool> tuning-ready;
+    in property <bool> tuning-busy;
+    in property <bool> tuning-dirty;
+    in property <string> tuning-status;
+    in property <string> tuning-saved-response;
+    in property <string> tuning-saved-limit;
+    in property <int> tuning-limit-min;
+    in property <int> tuning-limit-max;
+    in property <bool> tuning-unlimited;
+    in property <[TuneField]> tuning-fields;
+    in-out property <int> tuning-section;
+    callback tuning-refresh();
+    callback tuning-adjust(int, int);
+    callback tuning-set(int, float);
+    callback tuning-edit(int);
+    callback tuning-save();
+    callback tuning-reset();
+    callback tuning-section-requested(int);
+
     callback apply-limit(int);
     callback apply-mode(int);
 
-    SwipeScroll {
+    changed tuning-section => { scroll.content-y = 0px; }
+
+    scroll := SwipeScroll {
         scroll-active: root.scroll-active;
         drag-delta: root.drag-delta;
         content-width: self.width;
@@ -35,27 +62,48 @@ export component TunePage inherits TransitionPage {
                 font-weight: 800;
             }
 
-            if !root.supports-presets && !root.supports-limit: Text {
-                text: root.integration-pending ? "Connect to your bike to discover its available tuning options." : "Ride presets and speed-limit tuning are not available for " + root.vehicle-brand + ". Use VESC Tool for vehicle configuration.";
+            if !root.supports-tuning && !root.supports-presets && !root.supports-limit: Text {
+                text: root.integration-pending ? "Connect to your bike to discover its available tuning options." : "Tuning is not available for " + root.vehicle-brand + ". Use VESC Tool for vehicle configuration.";
                 color: Theme.secondary;
                 font-size: 16px;
                 wrap: word-wrap;
             }
 
-            if root.supports-presets: VerticalLayout {
+            if root.supports-tuning: VerticalLayout {
+                spacing: 12px;
+                if !root.tuning-ready: Text {
+                    text: root.tuning-status;
+                    color: Theme.secondary;
+                    font-size: 14px;
+                    wrap: word-wrap;
+                }
+                GridLayout {
+                    spacing: 6px;
+                    for name[i] in root.tuning-sections: Action {
+                        visible: name != "Advanced";
+                        row: floor(i / 3);
+                        col: mod(i, 3);
+                        label: name;
+                        label-size: 14px;
+                        selected: root.tuning-section == i;
+                        activated => { root.tuning-section = i; root.tuning-section-requested(i); }
+                    }
+                }
+            }
+            if root.supports-presets && (!root.supports-tuning || root.tuning-section == 0): VerticalLayout {
                 spacing: 12px;
                 Text {
-                    text: "Ride response";
+                    text: "Response draft";
                     color: Theme.secondary;
                     font-size: 14px;
                 }
 
                 HorizontalLayout {
                     spacing: 8px;
-                    for name[i] in ["Eco", "Cruise", "Sport"]: Action {
+                    for name[i] in root.tuning-presets: Action {
                         label: name;
                         selected: root.draft-mode == i;
-                        enabled: root.connected;
+                        enabled: root.connected && root.tuning-ready && !root.tuning-busy;
                         border-color: !root.connected ? Theme.raised : i == 0 ? Theme.eco : i == 1 ? Theme.cruise : Theme.sport;
                         activated => { root.draft-mode = i; }
                     }
@@ -63,23 +111,37 @@ export component TunePage inherits TransitionPage {
 
                 Action {
                     label: "Apply ride response";
-                    enabled: root.connected && root.can-configure;
+                    enabled: root.connected && root.can-configure && root.tuning-ready && !root.tuning-busy && root.draft-mode >= 0 && root.draft-mode < root.tuning-presets.length;
                     activated => { root.apply-mode(root.draft-mode); }
                 }
+
+                Text {
+                    text: "Read from bike: " + root.tuning-saved-response;
+                    color: Theme.secondary;
+                    font-size: 14px;
+                    wrap: word-wrap;
+                }
+
+                Text {
+                    text: root.draft-mode >= 0 && root.draft-mode < root.tuning-preset-descriptions.length ? root.tuning-preset-descriptions[root.draft-mode] : "Choose a response draft, or edit individual values below.";
+                    color: Theme.secondary;
+                    font-size: 14px;
+                    wrap: word-wrap;
+                }
             }
-            if root.supports-limit: VerticalLayout {
+            if root.supports-limit && (!root.supports-tuning || root.tuning-section == 0): VerticalLayout {
                 spacing: 12px;
                 HorizontalLayout {
                     spacing: 10px;
                     Action {
                         label: "-";
                         width: 52px;
-                        enabled: root.connected && root.draft-limit > 5;
-                        activated => { root.draft-limit -= 1; }
+                        enabled: root.connected && root.tuning-ready && !root.tuning-busy && root.tuning-limit-min <= root.tuning-limit-max && (root.draft-limit == 0 || root.draft-limit > root.tuning-limit-min);
+                        activated => { root.draft-limit = root.draft-limit == 0 ? root.tuning-limit-max : clamp(root.draft-limit - 1, root.tuning-limit-min, root.tuning-limit-max); }
                     }
 
                     Text {
-                        text: "Limit: " + (root.metric ? round(root.draft-limit * 1.609344) : root.draft-limit) + (root.metric ? " km/h" : " mph");
+                        text: root.draft-limit == 0 ? "No limit" : "Limit: " + (root.metric ? round(root.draft-limit * 1.609344) : root.draft-limit) + (root.metric ? " km/h" : " mph");
                         color: Theme.text;
                         font-size: 20px;
                         horizontal-alignment: center;
@@ -89,18 +151,78 @@ export component TunePage inherits TransitionPage {
                     Action {
                         label: "+";
                         width: 52px;
-                        enabled: root.connected && root.draft-limit < 35;
-                        activated => { root.draft-limit += 1; }
+                        enabled: root.connected && root.tuning-ready && !root.tuning-busy && root.draft-limit != 0 && (root.draft-limit < root.tuning-limit-max || root.tuning-unlimited);
+                        activated => { root.draft-limit = root.draft-limit >= root.tuning-limit-max ? 0 : clamp(root.draft-limit + 1, root.tuning-limit-min, root.tuning-limit-max); }
                     }
                 }
 
                 Action {
+                    label: "Adjust speed limit";
+                    enabled: root.connected && root.tuning-ready && !root.tuning-busy && root.tuning-limit-min <= root.tuning-limit-max;
+                    activated => { root.tuning-edit(-2); }
+                }
+
+                Action {
                     label: "Apply speed limit";
-                    enabled: root.connected && root.can-configure;
+                    enabled: root.connected && root.can-configure && root.tuning-ready && !root.tuning-busy;
                     activated => { root.apply-limit(root.draft-limit); }
                 }
+
+                Text {
+                    text: "Read from bike: " + root.tuning-saved-limit + (root.metric ? ". The bike stores whole mph; km/h steps may vary." : ". Stored in whole mph.");
+                    color: Theme.secondary;
+                    font-size: 14px;
+                    wrap: word-wrap;
+                }
             }
-            if root.supports-presets || root.supports-limit: Text {
+            if root.supports-tuning: VerticalLayout {
+                spacing: 12px;
+                if root.tuning-sections[root.tuning-section] == "Advanced": Text {
+                    text: "Advanced gains change wheelie behaviour. Record your original settings and adjust one value at a time.";
+                    color: Theme.warning;
+                    font-size: 14px;
+                    wrap: word-wrap;
+                }
+                if root.tuning-ready && root.tuning-fields.length == 0: Text {
+                    text: "No controls are available for the current bike settings.";
+                    color: Theme.secondary;
+                    font-size: 14px;
+                    wrap: word-wrap;
+                }
+                for field[index] in root.tuning-fields: TuningField {
+                    field: field;
+                    enabled: root.connected && root.tuning-ready && !root.tuning-busy;
+                    adjust(delta) => { root.tuning-adjust(field.id, delta); }
+                    set-value(value) => { root.tuning-set(field.id, value); }
+                    edit() => { root.tuning-edit(index); }
+                }
+                Text {
+                    text: root.tuning-status;
+                    color: Theme.secondary;
+                    font-size: 14px;
+                    wrap: word-wrap;
+                }
+
+                Action {
+                    label: "Read bike settings";
+                    enabled: root.connected && !root.tuning-busy;
+                    activated => { root.tuning-refresh(); }
+                }
+
+                Action {
+                    label: "Save tuning changes";
+                    selected: root.tuning-dirty;
+                    enabled: root.connected && root.can-configure && root.tuning-ready && root.tuning-dirty && !root.tuning-busy;
+                    activated => { root.tuning-save(); }
+                }
+
+                Action {
+                    label: "Discard tuning draft";
+                    enabled: root.tuning-dirty && !root.tuning-busy;
+                    activated => { root.tuning-reset(); }
+                }
+            }
+            if root.supports-tuning || root.supports-presets || root.supports-limit: Text {
                 text: !root.connected ? "Connect to your bike to adjust ride tuning." : root.can-configure ? root.feedback : "Stop the bike and wait for live telemetry to apply changes.";
                 color: Theme.secondary;
                 font-size: 14px;

@@ -28,6 +28,7 @@
 #include "security.hpp"
 #include "slint_backend.hpp"
 #include "transport.hpp"
+#include "tuning.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -45,12 +46,6 @@ uint64_t now_ms() {
 bike::Telemetry telemetry;
 
 const bike::VehicleIntegration *vehicle = &bike::integration(bike::IntegrationId::Wfb);
-
-bool send_payload(std::span<const uint8_t> payload) {
-  if (ble_proxy::phone_owns_link())
-    return false;
-  return transport::send(payload);
-}
 
 slint::SharedString value(double v, const char *suffix, int precision = 0) {
   char s[48];
@@ -319,9 +314,6 @@ extern "C" void app_main() {
   });
   auto peers = std::make_shared<slint::VectorModel<Peer>>();
   ui->set_peers(peers);
-  int pending_kind = 0, pending_value = 0;
-  uint32_t pending_session = 0;
-  uint64_t pending_since = 0;
   std::array<transport::Device, 6> displayed_peers{};
   int displayed_count = 0;
   ui->on_connect_peer([&](int index) {
@@ -332,8 +324,7 @@ extern "C" void app_main() {
     if (value < 0 || value > 2 || security::blocked() || network::snapshot().busy || ble_proxy::phone_owns_link())
       return;
     if (transport::select(transport::Kind(value))) {
-      pending_kind = 0;
-      ui->set_confirming(false);
+      tuning::cancel();
       telemetry = {};
     }
   });
@@ -345,8 +336,7 @@ extern "C" void app_main() {
   });
   ui->on_discover_controller([&] {
     if (!security::blocked() && !network::snapshot().busy && transport::rediscover()) {
-      pending_kind = 0;
-      ui->set_confirming(false);
+      tuning::cancel();
       telemetry = {};
     }
   });
@@ -384,59 +374,7 @@ extern "C" void app_main() {
       nvs_close(h);
     }
   });
-  auto prepare = [&](int kind, int v) {
-    if ((kind == 1 && !vehicle->features().ride_presets) || (kind == 2 && !vehicle->features().speed_limit))
-      return;
-    if (security::blocked() || ble_proxy::phone_owns_link() || !telemetry.can_configure(now_ms()) ||
-        transport::snapshot().status != transport::Status::Ready)
-      return;
-    pending_kind = kind;
-    pending_value = v;
-    pending_session = transport::snapshot().session;
-    pending_since = now_ms();
-    if (kind == 1) {
-      const char *names[] = {"Eco", "Cruise", "Sport"};
-      ui->set_confirm_text(slint::SharedString("Ride response: ") + names[std::clamp(v, 0, 2)]);
-    }
-    else
-      ui->set_confirm_text(slint::SharedString("Speed limit: ") +
-                           value(ui->get_metric() ? v * 1.609344f : v, ui->get_metric() ? " km/h" : " mph"));
-    ui->set_confirming(true);
-  };
-  ui->on_apply_mode([&](int v) {
-    if (v >= 0 && v <= 2)
-      prepare(1, v);
-  });
-  ui->on_apply_limit([&](int v) {
-    if (v >= 5 && v <= 35)
-      prepare(2, v);
-  });
-  ui->on_cancel_change([&] {
-    pending_kind = 0;
-    ui->set_confirming(false);
-  });
-  ui->on_confirm_change([&] {
-    const auto link = transport::snapshot();
-    bool sent = false;
-    if (!security::blocked() && !ble_proxy::phone_owns_link() && link.status == transport::Status::Ready &&
-        link.session == pending_session && now_ms() - pending_since < 30000 && telemetry.can_configure(now_ms())) {
-      if (pending_kind == 1) {
-        std::array<uint8_t, 6> cmd{};
-        if (vehicle->ride(static_cast<bike::RideMode>(pending_value), cmd))
-          sent = send_payload(cmd);
-      }
-      if (pending_kind == 2) {
-        std::array<uint8_t, 4> cmd{};
-        if (vehicle->speed_limit(pending_value, cmd))
-          sent = send_payload(cmd);
-      }
-    }
-    // No acknowledgement/readback is documented: never claim the bike applied it.
-    ui->set_feedback(sent ? "Command queued. Bike application is unverified."
-                          : "Change not sent. Check connection and stop the bike.");
-    pending_kind = 0;
-    ui->set_confirming(false);
-  });
+  tuning::init(*ui, telemetry);
 #ifdef WFD_BLE_BENCHMARK
   BleBenchmark benchmark;
 #endif
@@ -460,8 +398,7 @@ extern "C" void app_main() {
     if (rotate_pending) {
       // Defer until the input dispatch and previous frame's DMA are done.
       rotate_pending = false;
-      pending_kind = 0;
-      ui->set_confirming(false);
+      tuning::cancel();
       ui->set_initial_width(bike::display_width(orientation));
       ui->set_initial_height(bike::display_height(orientation));
       set_slint_orientation(orientation);
@@ -483,10 +420,6 @@ extern "C" void app_main() {
       next_setup_poll = next_vehicle_poll = 0;
       next_bms_poll = 0;
       next_stats = 0;
-      if (pending_kind) {
-        pending_kind = 0;
-        ui->set_confirming(false);
-      }
     }
     if (!ready)
       ready_since = 0;
@@ -496,10 +429,12 @@ extern "C" void app_main() {
     while (transport::receive(received)) {
       if (received.discontinuity) {
         telemetry = {};
+        tuning::reset();
         continue;
       }
       if (ready && received.session == session) {
         const auto payload = std::span<const uint8_t>(received.bytes.data(), received.size);
+        tuning::receive(payload);
         const bool decoded = vehicle->decode(payload, now, telemetry);
         if (!payload.empty() && payload[0] == 47) {
           ++setup_received;
@@ -516,6 +451,7 @@ extern "C" void app_main() {
       }
     }
     security::tick(now);
+    tuning::tick(now);
     const auto pairing = ble_security::prompt();
     if (pairing.ticket != pairing_ticket) {
       pairing_ticket = pairing.ticket;
@@ -527,10 +463,6 @@ extern "C" void app_main() {
     ui->set_pairing_failed(pairing.failed);
     ui->set_pairing_ready(pairing.waiting || pairing.failed);
     ui->set_pairing_permitted(security::pairing_permitted());
-    if (security::blocked() && pending_kind) {
-      pending_kind = 0;
-      ui->set_confirming(false);
-    }
 #ifdef WFD_BLE_BENCHMARK
     const auto benchmark_proxy = ble_proxy::snapshot();
     benchmark.tick(now,
@@ -554,10 +486,6 @@ extern "C" void app_main() {
         next_bms_poll = now + bike::bms_poll_interval_ms;
     }
 #endif
-    if (pending_kind && now - pending_since > 30000) {
-      pending_kind = 0;
-      ui->set_confirming(false);
-    }
     if (now >= next_ui) {
       const bool fresh = ready && telemetry.fresh(now);
       const bool bike_fresh = telemetry.bike_valid && now - telemetry.bike_ms < 1500;
@@ -578,6 +506,7 @@ extern "C" void app_main() {
       if (ble_proxy::name_locked() && edit_stage == 3)
         clear_editor();
       ui->set_vehicle_brand(presentation.name());
+      ui->set_supports_tuning(presentation.features().tuning);
       ui->set_supports_presets(presentation.features().ride_presets);
       ui->set_supports_limit(presentation.features().speed_limit);
       ui->set_supports_lock(presentation.features().lock);

@@ -1,8 +1,8 @@
-import { DistanceSummary } from "../distance-summary.slint";
-import { BatteryMeter } from "../battery-meter.slint";
 import { TransitionPage } from "../page-transition.slint";
-import { Metric } from "../controls.slint";
-import { Speedometer } from "../speedometer.slint";
+import { RideTelemetry } from "ride/model.slint";
+import { PortraitRide } from "ride/portrait.slint";
+import { LandscapeRide } from "ride/landscape.slint";
+import { WideRide } from "ride/wide.slint";
 
 export component RidePage inherits TransitionPage {
     page-index: 0;
@@ -24,153 +24,36 @@ export component RidePage inherits TransitionPage {
     in property <string> trip;
     in property <string> odometer;
 
-    if !root.landscape: VerticalLayout {
-        spacing: 10px;
+    // Use available logical space, so layout selection follows all four rotations.
+    private property <bool> wide: root.landscape && root.width >= 640px && root.height >= 260px;
+    private property <bool> tall: !root.landscape && root.width >= 400px && root.height >= 560px;
+    private property <RideTelemetry> telemetry: {
+        battery: root.battery,
+        battery-level: root.battery-level,
+        fresh: root.fresh,
+        hot: root.hot,
+        metric: root.metric,
+        mosfet: root.mosfet,
+        motor: root.motor,
+        pitch: root.pitch,
+        power: root.power,
+        speed: root.speed,
+        speed-progress: root.speed-progress,
+        voltage: root.voltage,
+        trip: root.trip,
+        odometer: root.odometer,
+    };
 
-        BatteryMeter {
-            level: root.battery-level;
-            charge: root.battery;
-            voltage: root.voltage;
-        }
-
-        dial-area := Rectangle {
-            min-height: 0px;
-            preferred-height: 0px;
-            vertical-stretch: 1;
-            portrait-speedo-box := Rectangle {
-                x: 0px;
-                y: max(0px, parent.height - self.height);
-                width: parent.width;
-                height: portrait-distance.height + 4px + portrait-dial.height;
-                portrait-distance := DistanceSummary {
-                    x: 0px;
-                    y: 0px;
-                    width: parent.width;
-                    outer-edges: true;
-                    trip: root.trip;
-                    odometer: root.odometer;
-                }
-
-                portrait-dial := Speedometer {
-                    x: 0px;
-                    y: portrait-distance.height + 4px;
-                    width: parent.width;
-                    height-limit: max(0px, dial-area.height - portrait-distance.height - 4px);
-                    value: root.speed;
-                    live: root.fresh;
-                    progress: root.speed-progress;
-                    unit: root.metric ? "km/h" : "mph";
-                }
-            }
-        }
-
-        HorizontalLayout {
-            vertical-stretch: 0;
-            spacing: 10px;
-            Metric {
-                height: 60px;
-                label: "POWER";
-                value: root.power;
-            }
-
-            Metric {
-                height: 60px;
-                label: "PITCH";
-                value: root.pitch;
-            }
-        }
-
-        if !root.compact: HorizontalLayout {
-            vertical-stretch: 0;
-            spacing: 10px;
-            Metric {
-                height: 60px;
-                label: "CONTROLLER";
-                value: root.mosfet;
-                warning: root.hot;
-            }
-
-            Metric {
-                height: 60px;
-                label: "MOTOR";
-                value: root.motor;
-                warning: root.hot;
-            }
-        }
+    if !root.landscape: PortraitRide {
+        data: root.telemetry;
+        compact: root.compact;
+        expanded: root.tall;
     }
-    if root.landscape: HorizontalLayout {
-        spacing: 16px;
-        VerticalLayout {
-            alignment: end;
-            min-width: 0px;
-            preferred-width: 0px;
-            horizontal-stretch: 1;
-            spacing: 20px;
-
-            Speedometer {
-                align-bottom: true;
-                height-limit: min(231px, max(0px, root.height - 35px - 20px));
-                value: root.speed;
-                live: root.fresh;
-                progress: root.speed-progress;
-                unit: root.metric ? "km/h" : "mph";
-            }
-
-            BatteryMeter {
-                level: root.battery-level;
-                charge: root.battery;
-                voltage: root.voltage;
-            }
-        }
-
-        VerticalLayout {
-            min-width: 0px;
-            preferred-width: 0px;
-            horizontal-stretch: 1;
-            spacing: 12px;
-            alignment: end;
-            DistanceSummary {
-                trip: root.trip;
-                odometer: root.odometer;
-            }
-
-            HorizontalLayout {
-                vertical-stretch: 0;
-                spacing: 10px;
-                Metric {
-                    compact: root.short-landscape;
-                    height: root.short-landscape ? 64px : 76px;
-                    label: "POWER";
-                    value: root.power;
-                }
-
-                Metric {
-                    compact: root.short-landscape;
-                    height: root.short-landscape ? 64px : 76px;
-                    label: "PITCH";
-                    value: root.pitch;
-                }
-            }
-
-            HorizontalLayout {
-                vertical-stretch: 0;
-                spacing: 10px;
-                Metric {
-                    compact: root.short-landscape;
-                    height: root.short-landscape ? 64px : 76px;
-                    label: "ESC TEMP";
-                    value: root.mosfet;
-                    warning: root.hot;
-                }
-
-                Metric {
-                    compact: root.short-landscape;
-                    height: root.short-landscape ? 64px : 76px;
-                    label: "MOTOR";
-                    value: root.motor;
-                    warning: root.hot;
-                }
-            }
-        }
+    if root.landscape && !root.wide: LandscapeRide {
+        data: root.telemetry;
+        short-landscape: root.short-landscape;
+    }
+    if root.wide: WideRide {
+        data: root.telemetry;
     }
 }

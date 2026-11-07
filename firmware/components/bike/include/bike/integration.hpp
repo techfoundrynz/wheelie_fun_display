@@ -18,6 +18,7 @@ struct VehicleFeatures {
   bool ride_presets = false;
   bool speed_limit = false;
   bool lock = false;
+  bool tuning = false;
 };
 
 class VehicleIntegration {

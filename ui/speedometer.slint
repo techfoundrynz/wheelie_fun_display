@@ -6,6 +6,7 @@ export component Speedometer inherits Rectangle {
     in property <string> value;
     in property <string> unit;
     in property <bool> live;
+    in property <length> unit-size: 18px;
     in property <bool> align-bottom;
     in property <length> height-limit: self.width;
     private property <float> stroke-ratio: 16 / 260;
@@ -112,7 +113,7 @@ export component Speedometer inherits Rectangle {
             y: root.diameter * root.unit-y-factor;
             text: root.unit;
             color: Theme.secondary;
-            font-size: 18px;
+            font-size: root.unit-size;
             font-weight: 800;
             horizontal-alignment: center;
         }

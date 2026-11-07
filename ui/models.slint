@@ -3,3 +3,25 @@ export struct WifiItem { ssid: string, detail: string }
 export struct AboutItem { label: string, value: string }
 
 export struct StatItem { label: string, value: string }
+
+export struct TuneField {
+    id: int,
+    label: string,
+    value: string,
+    saved: string,
+    can-decrease: bool,
+    can-increase: bool,
+    changed: bool,
+    kind: int,
+    minimum: float,
+    maximum: float,
+    position: float,
+    step: float,
+    default-position: float,
+    has-default: bool,
+    read-only: bool,
+    read-only-reason: string,
+    off-grid: bool,
+    tick-every: int,
+    options: [string],
+}

@@ -35,6 +35,18 @@ For a published release, the [browser installer](https://techfoundrynz.github.io
 
 Slint renders into a persistent, full-screen RGB565 canvas in PSRAM. The P4 pixel processing accelerator (PPA) rotates each completed frame into the inactive native DSI framebuffer; two native framebuffers keep scanout separate from rendering. Presentation waits for refresh completion before reusing the old front buffer. This uses three full-screen allocations (2.30 MB total), with no internal-RAM scanline buffers. All four display orientations use PPA rotation and the matching native-coordinate touch transforms. PSRAM runs at 200 MHz. The supplied profile starts at 90° (800 × 480 landscape). `DISPLAY_ROTATION` sets the initial angle in the hardware profile; runtime selection is saved in NVS.
 
+## Large-screen layout
+
+Landscape Ride uses a full-width battery gauge at the top, then a larger speed dial on the left and trip and odometer above the four telemetry cards on the right. In portrait, telemetry cards and distance readings are larger. Stats groups its overview into three columns when the screen is wide; controller and BMS details remain scrollable.
+
+![GUITION landscape Ride layout](images/ride-guition-landscape.png)
+
+![GUITION portrait Ride layout](images/ride-guition-portrait.png)
+
+![GUITION landscape Stats overview](images/stats-guition-landscape.png)
+
+These previews are generated from the current shared UI with illustrative connected values during the Pages build. In the [browser simulator](../simulator/), select **GUITION 4.3-inch** under **Display model**, then use Rotate to explore all four orientations.
+
 ## ESP32-C6 radio firmware
 
 The P4 has no built-in radio. Wi-Fi and both BLE roles use the C6 through ESP-Hosted: standard `esp_wifi` calls are supplied by `esp_wifi_remote`, and the P4 NimBLE host communicates with the C6 Bluetooth controller through the Hosted HCI tunnel.

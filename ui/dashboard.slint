@@ -2,6 +2,7 @@ import { Header } from "header.slint";
 import { Navigation } from "navigation.slint";
 import { UpdateConfirmation } from "dialogs/update-confirmation.slint";
 import { ApplyConfirmation } from "dialogs/apply-confirmation.slint";
+import { TuningEditor } from "dialogs/tuning-editor.slint";
 import { AboutPage } from "pages/about.slint";
 import { UpdatesPage } from "pages/updates.slint";
 import { WifiPage } from "pages/wifi.slint";
@@ -15,8 +16,8 @@ import { PinPad } from "pin-pad.slint";
 import { Theme } from "theme.slint";
 import { SafeArea } from "safe-area.slint";
 import "fonts/Roboto.ttf";
-import { Peer, WifiItem, AboutItem, StatItem } from "models.slint";
-export { Peer, WifiItem, AboutItem, StatItem } from "models.slint";
+import { Peer, WifiItem, AboutItem, StatItem, TuneField } from "models.slint";
+export { Peer, WifiItem, AboutItem, StatItem, TuneField } from "models.slint";
 
 export component Dashboard inherits Window {
     title: root.vehicle-brand;
@@ -98,6 +99,7 @@ export component Dashboard inherits Window {
     in property <int> active-integration: 1;
     in property <string> vehicle-brand: "Wheelie Fun Bike";
     in property <bool> supports-presets: true;
+    in property <bool> supports-tuning: true;
     in property <bool> supports-limit: true;
     in property <bool> supports-lock: true;
     in-out property <int> integration-choice: -1;
@@ -134,7 +136,66 @@ export component Dashboard inherits Window {
     out property <bool> transitioning: pages.animating;
     out property <int> displayed-page: pages.active-page;
     out property <int> outgoing-page: pages.previous-page;
-    in-out property <int> draft-mode: 1;
+    in-out property <int> draft-mode: -1;
+    in property <bool> tuning-ready: false;
+    in property <[string]> tuning-presets: ["Eco", "Cruise", "Sport"];
+    in property <[string]> tuning-preset-descriptions: [
+        "Eco: 90 A motor limit with gentler response.",
+        "Cruise: 150 A motor limit with smoother throttle response.",
+        "Sport: 150 A motor limit with faster throttle response."
+    ];
+    in property <[string]> tuning-sections: ["Response", "Button", "Throttle", "Horn", "Advanced"];
+    in property <bool> tuning-busy;
+    in property <bool> tuning-dirty;
+    in property <string> tuning-status;
+    in property <string> tuning-saved-response: "Not read from bike";
+    in property <string> tuning-saved-limit: "Not read from bike";
+    in property <int> tuning-limit-min: 5;
+    in property <int> tuning-limit-max: 35;
+    in property <bool> tuning-unlimited: false;
+    in property <[TuneField]> tuning-fields;
+    in-out property <int> tuning-section;
+    callback tuning-refresh();
+    callback tuning-adjust(int, int);
+    callback tuning-set(int, float);
+    private property <int> tuning-editor-index: -1;
+    out property <bool> tuning-editor-open: root.tuning-editor-index != -1;
+    callback tuning-edit(int);
+    tuning-edit(index) => {
+        if index == -1 { root.tuning-editor-index = -1; return; }
+        if root.connected && root.tuning-ready && !root.tuning-busy &&
+            ((index == -2 && root.supports-limit) || (index >= 0 && index < root.tuning-fields.length && !root.tuning-fields[index].read-only)) {
+            root.tuning-editor-index = index;
+            pages.snap();
+        }
+    }
+    private property <TuneField> limit-editor-field: {
+        id: -1,
+        label: "Speed limit",
+        value: root.draft-limit == 0 ? "No limit" : (root.metric ? round(root.draft-limit * 1.609344) : root.draft-limit) + (root.metric ? " km/h" : " mph"),
+        saved: root.tuning-saved-limit,
+        can-decrease: root.draft-limit == 0 || root.draft-limit > root.tuning-limit-min,
+        can-increase: root.draft-limit != 0 && (root.draft-limit < root.tuning-limit-max || root.tuning-unlimited),
+        changed: false,
+        kind: 3,
+        minimum: 0,
+        maximum: root.tuning-limit-max - root.tuning-limit-min + (root.tuning-unlimited ? 1 : 0),
+        position: root.draft-limit == 0 ? root.tuning-limit-max - root.tuning-limit-min + 1 : root.draft-limit - root.tuning-limit-min,
+        step: 1,
+        default-position: 20 - root.tuning-limit-min,
+        has-default: root.tuning-limit-min <= 20 && root.tuning-limit-max >= 20,
+        read-only: false,
+        read-only-reason: "",
+        off-grid: false,
+        tick-every: 5,
+        options: []
+    };
+    function edit-limit-position(value: float) {
+        root.draft-limit = root.tuning-unlimited && round(value) > root.tuning-limit-max - root.tuning-limit-min ? 0 : round(value) + root.tuning-limit-min;
+    }
+    callback tuning-save();
+    callback tuning-reset();
+    callback tuning-section-requested(int);
     in-out property <int> draft-limit: 20;
     in property <string> feedback: "Changes are sent only when you tap Apply.";
     in property <bool> confirming: false;
@@ -184,10 +245,12 @@ export component Dashboard inherits Window {
     callback update-cancel();
     callback update-reboot();
 
-    changed rotation => { pages.snap(); }
+    changed rotation => { root.tuning-editor-index = -1; pages.snap(); }
+    changed page => { root.tuning-editor-index = -1; }
+    changed tuning-ready => { if !self.tuning-ready { self.tuning-editor-index = -1; } }
     changed editing => { if self.editing { pages.snap(); } }
-    changed pin-open => { if self.pin-open { pages.snap(); } }
-    changed confirming => { if self.confirming { pages.snap(); } }
+    changed pin-open => { if self.pin-open { root.tuning-editor-index = -1; pages.snap(); } }
+    changed confirming => { if self.confirming { root.tuning-editor-index = -1; pages.snap(); } }
     changed ota-confirming => { if self.ota-confirming { pages.snap(); } }
 
     private property <bool> compact: self.height < 560px;
@@ -224,7 +287,7 @@ export component Dashboard inherits Window {
             pages := PageDeck {
                 page: root.page;
                 animations-enabled: root.animations-enabled;
-                swipe-enabled: root.page >= 0 && root.page <= 2 && !root.confirming && !root.ota-confirming && !root.editing && !root.pin-open;
+                swipe-enabled: root.page >= 0 && root.page <= 2 && !root.confirming && !root.ota-confirming && !root.editing && !root.pin-open && !root.tuning-editor-open;
                 page-requested(page) => { root.page = page; }
                 if root.show-page-content && (pages.active-page == 0 || pages.previous-page == 0): RidePage {
                     active-page: pages.active-page;
@@ -305,6 +368,28 @@ export component Dashboard inherits Window {
                     supports-limit: root.supports-limit;
                     supports-presets: root.supports-presets;
                     vehicle-brand: root.vehicle-brand;
+                    supports-tuning: root.supports-tuning;
+                    tuning-presets: root.tuning-presets;
+                    tuning-preset-descriptions: root.tuning-preset-descriptions;
+                    tuning-sections: root.tuning-sections;
+                    tuning-ready: root.tuning-ready;
+                    tuning-busy: root.tuning-busy;
+                    tuning-dirty: root.tuning-dirty;
+                    tuning-status: root.tuning-status;
+                    tuning-saved-response: root.tuning-saved-response;
+                    tuning-saved-limit: root.tuning-saved-limit;
+                    tuning-limit-min: root.tuning-limit-min;
+                    tuning-limit-max: root.tuning-limit-max;
+                    tuning-unlimited: root.tuning-unlimited;
+                    tuning-fields: root.tuning-fields;
+                    tuning-section <=> root.tuning-section;
+                    tuning-refresh => { root.tuning-refresh(); }
+                    tuning-adjust(id, delta) => { root.tuning-adjust(id, delta); }
+                    tuning-set(id, value) => { root.tuning-set(id, value); }
+                    tuning-edit(index) => { root.tuning-edit(index); }
+                    tuning-save => { root.tuning-save(); }
+                    tuning-reset => { root.tuning-reset(); }
+                    tuning-section-requested(section) => { root.tuning-section-requested(section); }
                 }
                 if root.show-page-content && (pages.active-page == 3 || pages.previous-page == 3): TransitionPage {
                     page-index: 3;
@@ -436,6 +521,23 @@ export component Dashboard inherits Window {
     // remain above this blocker and retain their existing safety interlocks.
     if root.transitioning: TouchArea {
         clicked => {}
+    }
+    if root.tuning-editor-open && root.tuning-ready && !root.pin-open: TuningEditor {
+        field: root.tuning-editor-index >= 0 && root.tuning-editor-index < root.tuning-fields.length ? root.tuning-fields[root.tuning-editor-index] : root.limit-editor-field;
+        enabled: root.connected && root.tuning-ready && !root.tuning-busy;
+        safe-inset-x: root.display-safe-inset-x;
+        safe-inset-y: root.display-safe-inset-y;
+        adjust(delta) => {
+            if root.tuning-editor-index == -2 {
+                let next = clamp(root.limit-editor-field.position + delta, root.limit-editor-field.minimum, root.limit-editor-field.maximum);
+                root.edit-limit-position(next);
+            } else { root.tuning-adjust(root.tuning-fields[root.tuning-editor-index].id, delta); }
+        }
+        set-value(value) => {
+            if root.tuning-editor-index == -2 { root.edit-limit-position(value); }
+            else { root.tuning-set(root.tuning-fields[root.tuning-editor-index].id, value); }
+        }
+        closed => { root.tuning-editor-index = -1; }
     }
     if root.confirming: ApplyConfirmation {
         can-configure: root.can-configure;

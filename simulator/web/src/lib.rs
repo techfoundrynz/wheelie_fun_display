@@ -1,6 +1,6 @@
 use slint::platform::software_renderer::{MinimalSoftwareWindow, RepaintBufferType};
 use slint::platform::{Platform, PointerEventButton, WindowAdapter, WindowEvent};
-use slint::{ComponentHandle, ModelRc, PhysicalSize, Rgb8Pixel, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, PhysicalSize, Rgb8Pixel, VecModel};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -10,6 +10,8 @@ use wasm_bindgen::{JsCast, prelude::*};
 slint::include_modules!();
 #[path = "../../stats_fixture.rs"]
 mod stats_fixture;
+#[path = "../../tuning_fixture.rs"]
+mod tuning_fixture;
 
 struct BrowserPlatform {
     window: Rc<MinimalSoftwareWindow>,
@@ -56,6 +58,7 @@ fn presentation(ui: &Dashboard, id: i32) {
         }
         .into(),
     );
+    ui.set_supports_tuning(id == 1);
     ui.set_supports_presets(id == 1);
     ui.set_supports_limit(id == 1);
     ui.set_supports_lock(id != 0);
@@ -309,9 +312,11 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
     ui.on_orientation_requested(move |degrees| {
         let ui = weak.unwrap();
         let landscape = degrees == 90 || degrees == 270;
+        let short = ui.get_initial_width().min(ui.get_initial_height());
+        let long = ui.get_initial_width().max(ui.get_initial_height());
         ui.set_rotation(degrees);
-        ui.set_initial_width(if landscape { 502. } else { 410. });
-        ui.set_initial_height(if landscape { 410. } else { 502. });
+        ui.set_initial_width(if landscape { long } else { short });
+        ui.set_initial_height(if landscape { short } else { long });
     });
     ui.set_wifi_networks(ModelRc::from(Rc::new(VecModel::from(vec![WifiItem {
         ssid: "Workshop demo".into(),
@@ -620,6 +625,7 @@ impl WebSimulator {
             ..Default::default()
         }));
         configure(&ui, &state);
+        tuning_fixture::configure(&ui);
         window.set_size(PhysicalSize::new(410, 502));
         ui.show().map_err(|e| JsValue::from_str(&e.to_string()))?;
         Ok(Self {
@@ -858,6 +864,27 @@ impl WebSimulator {
         integration(&self.ui, id.clamp(0, 2));
         project_proxy_name(&self.ui, &self.state);
     }
+    pub fn set_display_model(&self, model: i32) {
+        let large = model == 1;
+        let (short, long) = if large { (480., 800.) } else { (410., 502.) };
+        let landscape = matches!(self.ui.get_rotation(), 90 | 270);
+        self.ui
+            .set_initial_width(if landscape { long } else { short });
+        self.ui
+            .set_initial_height(if landscape { short } else { long });
+        self.ui
+            .set_display_safe_inset_x(if large { 24. } else { 32. });
+        self.ui
+            .set_display_safe_inset_y(if large { 24. } else { 16. });
+        self.ui.set_device_label(
+            if large {
+                "GUITION P4 4.3-inch"
+            } else {
+                "Waveshare AMOLED 2.06"
+            }
+            .into(),
+        );
+    }
     pub fn set_rotation(&self, degrees: i32) {
         if matches!(degrees, 0 | 90 | 180 | 270) {
             self.ui.invoke_orientation_requested(degrees);
@@ -890,7 +917,19 @@ impl WebSimulator {
             }
             .into(),
         );
-        self.ui.set_device_label("Waveshare AMOLED 2.06".into());
+        self.ui.set_device_label(
+            if self
+                .ui
+                .get_initial_width()
+                .max(self.ui.get_initial_height())
+                >= 800.
+            {
+                "GUITION P4 4.3-inch"
+            } else {
+                "Waveshare AMOLED 2.06"
+            }
+            .into(),
+        );
         self.ui.set_ble_proxy_status("Phone bridge off".into());
         self.ui.set_wifi_status("Connected to Workshop".into());
         self.ui.set_wifi_connected(true);
@@ -930,8 +969,30 @@ impl WebSimulator {
         self.ui.set_pairing_failed(false);
         self.ui.set_pairing_open(true);
     }
+    pub fn set_tuning_section(&self, section: i32) {
+        self.ui.invoke_tuning_section_requested(section);
+    }
+    pub fn adjust_tuning(&self, id: i32, delta: i32) {
+        self.ui.invoke_tuning_adjust(id, delta);
+    }
+    pub fn edit_tuning(&self, id: i32) {
+        if let Some(index) = (0..self.ui.get_tuning_fields().row_count()).find(|i| {
+            self.ui
+                .get_tuning_fields()
+                .row_data(*i)
+                .is_some_and(|row| row.id == id)
+        }) {
+            self.ui.invoke_tuning_edit(index as i32);
+        }
+    }
     pub fn invoke(&self, callback: &str) -> Result<(), JsValue> {
         match callback {
+            "tuning-save" => self.ui.invoke_tuning_save(),
+            "tuning-reset" => self.ui.invoke_tuning_reset(),
+            "tuning-editor-done" => self.ui.invoke_tuning_edit(-1),
+            "tuning-refresh" => self.ui.invoke_tuning_refresh(),
+            "confirm-change" => self.ui.invoke_confirm_change(),
+            "cancel-change" => self.ui.invoke_cancel_change(),
             "pin-setup" => self.ui.invoke_pin_setup(),
             "screen-lock" => self.ui.invoke_screen_lock(),
             "wifi-manual" => self.ui.invoke_wifi_manual(),
@@ -944,6 +1005,11 @@ impl WebSimulator {
     }
     pub fn state(&self, name: &str) -> JsValue {
         match name {
+            "tuning-dirty" => self.ui.get_tuning_dirty().into(),
+            "tuning-ready" => self.ui.get_tuning_ready().into(),
+            "tuning-editor-open" => self.ui.get_tuning_editor_open().into(),
+            "tuning-status" => self.ui.get_tuning_status().as_str().into(),
+            "confirming" => self.ui.get_confirming().into(),
             "documentation-fixture" => self.state.borrow().documentation_fixture.into(),
             "connected" => self.ui.get_connected().into(),
             "phone-connected" => self.ui.get_phone_connected().into(),
@@ -966,6 +1032,12 @@ impl WebSimulator {
             "rotation" => self.ui.get_rotation().into(),
             "safe-inset-x" => self.ui.get_display_safe_inset_x().into(),
             "safe-inset-y" => self.ui.get_display_safe_inset_y().into(),
+            "display-model" => (self
+                .ui
+                .get_initial_width()
+                .max(self.ui.get_initial_height())
+                >= 800.)
+                .into(),
             "landscape" => (self.ui.get_initial_width() > self.ui.get_initial_height()).into(),
             "metric" => self.ui.get_metric().into(),
             "celsius" => self.ui.get_celsius().into(),
