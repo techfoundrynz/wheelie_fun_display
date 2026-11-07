@@ -674,7 +674,12 @@ impl WebSimulator {
             let live = state.connected;
             self.ui.set_data_stale(false);
             self.ui.set_bike_ble_rssi(-62);
-            self.ui.set_bike_ble_signal(if live && self.ui.get_transport_kind() == 0 { 3 } else { -1 });
+            self.ui
+                .set_bike_ble_signal(if live && self.ui.get_transport_kind() == 0 {
+                    3
+                } else {
+                    -1
+                });
             let metric = self.ui.get_metric();
             let speed = state.speed;
             if live {
