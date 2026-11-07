@@ -207,6 +207,10 @@ input {
   border-left: 2px solid var(--cyan);
   padding-left: 8px;
 }
+.sidebar a.nav-child {
+  margin-left: 12px;
+  font-size: 12px;
+}
 .overview-link {
   font-weight: 500;
   color: var(--text) !important;

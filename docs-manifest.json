@@ -9,6 +9,7 @@
     "maintenance/index.html",
     "troubleshooting/index.html",
     "hardware/waveshare-206/index.html",
+    "hardware/waveshare-206/case-mount/index.html",
     "hardware/guition-43/index.html",
     "building/index.html",
     "contributing/index.html",
@@ -23,8 +24,7 @@
     "reference/vesc-protocol/index.html",
     "reference/wfb-bike-layer/index.html",
     "reference/theme/index.html",
-    "reference/notices/index.html",
-    "hardware/waveshare-206/case-mount/index.html"
+    "reference/notices/index.html"
   ],
   "simulator": "simulator/",
   "installer": "install/",
