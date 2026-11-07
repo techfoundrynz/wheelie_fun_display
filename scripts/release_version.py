@@ -40,7 +40,7 @@ def configured_version(source):
 
 
 def release_plan(
-    event, ref_type, ref_name, current, previous=None, manual_release=False
+    event, ref_type, ref_name, current, published=None, manual_release=False
 ):
     current_key = version_key(current)
     result = {"version": current, "tag": "v" + current, "publish": False}
@@ -63,40 +63,46 @@ def release_plan(
         )
     elif event != "push":
         result["reason"] = "Not a release event"
-    elif previous is None:
-        result["reason"] = "Initial branch push; use a manual run for the first release"
-    elif current_key > version_key(previous):
+    elif published is None or current_key > version_key(published):
         result.update(
-            publish=True, reason=f"Firmware version increased: {previous} -> {current}"
+            publish=True,
+            reason=f"Firmware {current} is newer than published {published}"
+            if published is not None
+            else f"Firmware {current} has not been published; first release",
         )
     else:
-        result["reason"] = "Firmware version did not increase"
+        result["reason"] = "Firmware version is already published or older"
     return result
 
 
-def previous_version(before):
-    if not before or set(before) == {"0"}:
-        return None
-    if not re.fullmatch(r"[0-9a-f]{40,64}", before):
-        raise ValueError("Invalid push base commit")
-    command = ["git", "show", before + ":platformio.ini"]
+def published_version(repository):
+    # Tags alone do not establish publication: creating a release can fail after
+    # its tag was pushed. Include prereleases, but exclude unpublished drafts.
     result = subprocess.run(
-        command, cwd=ROOT, capture_output=True, text=True, encoding="utf-8"
+        [
+            "gh",
+            "api",
+            "--paginate",
+            f"repos/{repository}/releases?per_page=100",
+            "--jq",
+            ".[] | select(.draft == false) | .tag_name",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=True,
     )
-    if result.returncode:
-        # A rewritten branch can leave the push's base outside checkout history.
-        subprocess.run(
-            ["git", "fetch", "--no-tags", "origin", before], cwd=ROOT, check=True
-        )
-        result = subprocess.run(
-            command,
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            check=True,
-        )
-    return configured_version(result.stdout)
+    versions = []
+    for tag in result.stdout.splitlines():
+        if not tag.startswith("v"):
+            continue
+        try:
+            version_key(tag[1:])
+        except ValueError:
+            continue
+        versions.append(tag[1:])
+    return max(versions, key=version_key, default=None)
 
 
 def main():
@@ -105,16 +111,18 @@ def main():
         Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8")
     )
     ref_type = os.environ["GITHUB_REF_TYPE"]
-    before = payload.get("before", "")
-    previous = (
-        previous_version(before) if event == "push" and ref_type == "branch" else None
+    ref_name = os.environ["GITHUB_REF_NAME"]
+    published = (
+        published_version(os.environ["GITHUB_REPOSITORY"])
+        if event == "push" and ref_type == "branch" and ref_name == "main"
+        else None
     )
     plan = release_plan(
         event,
         ref_type,
-        os.environ["GITHUB_REF_NAME"],
+        ref_name,
         configured_version((ROOT / "platformio.ini").read_text(encoding="utf-8")),
-        previous,
+        published,
         manual_release=str(
             payload.get("inputs", {}).get("publish_release", False)
         ).lower()

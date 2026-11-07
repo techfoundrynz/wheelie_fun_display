@@ -15,11 +15,11 @@ Installation pauses vehicle communications. A connected phone blocks display fir
 
 ## Automatic releases and PR previews
 
-Increase `[common].custom_firmware_version` in `platformio.ini`, commit and push to `main`. CI compares the version before and after the entire push, including multi-commit pushes. A higher semantic version triggers publication; unrelated configuration edits, formatting changes, downgrades and build-metadata-only changes do not.
+Increase `[common].custom_firmware_version` in `platformio.ini`, commit and push to `main`. CI compares the configured version with the highest semantic version actually published on GitHub, including prereleases. An unpublished newer version stays eligible on subsequent pushes, so a failed build followed by a formatting or code fix can still release the same version. The first version is eligible when no releases exist. Already published versions, downgrades and build-metadata-only changes do not trigger another release. Draft releases and tags without a published release do not count as publication; failure to query GitHub stops release detection.
 
 The pipeline runs formatting, sanitizer tests and native UI checks, builds every supported `default_envs` target once, then tests the browser simulator and installer using those firmware artifacts. Only after those stages succeed does it create `v<version>` at that commit and publish the OTA/factory images, notices and source references. An existing tag must identify the same commit; published assets are never replaced. Re-running the same published commit leaves its release unchanged.
 
-For the first release, or an explicit manual publication, run **Actions > CI, firmware and previews > Run workflow** on `main` with **publish_release** enabled. A manual run without that option validates only. Pushed version tags also work, but the tag must match the configuration. Prerelease versions are marked as prereleases on GitHub; separate OTA channels are not implemented.
+For an explicit manual publication, run **Actions > CI, firmware and previews > Run workflow** on `main` with **publish_release** enabled. A manual run without that option validates only. Pushed version tags also work, but the tag must match the configuration. Prerelease versions are marked as prereleases on GitHub; separate OTA channels are not implemented.
 
 PRs run the same validation and produce a hosted simulator link and browser-test gallery in one updated bot comment and the publication run summary. Each URL includes the PR number and exact head revision. Preview frames isolate PR scripts from the parent and disable hardware APIs. Superseded builds are skipped, and closing a PR removes its preview and updates the comment.
 

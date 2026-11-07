@@ -67,7 +67,7 @@ class ReleaseVersionTests(unittest.TestCase):
                 "workflow_dispatch", "branch", "main", "0.1.0", manual_release=True
             )["publish"]
         )
-        self.assertFalse(
+        self.assertTrue(
             release.release_plan("push", "branch", "main", "0.1.0")["publish"]
         )
         self.assertFalse(
@@ -100,41 +100,105 @@ class ReleaseVersionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "must match"):
             release.release_plan("push", "tag", "v0.3.0", "0.2.0")
 
-    def test_push_base_covers_all_commits_not_just_last_parent(self):
+    def test_failed_bump_then_fix_remains_eligible_until_published(self):
+        # Neither the failed bump nor a subsequent fix advances publication.
+        for _ in range(2):
+            plan = release.release_plan("push", "branch", "main", "0.1.1", "0.1.0")
+            self.assertTrue(plan["publish"])
+        self.assertFalse(
+            release.release_plan("push", "branch", "main", "0.1.1", "0.1.1")["publish"]
+        )
+
+    def test_published_versions_are_semantically_sorted_and_validated(self):
+        result = subprocess.CompletedProcess(
+            [],
+            0,
+            stdout="v0.9.0\nv0.10.0-rc.1\nv0.10.0\nv0.10.0-beta.2\n"
+            "not-a-version\n0.99.0\nv01.0.0\n",
+        )
+        with patch.object(release.subprocess, "run", return_value=result) as run:
+            self.assertEqual(release.published_version("owner/repo"), "0.10.0")
+        command = run.call_args.args[0]
+        self.assertIn("--paginate", command)
+        self.assertIn("repos/owner/repo/releases?per_page=100", command)
+        self.assertIn(".[] | select(.draft == false) | .tag_name", command)
+        self.assertTrue(run.call_args.kwargs["check"])
+
+    def test_no_published_releases(self):
+        with patch.object(
+            release.subprocess,
+            "run",
+            return_value=subprocess.CompletedProcess([], 0, stdout=""),
+        ):
+            self.assertIsNone(release.published_version("owner/repo"))
+
+    def test_release_lookup_failure_does_not_become_first_release(self):
+        with (
+            patch.object(
+                release.subprocess,
+                "run",
+                side_effect=subprocess.CalledProcessError(1, ["gh", "api"]),
+            ),
+            self.assertRaises(subprocess.CalledProcessError),
+        ):
+            release.published_version("owner/repo")
+
+    def test_main_fix_push_uses_publication_not_previous_push_version(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-
-            def git(*args):
-                return (
-                    subprocess.check_output(
-                        ["git", *args], cwd=root, stderr=subprocess.DEVNULL
-                    )
-                    .decode()
-                    .strip()
-                )
-
-            git("init")
-            git("config", "commit.gpgsign", "false")
-            git("config", "user.name", "Release test")
-            git("config", "user.email", "release@example.invalid")
-            ini = root / "platformio.ini"
-            ini.write_text(
-                "[common]\ncustom_firmware_version=0.1.0\n", encoding="utf-8"
+            (root / "platformio.ini").write_text(
+                "[common]\ncustom_firmware_version=0.1.1\n", encoding="utf-8"
             )
-            git("add", ".")
-            git("commit", "-m", "Base")
-            before = git("rev-parse", "HEAD")
-            ini.write_text(
-                "[common]\ncustom_firmware_version=0.2.0\n", encoding="utf-8"
+            event = root / "event.json"
+            event.write_text('{"before": "' + "a" * 40 + '"}', encoding="utf-8")
+            output = root / "output"
+            environment = {
+                "GITHUB_EVENT_NAME": "push",
+                "GITHUB_EVENT_PATH": str(event),
+                "GITHUB_REF_TYPE": "branch",
+                "GITHUB_REF_NAME": "main",
+                "GITHUB_REPOSITORY": "owner/repo",
+                "GITHUB_OUTPUT": str(output),
+            }
+            with (
+                patch.object(release, "ROOT", root),
+                patch.dict(release.os.environ, environment),
+                patch.object(
+                    release, "published_version", return_value="0.1.0"
+                ) as published,
+            ):
+                release.main()
+            published.assert_called_once_with("owner/repo")
+            self.assertEqual(
+                output.read_text(encoding="utf-8"),
+                "publish=true\nversion=0.1.1\ntag=v0.1.1\n",
             )
-            git("commit", "-am", "Bump")
-            (root / "notes.txt").write_text("Later commit", encoding="utf-8")
-            git("add", ".")
-            git("commit", "-m", "More work")
-            with patch.object(release, "ROOT", root):
-                previous = release.previous_version(before)
-            plan = release.release_plan("push", "branch", "main", "0.2.0", previous)
-            self.assertTrue(plan["publish"])
+
+    def test_pr_and_manual_validation_do_not_query_releases(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "platformio.ini").write_text(
+                "[common]\ncustom_firmware_version=0.1.1\n", encoding="utf-8"
+            )
+            event = root / "event.json"
+            event.write_text("{}", encoding="utf-8")
+            for event_name in ("pull_request", "workflow_dispatch"):
+                output = root / event_name
+                environment = {
+                    "GITHUB_EVENT_NAME": event_name,
+                    "GITHUB_EVENT_PATH": str(event),
+                    "GITHUB_REF_TYPE": "branch",
+                    "GITHUB_REF_NAME": "main",
+                    "GITHUB_OUTPUT": str(output),
+                }
+                with (
+                    patch.object(release, "ROOT", root),
+                    patch.dict(release.os.environ, environment),
+                    patch.object(release, "published_version") as published,
+                ):
+                    release.main()
+                published.assert_not_called()
+                self.assertIn("publish=false", output.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
