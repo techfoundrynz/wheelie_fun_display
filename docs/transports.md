@@ -50,9 +50,35 @@ The relay uses three 16 KiB PSRAM byte rings and validates each complete phone f
 
 On CAN, a direct firmware query identifies a custom adapter, not a motor controller. `COMM_PING_CAN` lists responding nodes. `COMM_FORWARD_CAN` sends the phone's payload to its explicitly requested CAN ID and returns the unmodified VESC reply inside serial framing. A direct motor command without a CAN destination is not implicitly routed to the display's selected bike; the adapter tells the app to select a CAN controller. Native CAN packet size limits and CRC framing apply. The phone app performs its own controller discovery/selection, as with a CAN-capable VESC adapter.
 
+The adapter handlers bind only while CAN is selected. BLE and UART forward all
+of these requests to the upstream device without substituting display metadata.
+
+| Local CAN adapter command | Behaviour |
+| --- | --- |
+| `COMM_FW_VERSION` (0) | Reports the configured hardware target, stable device UUID and **Wheelie Fun Display v&lt;release&gt;**. Hardware type is Custom Module; motor, custom-configuration, QML and NRF capabilities are not advertised. |
+| `COMM_FW_INFO` (157) | Reports the source Git revision, or an empty revision if unavailable. Protocol version bytes match the firmware-version reply. |
+| `COMM_PING_CAN` (62) | Returns discovered CAN IDs. |
+| `COMM_FORWARD_CAN` (34) | Forwards the enclosed VESC command to the explicitly supplied node. Its firmware/configuration replies belong to that controller. |
+| `COMM_CAN_FWD_FRAME` (85) | Transmits one Classic CAN data frame: big-endian 32-bit ID, one-byte extended flag, then 0–8 payload bytes. Standard IDs are limited to 11 bits and extended IDs to 29 bits. No acknowledgment or automatic raw receive/sniffer stream is generated. |
+| `COMM_ALIVE` (30) | Quietly accepted; the adapter has no motor watchdog to refresh. |
+
+The adapter's `7.0` version bytes denote VESC protocol compatibility. The display's
+own release is taken from ESP-IDF application metadata and included in its firmware
+name. It does not claim to run the motor-controller firmware or VESC Express.
+Malformed raw-frame requests never reach the CAN driver. The existing BLE lease,
+generation checks, framing and queue limits apply to adapter requests as well.
+VESC Tool can update the display using `COMM_ERASE_NEW_APP` (2),
+`COMM_WRITE_NEW_APP_DATA` (3) and `COMM_JUMP_TO_BOOTLOADER` (1). These commands
+address the display itself; commands explicitly forwarded to another controller
+continue to address that controller. See [Firmware updates](maintenance.md#vesc-tool-updates).
+
 Only the active WFB integration forces the advertised/GAP name to **WFB** and hides its editor. Wheel-e and generic VESC use the editable saved name (default **WB Disp**). Leaving WFB restores that preference without mutating NVS. The name never mirrors an upstream BLE module. The bike lock PIN or pattern controls the proxy's pairing requirement; the upstream BLE PIN is independent. See [Bluetooth](bluetooth.md) and [PINs and locking](pins-and-locking.md).
 
 ## References and verification
+
+Adapter identity, firmware-info and raw-frame command layouts follow
+[VESC Express commands](https://github.com/vedderb/vesc_express/blob/main/main/commands.c)
+and the [VESC Tool encoder/parser](https://github.com/vedderb/vesc_tool/blob/master/commands.cpp).
 
 Native packet formats and firmware discovery were checked against [VESC firmware 21e66bb](https://github.com/vedderb/bldc/tree/21e66bb9efb41322c84f34c1db03a71ffeb7d8a1), particularly [CAN transport](https://github.com/vedderb/bldc/blob/21e66bb9efb41322c84f34c1db03a71ffeb7d8a1/comm/comm_can.c) and [command responses](https://github.com/vedderb/bldc/blob/21e66bb9efb41322c84f34c1db03a71ffeb7d8a1/comm/commands.c). Hardware uses the [ESP-IDF TWAI driver](https://docs.espressif.com/projects/esp-idf/en/v6.1/esp32s3/api-reference/peripherals/twai.html).
 

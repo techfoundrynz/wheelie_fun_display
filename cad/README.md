@@ -1,6 +1,6 @@
 # Display cases and mounts
 
-Native Fusion archives and STEP exports for Wheelie Fun Display cases and mounting parts, grouped by display module.
+Native Fusion archives and STEP exports for Wheelie Fun Display cases, cable grommets and mounting parts, grouped by display module.
 
 - [Waveshare ESP32-S3 Touch AMOLED 2.06 casing and handlebar clamp](waveshare-206/README.md)
 

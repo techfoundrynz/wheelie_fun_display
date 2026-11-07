@@ -15,6 +15,29 @@ int main() {
   }
   fail_step = 0;
   assert(driver.open(1, 2, 500000) == ESP_OK && driver.healthy());
+  bike::CanFrame raw;
+  raw.extended = false;
+  raw.id = 0x7ff;
+  assert(driver.send(raw));
+  assert(!node->pending.back()->header.ide && node->pending.back()->header.id == 0x7ff &&
+         node->pending.back()->header.dlc == 0);
+  finish_tx(0);
+  assert(driver.healthy());
+  raw.id = 0x800;
+  assert(!driver.send(raw));
+  raw.extended = true;
+  raw.id = 0x20000000;
+  assert(!driver.send(raw));
+  raw.id = 0x1fffffff;
+  raw.size = 8;
+  assert(driver.send(raw) && node->pending.back()->header.ide);
+  finish_tx(0);
+  assert(driver.healthy());
+  raw.remote = true;
+  assert(!driver.send(raw));
+  raw.remote = false;
+  raw.size = 9;
+  assert(!driver.send(raw) && node->pending.empty());
   bike::CanFrame input;
   input.id = 0x1234;
   input.size = 8;

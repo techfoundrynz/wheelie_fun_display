@@ -19,6 +19,7 @@
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
 #include "transport.hpp"
+#include "vesc_update.hpp"
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -123,6 +124,8 @@ bike::ProxyPollArbiter arbiter;
 uint8_t address_type;
 uint16_t phone = BLE_HS_CONN_HANDLE_NONE, tx_handle;
 bool advertising = false, wfb_name_override = false, advertising_hold = false;
+bool local_update = false, configured_enabled = false, actual_ready = false, actual_paused = false;
+uint32_t actual_session = 0, local_session = 0x80000000;
 transport::Kind selected_source = transport::Kind::Ble;
 std::array<char, 32> proxy_name{};
 std::array<char, 32> advertised_name{}, gap_name{}; // Proxy worker only.
@@ -156,8 +159,9 @@ void release_phone(bool graceful) {
   lock();
   const auto old_phone = phone;
   const bool existed = lease.connected;
-  const bool drain = graceful && existed && source_continuity && lease.synced && lease.upstream_ready &&
-                     relay->epoch == lease.generation && relay->session == lease.upstream_session;
+  const bool drain = !local_update && graceful && existed && source_continuity && lease.synced &&
+                     lease.upstream_ready && relay->epoch == lease.generation &&
+                     relay->session == lease.upstream_session;
   accepting = false;
   phone = BLE_HS_CONN_HANDLE_NONE;
   if (drain) {
@@ -190,7 +194,8 @@ int gap_event(ble_gap_event *event, void *) {
     const bool security_ready = ble_security::proxy_ready();
     lock();
     advertising = false;
-    const bool allowed = lease.advertise() && !advertising_hold && !handoff && security_ready && !event->connect.status;
+    const bool allowed = lease.advertise() && (!advertising_hold || local_update) && !handoff && security_ready &&
+                         !event->connect.status;
     if (allowed) {
       phone = event->connect.conn_handle;
       lease.attach();
@@ -300,7 +305,8 @@ void update_advertising() {
   const bool security_ready = ble_security::proxy_ready();
   const auto name = runtime_name();
   lock();
-  const bool wanted = lease.advertise() && !advertising_hold && !handoff && security_ready && !name.empty();
+  const bool wanted =
+      lease.advertise() && (!advertising_hold || local_update) && !handoff && security_ready && !name.empty();
   const bool active = advertising;
   const bool synced = lease.synced;
   unlock();
@@ -566,7 +572,8 @@ void worker(void *) {
       have_poll = xQueueReceive(polls, &poll, 0) == pdTRUE;
     if (have_poll) {
       lock();
-      const bool valid = !handoff && lease.accepts_display(poll.epoch, poll.session);
+      const bool valid =
+          !local_update && !vesc_update::busy() && !handoff && lease.accepts_display(poll.epoch, poll.session);
       if (valid)
         arbiter.reserve(poll.key, now);
       const bool available = valid && arbiter.may_poll(poll.key);
@@ -703,6 +710,11 @@ void host_sync(uint8_t type) {
   lock();
   address_type = type;
   lease.synced = true;
+  if (local_update && !lease.upstream_ready) {
+    lease.set_upstream(true, ++local_session);
+    relay->reset(lease.generation, lease.upstream_session);
+    source_continuity = true;
+  }
   unlock();
 }
 
@@ -719,6 +731,9 @@ void host_reset() {
 void select_upstream(transport::Kind source) {
   lock();
   selected_source = source;
+  actual_ready = false;
+  actual_session = 0;
+  actual_paused = false;
   lease.set_upstream(false, 0);
   lease.paused = false;
   unlock();
@@ -727,6 +742,12 @@ void select_upstream(transport::Kind source) {
 void upstream_state(transport::Kind source, bool ready, uint32_t session) {
   lock();
   if (source != selected_source) {
+    unlock();
+    return;
+  }
+  actual_ready = ready;
+  actual_session = session;
+  if (local_update) {
     unlock();
     return;
   }
@@ -745,14 +766,17 @@ void upstream_state(transport::Kind source, bool ready, uint32_t session) {
 void source_paused(transport::Kind source, bool paused) {
   lock();
   const bool selected = source == selected_source;
-  unlock();
   if (selected)
+    actual_paused = paused;
+  const bool updating = local_update;
+  unlock();
+  if (selected && !updating)
     set_paused(paused);
 }
 
 void upstream_failed(transport::Kind source) {
   lock();
-  const bool selected = source == selected_source;
+  const bool selected = source == selected_source && !local_update;
   unlock();
   if (selected)
     fail_stream();
@@ -814,15 +838,16 @@ bool name_locked() {
 
 std::string runtime_name() {
   lock();
-  const std::string value(wfb_name_override ? "WFB" : proxy_name.data());
+  const std::string value(local_update ? "Wheelie Fun Display OTA" : wfb_name_override ? "WFB" : proxy_name.data());
   unlock();
   return value;
 }
 
 void set_enabled(bool enabled) {
   lock();
-  lease.enabled = enabled;
-  const bool disconnect = !enabled && lease.connected;
+  configured_enabled = enabled;
+  lease.enabled = enabled || local_update;
+  const bool disconnect = !lease.enabled && lease.connected;
   unlock();
   if (disconnect)
     disconnect_requested.store(true);
@@ -848,7 +873,7 @@ void set_advertising_hold(bool hold) {
 
 bool begin_maintenance() {
   lock();
-  const bool reserved = !handoff && lease.begin_maintenance();
+  const bool reserved = !local_update && !vesc_update::busy() && !handoff && lease.begin_maintenance();
   unlock();
   return reserved;
 }
@@ -872,6 +897,106 @@ bool phone_owns_link() {
   return connected;
 }
 
+bool update_mode() {
+  lock();
+  const bool value = local_update;
+  unlock();
+  return value;
+}
+
+bool set_update_mode(bool enabled) {
+  if (vesc_update::busy())
+    return false;
+  lock();
+  if (enabled == local_update) {
+    unlock();
+    return true;
+  }
+  if (handoff || (enabled && lease.connected)) {
+    unlock();
+    return false;
+  }
+  const auto old_phone = phone;
+  lease.paused = true; // Reserve admission while the old endpoint is detached.
+  if (old_phone != BLE_HS_CONN_HANDLE_NONE) {
+    unlock();
+    release_phone(false);
+    ble_gap_terminate(old_phone, BLE_ERR_REM_USER_CONN_TERM);
+    lock();
+  }
+  local_update = enabled;
+  lease.enabled = configured_enabled || enabled;
+  lease.paused = enabled ? false : actual_paused;
+  lease.set_upstream(enabled ? true : actual_ready, enabled ? ++local_session : actual_session);
+  relay->reset(lease.generation, lease.upstream_session);
+  source_continuity = true;
+  unlock();
+  return true;
+}
+
+bool update_owner_valid(uint32_t epoch, uint32_t session) {
+  lock();
+  const bool valid =
+      accepting && lease.accepts(epoch, session) && (local_update || selected_source == transport::Kind::Can);
+  const auto handle = phone;
+  unlock();
+  return valid && handle != BLE_HS_CONN_HANDLE_NONE && ble_security::proxy_authorized(handle);
+}
+
+void update_reply(uint32_t epoch, uint32_t session, std::span<const uint8_t> payload) {
+  if (!update_owner_valid(epoch, session))
+    return;
+  std::array<uint8_t, bike::max_payload + 6> bytes{};
+  const auto size = bike::frame(payload, bytes);
+  lock();
+  const bool valid = lease.accepts(epoch, session);
+  const bool sent = valid && size && relay->upstream.append(std::span(bytes).first(size), epoch);
+  if (sent)
+    relay->last_rx = esp_timer_get_time() / 1000;
+  unlock();
+  if (valid && !sent)
+    fail_stream("update reply backpressure");
+}
+
+bool update_send(std::span<const uint8_t> bytes, uint32_t epoch) {
+  struct LocalInput {
+    uint32_t epoch = 0, session = 0;
+    bike::Decoder decoder{[](void *context, std::span<const uint8_t> payload) {
+                            auto &input = *static_cast<LocalInput *>(context);
+                            if (vesc_update::handles(payload))
+                              vesc_update::submit({false, input.epoch, input.session, 0}, payload);
+                            else {
+                              const uint8_t empty_scan[] = {62};
+                              if (payload.size() == 1 && payload[0] == 62)
+                                update_reply(input.epoch, input.session, empty_scan);
+                              else {
+                                const uint8_t unavailable[] = {21,  'U', 'p', 'd', 'a', 't', 'e', ' ', 'm',
+                                                               'o', 'd', 'e', ' ', 'o', 'n', 'l', 'y'};
+                                update_reply(input.epoch, input.session, unavailable);
+                              }
+                            }
+                          },
+                          this};
+  };
+
+  static ExternalState<LocalInput> input;
+  lock();
+  const auto session = lease.upstream_session;
+  const bool mode = local_update;
+  unlock();
+  if (!mode || !update_owner_valid(epoch, session))
+    return false;
+  if (!input)
+    input = make_external_state<LocalInput>();
+  if (input->epoch != epoch || input->session != session) {
+    input->decoder.reset();
+    input->epoch = epoch;
+    input->session = session;
+  }
+  input->decoder.feed(bytes, esp_timer_get_time() / 1000);
+  return true;
+}
+
 void register_poll_key(bike::ProxyReplyKey key) {
   lock();
   arbiter.register_key(key);
@@ -879,6 +1004,8 @@ void register_poll_key(bike::ProxyReplyKey key) {
 }
 
 bool queue_display_poll(std::span<const uint8_t> packet, bike::ProxyReplyKey key, uint32_t token) {
+  if (update_mode() || vesc_update::busy())
+    return false;
   if (packet.empty() || packet.size() > Poll{}.bytes.size())
     return false;
   Poll poll;

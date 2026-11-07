@@ -47,7 +47,7 @@ BLE is the default vehicle transport. CAN and UART appear in Settings only after
 
 ![Portrait and landscape Waveshare 2.06 cases with handlebar clamps](images/waveshare-206-mounted.png)
 
-The [case and mount guide](../cad/waveshare-206/README.md) includes the editable Fusion archive and STEP downloads for the printed casing, aluminium upper saddle and lower clamp cap, plus the split rubber liner. The same casing can be rotated on the clamp for **portrait or landscape mounting** using its square mounting pattern. Set **Settings > Orientation** to match; all four UI rotations (0°, 90°, 180° and 270°) are supported. The guide also covers model dimensions, fasteners and assembly details for the nominal 22.225 mm (7/8-inch) handlebar design.
+The [case and mount guide](../cad/waveshare-206/README.md) includes the editable Fusion archive and STEP downloads for the printed casing, aluminium upper saddle and lower clamp cap, plus the split rubber liner and one-piece TPU cable grommet. The [cable gland / grommet installation instructions](../cad/waveshare-206/README.md#cable-grommet-installation) cover the 6 mm cable jacket, revised 7.8 mm casing opening and fitting the grommet before terminating oversized connectors. The same casing can be rotated on the clamp for **portrait or landscape mounting** using its square mounting pattern. Set **Settings > Orientation** to match; all four UI rotations (0°, 90°, 180° and 270°) are supported. The guide also covers model dimensions, fasteners and assembly details for the nominal 22.225 mm (7/8-inch) handlebar design.
 
 ## USB recovery and checks
 

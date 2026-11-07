@@ -100,3 +100,50 @@ ctest --test-dir .cache/host-tests --output-on-failure
 Add Python unit tests as `tests/*_tests.py` and Node suites as `tests/*_tests.cjs`. Cargo automatically discovers `#[test]` cases under `simulator/tests/`; display scenarios share the supported viewport list and launch isolated fixture processes to avoid sharing Slint platform state. Register C++ suites with CTest in `tests/CMakeLists.txt`. New test cases do not require workflow edits. Browser acceptance checks run in the Pages build after its simulator and installer artifacts exist.
 
 The P4 board profile explicitly selects `build.toolchain = riscv32-esp`. A pre-build hook applies it immediately before framework build environments are created, and the matching compiler package is pinned in the common configuration. This compensates for espressif32 8.0.0's incomplete MCU architecture table; do not patch the locally installed platform builder.
+
+
+## VESC Tool updates
+
+You can install an application firmware `.bin` from **VESC Tool → Firmware → Custom File**.
+Use the file for your exact display target, not the merged browser-install image,
+bootloader, partition table or GUITION C6 firmware.
+
+- **Direct BLE with CAN selected:** enable Phone connection and connect VESC Tool to the display.
+  Its local Custom Module identity represents the display. Selecting another CAN controller
+  in VESC Tool addresses that controller instead.
+- **Through another VESC on CAN:** connect VESC Tool to that VESC, scan the bus and select
+  the display's CAN ID (default **254**, configured per target). The display answers CAN
+  discovery and firmware requests whenever its CAN transport is active.
+- **Update-only BLE:** open **Settings → Firmware update → Start BLE update mode**.
+  Disconnect an existing phone session first. Connect VESC Tool to **Wheelie Fun Display OTA**.
+  This mode needs neither a bike nor Wi-Fi and keeps the usual phone pairing/bonding policy
+  and screen-lock code. Exit the mode to restore normal operation. The saved Phone connection
+  preference and advertised name are unchanged; reboot also exits the mode.
+
+Unlock the display and stop the bike before starting. During a transfer, bike polling and
+tuning writes pause. The updater binds each transfer to its originating connection/CAN
+sender; a BLE disconnect, CAN transport/session change, screen lock, cancellation
+or 60-second inactivity aborts it. Loss of a remote CAN sender is detected by that timeout.
+Native CAN has no Bluetooth authentication: keep physical bus access trusted.
+
+Uploads go to the inactive OTA partition. Size, CRC16, ESP image validity and the hardware
+project identity are checked before selecting it for the next boot. Failed uploads retain
+current firmware. A verified upload restarts automatically and uses the same boot-validation
+and rollback mechanism as Wi-Fi OTA. A cancellation after activation cannot undo that restart.
+Compressed uploads, bootloader writes and broadcast/all-controller flashing are not provided.
+
+The command compatibility follows [VESC Express](https://github.com/vedderb/vesc_express/blob/main/main/commands.c)
+and [VESC Tool](https://github.com/vedderb/vesc_tool/blob/master/vescinterface.cpp).
+Physical VESC Tool uploads over both routes still require hardware acceptance testing.
+
+
+## Update progress on the display
+
+Wi-Fi OTA downloads and VESC Tool uploads over BLE or native CAN automatically
+open a progress panel over the current screen. It shows the transfer source,
+percentage and status, and blocks navigation while the update is active.
+Cancel is available during transfer and disabled while verification/activation is
+finishing. A stopped or rejected update keeps its status visible until closed.
+Verified Wi-Fi updates offer **Restart into update**; verified VESC Tool uploads
+show their restart state and reboot automatically. Screen-lock and pairing prompts
+retain priority over the progress panel.

@@ -5,12 +5,12 @@
 #include "ble_proxy.hpp"
 #include "can_driver.hpp"
 #include "driver/uart.h"
-#include "esp_mac.h"
 #include "esp_timer.h"
 #include "external_state.hpp"
 #include "freertos/task.h"
 #include "nvs.h"
 #include "packet_queue.hpp"
+#include "vesc_update.hpp"
 #include <algorithm>
 #include <atomic>
 #include <cstdio>
@@ -80,7 +80,7 @@ struct Runtime {
   std::atomic<bool> gap{false};
   Packet outgoing, incoming;
   std::array<uint8_t, bike::max_payload + 6> serial_bytes{};
-  bike::CanReassembler can;
+  bike::CanReassembler can, endpoint;
   uint32_t processing_generation = 0;
   uint64_t last_rx = 0;
   CanScan scan;
@@ -212,14 +212,19 @@ bool transmit(Runtime &r, Kind kind, uint8_t node, uint32_t generation, std::spa
 }
 
 void Runtime::phone_command(std::span<const uint8_t> payload) {
-  const auto command = bike::can_bridge_request(payload, CAN_LOCAL_ID);
-  if (command.operation == bike::BridgeOperation::Firmware) {
-    std::array<uint8_t, 12> uuid{};
-    esp_read_mac(uuid.data(), ESP_MAC_WIFI_STA);
-    const auto size = bike::can_bridge_firmware(proxy_reply_payload, uuid);
-    proxy_reply({proxy_reply_payload.data(), size});
+  // Only the native CAN worker feeds this decoder. BLE/UART relay the actual
+  // upstream byte stream and must never acquire a local adapter identity.
+  lock();
+  const bool can_adapter = kind == Kind::Can && enabled && !paused && generation == processing_generation;
+  unlock();
+  if (!can_adapter)
+    return;
+  if (vesc_update::handles(payload)) {
+    vesc_update::submit({false, proxy_processing_epoch, processing_generation, 0}, payload);
+    return;
   }
-  else if (command.operation == bike::BridgeOperation::Scan) {
+  const auto command = bike::can_bridge_request(payload, CAN_LOCAL_ID);
+  if (command.operation == bike::BridgeOperation::Scan) {
     lock();
     scan = {};
     ++scan_generation;
@@ -227,14 +232,27 @@ void Runtime::phone_command(std::span<const uint8_t> payload) {
     unlock();
   }
   else if (command.operation == bike::BridgeOperation::Forward) {
+    if (vesc_update::busy())
+      return;
     if (!transmit(*this, Kind::Can, command.destination, processing_generation, command.payload))
       proxy_failed = true;
   }
+  else if (command.operation == bike::BridgeOperation::RawFrame) {
+    if (vesc_update::busy())
+      return;
+    if (!current(processing_generation) || !can_driver.send(command.frame))
+      proxy_failed = true;
+  }
+  else if (command.operation == bike::BridgeOperation::Ignore) {
+    // COMM_ALIVE has no local watchdog or reply on this adapter.
+  }
   else {
-    constexpr char text[] = "Select a CAN controller in the app";
+    const std::string_view text = command.operation == bike::BridgeOperation::Invalid
+                                      ? "Invalid CAN adapter request"
+                                      : "Unsupported CAN adapter command; select a CAN controller in the app";
     proxy_reply_payload[0] = 21; // COMM_PRINT: adapter has no implicit motor controller.
-    std::copy_n(text, sizeof(text) - 1, proxy_reply_payload.begin() + 1);
-    proxy_reply({proxy_reply_payload.data(), sizeof(text)});
+    std::copy(text.begin(), text.end(), proxy_reply_payload.begin() + 1);
+    proxy_reply({proxy_reply_payload.data(), text.size() + 1});
   }
 }
 
@@ -263,6 +281,7 @@ void worker(void *context) {
       r.phone_decoder.reset();
       r.decoder.reset();
       r.can.reset();
+      r.endpoint.reset();
     }
     proxy_active.store(requested_owner);
     r.lock();
@@ -284,6 +303,7 @@ void worker(void *context) {
       r.processing_generation = generation;
       r.decoder.reset();
       r.can.reset();
+      r.endpoint.reset();
       if (wanted) {
         open = open_driver(kind) == ESP_OK;
         opened = kind;
@@ -317,6 +337,19 @@ void worker(void *context) {
     if (kind == Kind::Can) {
       bike::CanFrame f;
       for (unsigned reads = 0; reads < 64 && can_driver.receive(f); ++reads) {
+        if (f.extended && !f.remote && f.id == ((17u << 8) | CAN_LOCAL_ID) && f.size >= 1 && f.data[0] != 255 &&
+            f.data[0] != CAN_LOCAL_ID) {
+          bike::CanFrame pong;
+          pong.id = (18u << 8) | f.data[0];
+          pong.size = 2;
+          pong.data[0] = CAN_LOCAL_ID;
+          pong.data[1] = 2;
+          can_driver.send(pong);
+        }
+        const auto request = r.endpoint.feed(f, CAN_LOCAL_ID, -1, now_ms(), false);
+        if (!request.empty() && r.endpoint.sender() >= 0 && r.endpoint.sender() != CAN_LOCAL_ID &&
+            r.endpoint.sender() != 255 && vesc_update::handles(request))
+          vesc_update::submit({true, 0, generation, uint8_t(r.endpoint.sender())}, request);
         if (f.extended && !f.remote && f.id == ((18u << 8) | CAN_LOCAL_ID) && f.size >= 1 && f.data[0] != 255 &&
             f.data[0] != CAN_LOCAL_ID) {
           r.lock();
@@ -374,6 +407,11 @@ void worker(void *context) {
       if (r.outgoing.session != generation) {
         // Stale requests still relinquish their queued count through the guard.
       }
+      else if (r.outgoing.can_reply && kind == Kind::Can) {
+        failed = !bike::send_can_packet(
+            std::span(r.outgoing.bytes).first(r.outgoing.size), CAN_LOCAL_ID, uint8_t(r.outgoing.controller), true,
+            [&](const bike::CanFrame &frame) { return r.current(generation) && can_driver.send(frame); });
+      }
       else if (r.outgoing.proxy_epoch) {
         if (r.outgoing.proxy_epoch == requested_owner && proxy_requested.load() == requested_owner) {
           if (kind == Kind::Can) {
@@ -419,7 +457,8 @@ void worker(void *context) {
       ble_proxy::upstream_failed(kind);
     r.lock();
     if (r.generation == generation && r.enabled && !r.paused &&
-        (failed || (!requested_owner && r.state.status == Status::Ready && now_ms() - r.last_rx >= 3000))) {
+        (failed || (!vesc_update::busy() && !ble_proxy::update_mode() && !requested_owner &&
+                    r.state.status == Status::Ready && now_ms() - r.last_rx >= 3000))) {
       ++r.generation;
       r.state.session = r.generation;
       r.state.status = Status::Retry;
@@ -584,6 +623,28 @@ bool wired_available(Kind kind) {
 
 Interface &wired_backend(Kind kind) {
   return kind == Kind::Can ? static_cast<Interface &>(can) : uart;
+}
+
+bool wired_update_valid(uint32_t session) {
+  if (!runtime)
+    return false;
+  runtime->lock();
+  const bool valid =
+      runtime->kind == Kind::Can && runtime->enabled && !runtime->paused && runtime->generation == session;
+  runtime->unlock();
+  return valid;
+}
+
+void wired_update_reply(uint8_t peer, uint32_t session, std::span<const uint8_t> payload) {
+  if (!wired_update_valid(session) || peer == 255 || peer == CAN_LOCAL_ID || payload.size() > bike::max_payload)
+    return;
+  Packet packet;
+  packet.session = session;
+  packet.controller = peer;
+  packet.can_reply = true;
+  packet.size = payload.size();
+  std::copy(payload.begin(), payload.end(), packet.bytes.begin());
+  xQueueSend(runtime->tx, &packet, 0);
 }
 
 void wired_proxy_ownership(bool owned, uint32_t epoch) {

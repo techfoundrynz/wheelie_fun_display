@@ -419,6 +419,27 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
         ui.set_wifi_connected(true);
         ui.set_wifi_status("Demo | Wi-Fi connected".into());
     });
+    ui.set_vesc_update_status("Ready for VESC Tool".into());
+    let weak = ui.as_weak();
+    ui.on_vesc_update_mode_requested(move |enabled| {
+        let ui = weak.unwrap();
+        ui.set_vesc_update_mode(enabled);
+        ui.set_can_maintain(!enabled);
+        ui.set_vesc_update_status(
+            if enabled {
+                "Waiting for VESC Tool (preview only)"
+            } else {
+                "Ready for VESC Tool"
+            }
+            .into(),
+        );
+    });
+    let weak = ui.as_weak();
+    ui.on_vesc_update_cancel(move || {
+        let ui = weak.unwrap();
+        ui.set_vesc_update_active(false);
+        ui.set_vesc_update_status("Upload cancelled".into());
+    });
     let weak = ui.as_weak();
     ui.on_update_check(move || {
         let ui = weak.unwrap();

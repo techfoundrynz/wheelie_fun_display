@@ -25,10 +25,12 @@
 #include "network.hpp"
 #include "nvs.h"
 #include "nvs_flash.h"
+#include "ota_image.hpp"
 #include "security.hpp"
 #include "slint_backend.hpp"
 #include "transport.hpp"
 #include "tuning.hpp"
+#include "vesc_update.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -146,6 +148,7 @@ extern "C" void app_main() {
   set_slint_orientation(orientation);
   bool rotate_pending = false;
   board::brightness(ui->get_brightness());
+  vesc_update::start();
   transport::start();
   const auto initial_link = transport::snapshot();
   const auto &initial_presentation =
@@ -299,10 +302,19 @@ extern "C" void app_main() {
     clear_pairing();
   });
   auto maintenance_allowed = [&] {
-    return !security::blocked() && !ble_proxy::phone_owns_link() &&
+    return !security::blocked() && !ble_proxy::update_mode() && !vesc_update::busy() && !ble_proxy::phone_owns_link() &&
            (transport::snapshot().status != transport::Status::Ready || telemetry.can_configure(now_ms()));
   };
   ui->on_update_check([] { network::check_release(); });
+  ui->on_vesc_update_mode_requested([&](bool enabled) {
+    if (security::blocked() || network::snapshot().busy || vesc_update::busy())
+      return;
+    if (enabled && (!maintenance_allowed() || ota_image::busy()))
+      return;
+    if (ble_proxy::set_update_mode(enabled))
+      tuning::cancel();
+  });
+  ui->on_vesc_update_cancel([] { vesc_update::cancel(); });
   ui->on_update_cancel([] { network::cancel(); });
   ui->on_update_install([&] {
     if (maintenance_allowed())
@@ -317,11 +329,13 @@ extern "C" void app_main() {
   std::array<transport::Device, 6> displayed_peers{};
   int displayed_count = 0;
   ui->on_connect_peer([&](int index) {
-    if (!security::blocked() && index >= 0 && index < displayed_count)
+    if (!security::blocked() && !vesc_update::busy() && !ble_proxy::update_mode() && index >= 0 &&
+        index < displayed_count)
       transport::connect(displayed_peers[index].address, ui->get_integration_choice());
   });
   ui->on_transport_requested([&](int value) {
-    if (value < 0 || value > 2 || security::blocked() || network::snapshot().busy || ble_proxy::phone_owns_link())
+    if (value < 0 || value > 2 || security::blocked() || ble_proxy::update_mode() || vesc_update::busy() ||
+        network::snapshot().busy || ble_proxy::phone_owns_link())
       return;
     if (transport::select(transport::Kind(value))) {
       tuning::cancel();
@@ -329,19 +343,21 @@ extern "C" void app_main() {
     }
   });
   ui->on_connect_wired([&] {
-    if (security::blocked() || transport::selected() == transport::Kind::Ble)
+    if (security::blocked() || vesc_update::busy() || ble_proxy::update_mode() ||
+        transport::selected() == transport::Kind::Ble)
       return;
     const int choice = ui->get_integration_choice();
     transport::connect("", choice);
   });
   ui->on_discover_controller([&] {
-    if (!security::blocked() && !network::snapshot().busy && transport::rediscover()) {
+    if (!security::blocked() && !vesc_update::busy() && !ble_proxy::update_mode() && !network::snapshot().busy &&
+        transport::rediscover()) {
       tuning::cancel();
       telemetry = {};
     }
   });
   ui->on_forget_peer([&] {
-    if (security::blocked())
+    if (security::blocked() || vesc_update::busy() || ble_proxy::update_mode())
       return;
     transport::forget();
     telemetry = {};
@@ -451,6 +467,9 @@ extern "C" void app_main() {
       }
     }
     security::tick(now);
+    vesc_update::set_allowed(!security::blocked() && !network::snapshot().busy &&
+                                 (ble_proxy::update_mode() || !ready || telemetry.can_configure(now)),
+                             !security::blocked());
     tuning::tick(now);
     const auto pairing = ble_security::prompt();
     if (pairing.ticket != pairing_ticket) {
@@ -539,13 +558,22 @@ extern "C" void app_main() {
       ui->set_wifi_saved(wifi.ssid.c_str());
       ui->set_wifi_connected(wifi.connected);
       ui->set_network_busy(wifi.busy);
-      ui->set_can_change_transport(!security::blocked() && !wifi.busy && !ble_proxy::phone_owns_link());
+      ui->set_can_change_transport(!security::blocked() && !wifi.busy && !ble_proxy::phone_owns_link() &&
+                                   !vesc_update::busy() && !ble_proxy::update_mode());
       ui->set_release_version(wifi.version.c_str());
       ui->set_update_available(wifi.available);
       ui->set_updating(wifi.updating);
+      ui->set_update_cancellable(wifi.cancellable);
       ui->set_update_progress(wifi.progress);
       ui->set_reboot_ready(wifi.reboot_ready);
       ui->set_can_maintain(maintenance_allowed());
+      const auto vesc_ota = vesc_update::snapshot();
+      ui->set_vesc_update_mode(ble_proxy::update_mode());
+      ui->set_vesc_update_active(vesc_ota.active);
+      ui->set_vesc_update_cancellable(vesc_ota.cancellable);
+      ui->set_vesc_update_transport(vesc_ota.native_can ? "CAN" : "BLE");
+      ui->set_vesc_update_progress(vesc_ota.progress);
+      ui->set_vesc_update_status(vesc_ota.status);
       const auto proxy = ble_proxy::snapshot();
       ui->set_phone_connected(proxy.authorized);
       ui->set_ble_proxy_status(!proxy.enabled      ? "Off"

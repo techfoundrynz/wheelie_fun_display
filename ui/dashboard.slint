@@ -1,6 +1,7 @@
 import { Header } from "header.slint";
 import { Navigation } from "navigation.slint";
 import { UpdateConfirmation } from "dialogs/update-confirmation.slint";
+import { UpdateProgress } from "dialogs/update-progress.slint";
 import { ApplyConfirmation } from "dialogs/apply-confirmation.slint";
 import { TuningEditor } from "dialogs/tuning-editor.slint";
 import { AboutPage } from "pages/about.slint";
@@ -220,10 +221,25 @@ export component Dashboard inherits Window {
     in property <string> release-version;
     in property <bool> update-available;
     in property <bool> updating;
+    in property <bool> update-cancellable: true;
     in property <bool> reboot-ready;
     in property <int> update-progress;
     in property <bool> can-maintain: true;
+    in property <bool> vesc-update-mode;
+    in property <bool> vesc-update-active;
+    in property <bool> vesc-update-cancellable: true;
+    in property <string> vesc-update-transport: "BLE";
+    in property <int> vesc-update-progress;
+    in property <string> vesc-update-status: "Ready for VESC Tool";
+    callback vesc-update-mode-requested(bool);
+    callback vesc-update-cancel();
     in-out property <bool> ota-confirming: false;
+    private property <bool> update-result-open;
+    private property <bool> update-dialog-vesc;
+    out property <bool> update-modal-open: root.updating || root.reboot-ready || root.vesc-update-active || root.update-result-open;
+    changed updating => { if self.updating { self.update-dialog-vesc = false; self.update-result-open = true; self.ota-confirming = false; pages.snap(); } }
+    changed vesc-update-active => { if self.vesc-update-active { self.update-dialog-vesc = true; self.update-result-open = true; self.ota-confirming = false; pages.snap(); } }
+    changed reboot-ready => { if self.reboot-ready { self.update-dialog-vesc = false; self.update-result-open = true; pages.snap(); } }
     in property <bool> editing;
     in property <string> editor-heading;
     in property <string> editor-value;
@@ -276,7 +292,7 @@ export component Dashboard inherits Window {
                 bike-ble-signal: root.bike-ble-signal;
                 bike-ble-rssi: root.bike-ble-rssi;
                 settings-selected: root.page >= 3;
-                animate-status: root.animations-enabled && !root.screen-asleep && !root.pin-open && !root.editing && !root.confirming && !root.ota-confirming;
+                animate-status: root.animations-enabled && !root.screen-asleep && !root.pin-open && !root.editing && !root.confirming && !root.ota-confirming && !root.update-modal-open;
                 open-settings => { root.page = 3; }
             }
 
@@ -287,7 +303,7 @@ export component Dashboard inherits Window {
             pages := PageDeck {
                 page: root.page;
                 animations-enabled: root.animations-enabled;
-                swipe-enabled: root.page >= 0 && root.page <= 2 && !root.confirming && !root.ota-confirming && !root.editing && !root.pin-open && !root.tuning-editor-open;
+                swipe-enabled: root.page >= 0 && root.page <= 2 && !root.confirming && !root.ota-confirming && !root.editing && !root.pin-open && !root.tuning-editor-open && !root.update-modal-open;
                 page-requested(page) => { root.page = page; }
                 if root.show-page-content && (pages.active-page == 0 || pages.previous-page == 0): RidePage {
                     active-page: pages.active-page;
@@ -465,6 +481,12 @@ export component Dashboard inherits Window {
                     wifi-status: root.wifi-status;
                 }
                 if root.show-page-content && (pages.active-page == 5 || pages.previous-page == 5): UpdatesPage {
+                    vesc-update-mode: root.vesc-update-mode;
+                    vesc-update-active: root.vesc-update-active;
+                    vesc-update-progress: root.vesc-update-progress;
+                    vesc-update-status: root.vesc-update-status;
+                    vesc-update-mode-requested(enabled) => { root.vesc-update-mode-requested(enabled); }
+                    vesc-update-cancel => { root.vesc-update-cancel(); }
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;
@@ -568,6 +590,20 @@ export component Dashboard inherits Window {
         backspace => { root.editor-backspace(); }
         done => { root.editor-done(); }
         cancel => { root.editor-cancel(); }
+    }
+    if root.update-modal-open: UpdateProgress {
+        safe-inset-x: root.display-safe-inset-x;
+        safe-inset-y: root.display-safe-inset-y;
+        active: (root.updating && !root.reboot-ready) || root.vesc-update-active;
+        ready: root.reboot-ready;
+        cancellable: root.update-dialog-vesc ? root.vesc-update-cancellable : root.update-cancellable;
+        can-restart: root.can-maintain && !root.network-busy;
+        progress: root.update-dialog-vesc ? root.vesc-update-progress : root.reboot-ready ? 100 : root.update-progress;
+        status: root.update-dialog-vesc ? root.vesc-update-status : root.wifi-status;
+        source: root.update-dialog-vesc ? "VESC Tool | " + root.vesc-update-transport : "Wi-Fi OTA";
+        cancel => { if root.update-dialog-vesc { root.vesc-update-cancel(); } else { root.update-cancel(); } }
+        restart => { root.update-result-open = false; root.update-reboot(); }
+        closed => { root.update-result-open = false; }
     }
     if root.pin-open: PinPad {
         safe-inset-x: root.display-safe-inset-x;

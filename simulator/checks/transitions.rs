@@ -139,7 +139,8 @@ fn click_control(
         || ui.get_editing()
         || ui.get_confirming()
         || ui.get_tuning_editor_open()
-        || ui.get_ota_confirming();
+        || ui.get_ota_confirming()
+        || ui.get_update_modal_open();
     let navigation = ["Settings", "Ride", "Stats", "Tune"].contains(&label);
     let size = window.window().size();
     if !modal && !navigation {
@@ -1492,6 +1493,219 @@ fn main() {
         capture("pairing-retry", &pixels, width, height);
         println!(
             "{width}x{height}: independent pairing PIN entry/submit, retry layout and modal blocking passed"
+        );
+        return;
+    }
+    if args.get(2).is_some_and(|arg| arg == "--update-fixtures") {
+        let mut update_time = 0;
+        ui.set_animations_enabled(false);
+        ui.set_page(5);
+        ui.set_can_maintain(false);
+        let weak = ui.as_weak();
+        ui.on_vesc_update_mode_requested(move |enabled| {
+            weak.unwrap().set_vesc_update_mode(enabled)
+        });
+        let weak = ui.as_weak();
+        ui.on_vesc_update_cancel(move || weak.unwrap().set_vesc_update_active(false));
+        frame(
+            &window,
+            &clock,
+            {
+                update_time += 20;
+                update_time
+            },
+            &mut pixels,
+            width,
+        );
+        click_control(&window, &ui, &clock, &mut pixels, "Start BLE update mode");
+        assert!(!ui.get_vesc_update_mode());
+        ui.set_can_maintain(true);
+        click_control(&window, &ui, &clock, &mut pixels, "Start BLE update mode");
+        assert!(ui.get_vesc_update_mode());
+        ui.set_can_maintain(false);
+        let wifi_cancelled = Rc::new(Cell::new(0));
+        let called = wifi_cancelled.clone();
+        let weak = ui.as_weak();
+        ui.on_update_cancel(move || {
+            called.set(called.get() + 1);
+            let ui = weak.unwrap();
+            ui.set_wifi_status("Update cancelled; current firmware unchanged".into());
+            ui.set_updating(false);
+        });
+        let restarted = Rc::new(Cell::new(0));
+        let called = restarted.clone();
+        let weak = ui.as_weak();
+        ui.on_update_reboot(move || {
+            called.set(called.get() + 1);
+            weak.unwrap().set_reboot_ready(false);
+        });
+        // Native CAN and direct BLE share the same source-independent upload state.
+        for source in ["BLE", "CAN"] {
+            ui.set_page(0);
+            ui.set_vesc_update_transport(source.into());
+            ui.set_vesc_update_status("Receiving firmware from VESC Tool".into());
+            ui.set_vesc_update_cancellable(true);
+            ui.set_vesc_update_active(true);
+            ui.set_vesc_update_progress(42);
+            frame(
+                &window,
+                &clock,
+                {
+                    update_time += 20;
+                    update_time
+                },
+                &mut pixels,
+                width,
+            );
+            assert!(ui.get_update_modal_open());
+            capture(&format!("update-{source}"), &pixels, width, height);
+            let track = element(&ui, "UpdateProgress::track");
+            let fill = element(&ui, "UpdateProgress::fill");
+            assert!((fill.absolute_position().x - track.absolute_position().x).abs() < 0.1);
+            assert!((fill.size().width - track.size().width * 0.42).abs() < 0.1);
+            let cancel = control(&ui, "Cancel firmware update");
+            let panel = element(&ui, "ModalFrame::panel");
+            assert!(cancel.absolute_position().y >= panel.absolute_position().y);
+            assert!(
+                cancel.absolute_position().y + cancel.size().height
+                    <= panel.absolute_position().y + panel.size().height + 0.1
+            );
+
+            click_control(&window, &ui, &clock, &mut pixels, "Settings");
+            assert_eq!(ui.get_page(), 0); // Modal blocks header/navigation hit testing.
+            ui.set_vesc_update_status("Verifying received firmware...".into());
+            ui.set_vesc_update_cancellable(false);
+            frame(
+                &window,
+                &clock,
+                {
+                    update_time += 20;
+                    update_time
+                },
+                &mut pixels,
+                width,
+            );
+            click_control(&window, &ui, &clock, &mut pixels, "Cancel firmware update");
+            assert!(ui.get_vesc_update_active());
+            ui.set_vesc_update_cancellable(true);
+            frame(
+                &window,
+                &clock,
+                {
+                    update_time += 20;
+                    update_time
+                },
+                &mut pixels,
+                width,
+            );
+            click_control(&window, &ui, &clock, &mut pixels, "Cancel firmware update");
+            assert!(!ui.get_vesc_update_active());
+            click_control(&window, &ui, &clock, &mut pixels, "Close update status");
+            assert!(!ui.get_update_modal_open());
+        }
+        ui.set_page(2);
+        ui.set_wifi_status("Downloading and verifying firmware...".into());
+        ui.set_update_progress(67);
+        ui.set_update_cancellable(true);
+        ui.set_updating(true);
+        frame(
+            &window,
+            &clock,
+            {
+                update_time += 20;
+                update_time
+            },
+            &mut pixels,
+            width,
+        );
+        capture("update-wifi", &pixels, width, height);
+        click_control(&window, &ui, &clock, &mut pixels, "Ride");
+        assert_eq!(ui.get_page(), 2);
+        ui.set_update_cancellable(false);
+        frame(
+            &window,
+            &clock,
+            {
+                update_time += 20;
+                update_time
+            },
+            &mut pixels,
+            width,
+        );
+        click_control(&window, &ui, &clock, &mut pixels, "Cancel firmware update");
+        assert_eq!(wifi_cancelled.get(), 0);
+        ui.set_update_cancellable(true);
+        frame(
+            &window,
+            &clock,
+            {
+                update_time += 20;
+                update_time
+            },
+            &mut pixels,
+            width,
+        );
+        click_control(&window, &ui, &clock, &mut pixels, "Cancel firmware update");
+        assert_eq!(wifi_cancelled.get(), 1);
+        assert!(ui.get_update_modal_open()); // Outcome persists until acknowledged.
+        click_control(&window, &ui, &clock, &mut pixels, "Close update status");
+        assert!(!ui.get_update_modal_open());
+        ui.set_updating(true);
+        frame(
+            &window,
+            &clock,
+            {
+                update_time += 20;
+                update_time
+            },
+            &mut pixels,
+            width,
+        );
+        ui.set_updating(false);
+        ui.set_reboot_ready(true);
+        ui.set_wifi_status("Verified update ready. Restart to install.".into());
+        frame(
+            &window,
+            &clock,
+            {
+                update_time += 20;
+                update_time
+            },
+            &mut pixels,
+            width,
+        );
+        capture("update-ready", &pixels, width, height);
+        click_control(&window, &ui, &clock, &mut pixels, "Restart into update");
+        assert_eq!(restarted.get(), 0);
+        ui.set_can_maintain(true);
+        frame(
+            &window,
+            &clock,
+            {
+                update_time += 20;
+                update_time
+            },
+            &mut pixels,
+            width,
+        );
+        click_control(&window, &ui, &clock, &mut pixels, "Restart into update");
+        assert_eq!(restarted.get(), 1);
+        assert!(!ui.get_update_modal_open());
+        ui.set_page(5);
+        frame(
+            &window,
+            &clock,
+            {
+                update_time += 20;
+                update_time
+            },
+            &mut pixels,
+            width,
+        );
+        click_control(&window, &ui, &clock, &mut pixels, "Exit BLE update mode");
+        assert!(!ui.get_vesc_update_mode());
+        println!(
+            "{width}x{height}: Wi-Fi, BLE and native CAN progress modals, cancellation, verification, blocking and restart passed"
         );
         return;
     }

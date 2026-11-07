@@ -9,6 +9,7 @@
 #include "miniz.h"
 #include "security.hpp"
 #include "transport.hpp"
+#include "vesc_update.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -90,6 +91,8 @@ struct Manager {
   }
 
   bool can_write(uint64_t now) const {
+    if (vesc_update::busy() || ble_proxy::update_mode())
+      return false;
     const auto link = transport::snapshot();
     return bike::configuration_write_allowed(
         {link.status == transport::Status::Ready, matches(link), !security::blocked(), ble_proxy::phone_owns_link(),

@@ -13,6 +13,7 @@ struct AccessPoint {
 
 struct Snapshot {
   bool busy = false, connected = false, available = false, updating = false, reboot_ready = false;
+  bool cancellable = false;
   int progress = 0, count = 0;
   std::string status = "Wi-Fi is off", ssid, ip, version;
   std::array<AccessPoint, 12> networks{};

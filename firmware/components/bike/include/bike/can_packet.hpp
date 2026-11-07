@@ -14,6 +14,10 @@ struct CanFrame {
   bool extended = true, remote = false;
 };
 
+inline bool valid_can_data_frame(const CanFrame &frame) {
+  return !frame.remote && frame.size <= 8 && frame.id <= (frame.extended ? 0x1fffffffu : 0x7ffu);
+}
+
 // Native VESC CAN packet transport. UART framing is deliberately absent.
 template <class Send>
 bool send_can_packet(std::span<const uint8_t> payload, uint8_t source, uint8_t destination, bool reply, Send send) {
@@ -71,14 +75,14 @@ public:
 
   // A returned span remains valid until the next feed. Only replies from the
   // selected controller addressed to this display are accepted.
-  std::span<const uint8_t> feed(const CanFrame &f, uint8_t local, int peer, uint64_t now) {
+  std::span<const uint8_t> feed(const CanFrame &f, uint8_t local, int peer, uint64_t now, bool reply = true) {
     if (used_ && now - started_ >= 500)
       reset();
     if (!f.extended || f.remote || f.size > 8 || (f.id & 255) != local)
       return {};
     const auto command = f.id >> 8;
     if (command == 8) {
-      if (f.size < 3 || (peer >= 0 && f.data[0] != peer) || f.data[1] != 1)
+      if (f.size < 3 || (peer >= 0 && f.data[0] != peer) || f.data[1] != uint8_t(reply))
         return {};
       reset();
       sender_ = f.data[0];
@@ -107,7 +111,7 @@ public:
     }
     if (command == 7) {
       const size_t size = (size_t(f.data[2]) << 8) | f.data[3];
-      const bool valid = f.size == 6 && (peer < 0 || f.data[0] == peer) && f.data[1] == 1 && size > 0 &&
+      const bool valid = f.size == 6 && (peer < 0 || f.data[0] == peer) && f.data[1] == uint8_t(reply) && size > 0 &&
                          size == used_ && crc16({buffer_.data(), used_}) == ((uint16_t(f.data[4]) << 8) | f.data[5]);
       reset();
       if (valid) {

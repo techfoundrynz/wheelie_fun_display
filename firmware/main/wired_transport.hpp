@@ -4,6 +4,10 @@
 namespace transport
 {
 
+bool wired_update_valid(uint32_t session);
+
+void wired_update_reply(uint8_t peer, uint32_t session, std::span<const uint8_t> payload);
+
 Interface &wired_backend(Kind kind);
 
 bool wired_available(Kind kind);

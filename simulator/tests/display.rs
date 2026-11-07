@@ -86,3 +86,8 @@ fn detailed_stats() {
 fn wfb_configuration_drafts() {
     check_layouts(Some("--wfb-tuning-fixtures"), LAYOUTS);
 }
+
+#[test]
+fn vesc_update_controls() {
+    check_layouts(Some("--update-fixtures"), LAYOUTS);
+}

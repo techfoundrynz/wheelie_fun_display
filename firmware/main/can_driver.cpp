@@ -178,7 +178,7 @@ void CanDriver::close() {
 }
 
 bool CanDriver::send(const bike::CanFrame &source) {
-  if (!state || source.size > 8 || !source.extended || source.remote || !healthy())
+  if (!state || !bike::valid_can_data_frame(source) || !healthy())
     return false;
   auto *slot = state->available();
   if (!slot) {
@@ -194,7 +194,7 @@ bool CanDriver::send(const bike::CanFrame &source) {
   }
   slot->frame = {};
   slot->frame.header.id = source.id;
-  slot->frame.header.ide = true;
+  slot->frame.header.ide = source.extended;
   slot->frame.header.dlc = source.size;
   slot->data = source.data;
   slot->frame.buffer = slot->data.data();

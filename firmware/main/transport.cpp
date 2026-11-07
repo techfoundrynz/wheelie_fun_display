@@ -8,6 +8,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "nvs.h"
+#include "vesc_update.hpp"
 #include "wired_transport.hpp"
 #include <algorithm>
 #include <atomic>
@@ -304,8 +305,8 @@ Snapshot snapshot_locked() {
   }
   if (!route->admission_started)
     route->admission_started = now;
-  if (!paused && route->ready && !ble_proxy::phone_owns_link() && route->solo_controller_id < 0 &&
-      now >= route->next_identity_probe) {
+  if (!paused && !vesc_update::busy() && !ble_proxy::update_mode() && route->ready && !ble_proxy::phone_owns_link() &&
+      route->solo_controller_id < 0 && now >= route->next_identity_probe) {
     route->next_identity_probe = now + 1000;
     const std::array<uint8_t, 1> setup{47};
     const auto key = *bike::telemetry_poll_key(setup);
@@ -323,6 +324,8 @@ Snapshot snapshot_locked() {
 }
 
 void pump_discovery() {
+  if (vesc_update::busy() || ble_proxy::update_mode())
+    return;
   if (!route->started || route->ready || ble_proxy::phone_owns_link())
     return;
   const auto now = uint64_t(esp_timer_get_time() / 1000);
@@ -456,6 +459,8 @@ Snapshot snapshot() {
 }
 
 bool send(std::span<const uint8_t> payload) {
+  if (vesc_update::busy() || ble_proxy::update_mode())
+    return false;
   if (payload.empty() || payload.size() > bike::max_payload)
     return false;
   xSemaphoreTake(mutex, portMAX_DELAY);
@@ -465,6 +470,8 @@ bool send(std::span<const uint8_t> payload) {
 }
 
 bool poll(std::span<const uint8_t> payload) {
+  if (vesc_update::busy() || ble_proxy::update_mode())
+    return false;
   // Never turn this bypass into a write path. These are the exact read-only
   // requests used by the display's supported telemetry decoders.
   const auto key = bike::telemetry_poll_key(payload);
@@ -650,6 +657,8 @@ void proxy_ownership(bool owned, uint32_t epoch) {
 }
 
 bool send_proxy_fragment(std::span<const uint8_t> bytes, uint32_t epoch) {
+  if (ble_proxy::update_mode())
+    return ble_proxy::update_send(bytes, epoch);
   return proxy_source.load() == Kind::Ble ? ble::send_proxy_fragment(bytes, epoch)
                                           : wired_send_proxy_fragment(bytes, epoch);
 }

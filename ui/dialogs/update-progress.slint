@@ -1,0 +1,82 @@
+import { Action } from "../controls.slint";
+import { Theme } from "../theme.slint";
+import { ModalFrame } from "modal-frame.slint";
+
+export component UpdateProgress inherits ModalFrame {
+    in property <bool> active;
+    in property <bool> ready;
+    in property <bool> cancellable;
+    in property <bool> can-restart;
+    in property <int> progress;
+    in property <string> status;
+    in property <string> source;
+    callback cancel();
+    callback restart();
+    callback closed();
+
+    VerticalLayout {
+        spacing: 12px;
+        alignment: center;
+        Text {
+            text: root.ready ? "UPDATE READY" : root.active ? "FIRMWARE UPDATE" : "UPDATE STOPPED";
+            color: Theme.accent;
+            font-size: 24px;
+            font-weight: 800;
+            wrap: word-wrap;
+        }
+
+        Text {
+            text: root.source;
+            color: Theme.secondary;
+            font-size: 14px;
+        }
+
+        Text {
+            text: root.status;
+            color: Theme.text;
+            font-size: 16px;
+            wrap: word-wrap;
+        }
+
+        if root.active || root.ready: track := Rectangle {
+            height: 12px;
+            border-radius: 6px;
+            background: Theme.sunken;
+            clip: true;
+            fill := Rectangle {
+                x: 0px;
+                y: 0px;
+                width: parent.width * clamp(root.progress, 0, 100) / 100;
+                height: parent.height;
+                border-radius: 6px;
+                background: Theme.accent;
+            }
+        }
+        if root.active || root.ready: Text {
+            text: clamp(root.progress, 0, 100) + "%";
+            color: Theme.text;
+            font-size: 32px;
+            font-weight: 800;
+        }
+        if root.active: Text {
+            text: "Keep the display powered.";
+            color: Theme.secondary;
+            font-size: 14px;
+            wrap: word-wrap;
+        }
+        if root.active: Action {
+            label: "Cancel firmware update";
+            enabled: root.cancellable;
+            activated => { root.cancel(); }
+        }
+        if root.ready: Action {
+            label: "Restart into update";
+            enabled: root.can-restart;
+            activated => { root.restart(); }
+        }
+        if !root.active && !root.ready: Action {
+            label: "Close update status";
+            activated => { root.closed(); }
+        }
+    }
+}

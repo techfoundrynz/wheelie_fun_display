@@ -146,6 +146,12 @@ void bridge_tests() {
   const auto request = bike::can_bridge_request(forward, 254);
   CHECK(request.operation == bike::BridgeOperation::Forward && request.destination == 42);
   CHECK(Bytes(request.payload.begin(), request.payload.end()) == Bytes({36, 101, 12, 1}));
+  for (const uint8_t opcode : {0, 157}) {
+    const Bytes directed{34, 42, opcode};
+    const auto forwarded = bike::can_bridge_request(directed, 254);
+    CHECK(forwarded.operation == bike::BridgeOperation::Forward && forwarded.destination == 42);
+    CHECK(forwarded.payload.size() == 1 && forwarded.payload[0] == opcode);
+  }
   CHECK(bike::can_bridge_request(Bytes{0}, 254).operation == bike::BridgeOperation::Firmware);
   CHECK(bike::can_bridge_request(Bytes{62}, 254).operation == bike::BridgeOperation::Scan);
   CHECK(bike::can_bridge_request(Bytes{47}, 254).operation == bike::BridgeOperation::Unsupported);
@@ -161,6 +167,71 @@ void bridge_tests() {
   const auto extra = size_t(end - firmware.begin()) + 13;
   CHECK(firmware[extra + 2] == 2 && firmware[extra + 3] == 0); // Generic adapter, no motor/package identity.
   CHECK(bike::can_bridge_firmware(std::span(firmware).first(10), uuid) == 0);
+  const auto branded_length = bike::can_bridge_firmware(firmware, uuid, "waveshare_esp32s3_206", "0.1.3");
+  CHECK(branded_length > 0);
+  size_t position = 3;
+  auto string_at = [&](std::span<const uint8_t> data) {
+    const auto first = position;
+    while (position < data.size() && data[position])
+      ++position;
+    CHECK(position < data.size());
+    const std::string value(reinterpret_cast<const char *>(data.data() + first), position - first);
+    ++position;
+    return value;
+  };
+  const auto identity = std::span(firmware).first(branded_length);
+  CHECK(identity[1] == bike::bridge_protocol_major && identity[2] == bike::bridge_protocol_minor);
+  CHECK(string_at(identity) == "waveshare_esp32s3_206");
+  CHECK(std::equal(uuid.begin(), uuid.end(), identity.begin() + position));
+  position += uuid.size();
+  CHECK(identity[position++] == 0 && identity[position++] == 0);
+  CHECK(identity[position++] == 2);
+  for (int flag = 0; flag < 5; ++flag)
+    CHECK(identity[position++] == 0);
+  CHECK(string_at(identity) == "Wheelie Fun Display v0.1.3");
+  CHECK(position + 4 == branded_length);
+  CHECK(bike::can_bridge_request(Bytes{157}, 254).operation == bike::BridgeOperation::FirmwareInfo);
+  CHECK(bike::can_bridge_request(Bytes{30}, 254).operation == bike::BridgeOperation::Ignore);
+  std::array<uint8_t, 128> info{};
+  auto info_length = bike::can_bridge_firmware_info(info, "0123456789abcdef-dirty", "");
+  CHECK(info_length == 28 && info[0] == 157 && info[1] == bike::bridge_protocol_major &&
+        info[2] == bike::bridge_protocol_minor && info[3] == 0);
+  position = 4;
+  CHECK(string_at(std::span(info).first(info_length)) == "0123456789abcdef-dirty");
+  CHECK(string_at(std::span(info).first(info_length)).empty() && position == info_length);
+  CHECK(bike::can_bridge_firmware_info(std::span(info).first(info_length - 1), "0123456789abcdef-dirty") == 0);
+  info_length = bike::can_bridge_firmware_info(info, std::string(90, 'a'), std::string(90, 'b'));
+  CHECK(info_length == 98 && info[50] == 0 && info[97] == 0);
+  CHECK(bike::can_bridge_firmware_info(info, "") == 6);
+
+  for (const bool extended : {false, true}) {
+    const uint32_t identifier = extended ? 0x1fffffffu : 0x7ffu;
+    Bytes raw{85,
+              uint8_t(identifier >> 24),
+              uint8_t(identifier >> 16),
+              uint8_t(identifier >> 8),
+              uint8_t(identifier),
+              uint8_t(extended)};
+    for (unsigned dlc = 0; dlc <= 8; ++dlc) {
+      const auto parsed = bike::can_bridge_request(raw, 254);
+      CHECK(parsed.operation == bike::BridgeOperation::RawFrame);
+      CHECK(parsed.frame.id == identifier && parsed.frame.extended == extended && !parsed.frame.remote);
+      CHECK(parsed.frame.size == dlc);
+      CHECK(std::equal(raw.begin() + 6, raw.end(), parsed.frame.data.begin()));
+      CHECK(bike::valid_can_data_frame(parsed.frame));
+      raw.push_back(uint8_t(dlc));
+    }
+    CHECK(bike::can_bridge_request(raw, 254).operation == bike::BridgeOperation::Invalid);
+  }
+  for (const Bytes &malformed : {Bytes{85}, Bytes{85, 0, 0, 0, 0}, Bytes{85, 0, 0, 0, 0, 2}, Bytes{85, 0, 0, 8, 0, 0},
+                                 Bytes{85, 0x20, 0, 0, 0, 1}})
+    CHECK(bike::can_bridge_request(malformed, 254).operation == bike::BridgeOperation::Invalid);
+  bike::CanFrame invalid;
+  invalid.remote = true;
+  CHECK(!bike::valid_can_data_frame(invalid));
+  invalid.remote = false;
+  invalid.size = 9;
+  CHECK(!bike::valid_can_data_frame(invalid));
   std::vector<bike::CanFrame> frames;
   CHECK(bike::send_can_packet(Bytes{0, 6, 6}, 42, 254, true, [&](auto frame) {
     frames.push_back(frame);

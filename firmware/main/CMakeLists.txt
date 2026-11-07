@@ -17,7 +17,46 @@ idf_component_register(SRCS "main.cpp" "tuning.cpp" ${board_source} "ble.cpp" "b
     esp_wifi esp_netif esp_event esp_http_client app_update mbedtls espressif__cjson
     esp_hw_support esp_psram spi_flash
     ${board_requires})
+target_sources(${COMPONENT_LIB} PRIVATE ota_image.cpp vesc_update.cpp)
 target_compile_features(${COMPONENT_LIB} PUBLIC cxx_std_20)
+find_package(Git QUIET)
+set(wfd_source_revision "")
+if(GIT_FOUND)
+    function(wfd_watch_git_path name)
+        execute_process(COMMAND "${GIT_EXECUTABLE}" rev-parse --git-path "${name}"
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}" OUTPUT_VARIABLE wfd_git_path
+            OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET RESULT_VARIABLE wfd_git_path_result)
+        if(wfd_git_path_result EQUAL 0)
+            get_filename_component(wfd_git_path "${wfd_git_path}" ABSOLUTE BASE_DIR "${CMAKE_SOURCE_DIR}")
+            if(EXISTS "${wfd_git_path}")
+                set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${wfd_git_path}")
+            endif()
+        endif()
+    endfunction()
+    wfd_watch_git_path(HEAD)
+    wfd_watch_git_path(index)
+    wfd_watch_git_path(packed-refs)
+    execute_process(COMMAND "${GIT_EXECUTABLE}" symbolic-ref --quiet HEAD
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}" OUTPUT_VARIABLE wfd_git_ref
+        OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET RESULT_VARIABLE wfd_git_ref_result)
+    if(wfd_git_ref_result EQUAL 0)
+        wfd_watch_git_path("${wfd_git_ref}")
+    endif()
+    execute_process(COMMAND "${GIT_EXECUTABLE}" rev-parse --verify HEAD
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}" OUTPUT_VARIABLE wfd_source_revision
+        OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET RESULT_VARIABLE wfd_revision_result)
+    if(NOT wfd_revision_result EQUAL 0)
+        set(wfd_source_revision "")
+    else()
+        execute_process(COMMAND "${GIT_EXECUTABLE}" diff-index --quiet HEAD --
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}" RESULT_VARIABLE wfd_dirty_result)
+        if(wfd_dirty_result EQUAL 1)
+            string(APPEND wfd_source_revision "-dirty")
+        endif()
+    endif()
+endif()
+set_property(SOURCE wired_transport.cpp vesc_update.cpp APPEND PROPERTY COMPILE_DEFINITIONS
+    "WFD_SOURCE_REVISION=\"${wfd_source_revision}\"")
 option(WFD_BLE_BENCHMARK "Run bounded, read-only BLE telemetry throughput diagnostics" OFF)
 if(WFD_BLE_BENCHMARK)
     set_property(SOURCE main.cpp ble_proxy.cpp APPEND PROPERTY COMPILE_DEFINITIONS WFD_BLE_BENCHMARK=1)

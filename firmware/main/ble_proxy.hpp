@@ -9,6 +9,16 @@
 namespace ble_proxy
 {
 
+bool set_update_mode(bool enabled);
+
+bool update_mode();
+
+bool update_owner_valid(uint32_t epoch, uint32_t session);
+
+bool update_send(std::span<const uint8_t> bytes, uint32_t epoch);
+
+void update_reply(uint32_t epoch, uint32_t session, std::span<const uint8_t> payload);
+
 struct Snapshot {
   bool enabled = false, connected = false, subscribed = false, advertising = false, upstream_ready = false;
   uint32_t failures = 0;

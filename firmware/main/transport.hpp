@@ -42,7 +42,8 @@ struct Packet {
   uint16_t size = 0;
   bool discontinuity = false;
   bool passive_proxy = false; // Verified controller-ID setup from the phone's own query.
-  int controller = -2;        // -2: untagged serial reply; -1: direct controller.
+  bool can_reply = false;
+  int controller = -2; // -2: untagged serial reply; -1: direct controller.
   uint32_t proxy_epoch = 0;
   std::array<uint8_t, bike::max_payload> bytes{};
 };

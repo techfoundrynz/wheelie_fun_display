@@ -4,6 +4,12 @@ import { Action } from "../controls.slint";
 import { Theme } from "../theme.slint";
 
 export component UpdatesPage inherits TransitionPage {
+    in property <bool> vesc-update-mode;
+    in property <bool> vesc-update-active;
+    in property <int> vesc-update-progress;
+    in property <string> vesc-update-status;
+    callback vesc-update-mode-requested(bool);
+    callback vesc-update-cancel();
     page-index: 5;
     in property <bool> can-maintain;
     in property <string> firmware-version;
@@ -45,7 +51,7 @@ export component UpdatesPage inherits TransitionPage {
         }
         Action {
             label: "Check GitHub Releases";
-            enabled: root.wifi-connected && !root.network-busy && !root.reboot-ready;
+            enabled: root.wifi-connected && !root.network-busy && !root.reboot-ready && !root.vesc-update-mode && !root.vesc-update-active;
             activated => { root.update-check(); }
         }
 
@@ -67,6 +73,37 @@ export component UpdatesPage inherits TransitionPage {
             label: "Restart into update";
             enabled: root.can-maintain;
             activated => { root.update-reboot(); }
+        }
+        Text {
+            text: "VESC TOOL UPDATE";
+            color: Theme.text;
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        Text {
+            text: root.vesc-update-status + (root.vesc-update-active ? " · " + root.vesc-update-progress + "%" : "");
+            color: Theme.secondary;
+            font-size: 14px;
+            wrap: word-wrap;
+        }
+
+        Text {
+            text: root.vesc-update-mode ? "Connect VESC Tool to Wheelie Fun Display OTA. Choose the application firmware under Custom File. Your phone BLE code still applies. Done with uploads? Exit this mode to restore the bike proxy." : "CAN mode always accepts addressed firmware updates. Enable update-only BLE mode to update without a CAN connection or Wi-Fi.";
+            color: Theme.secondary;
+            font-size: 14px;
+            wrap: word-wrap;
+        }
+
+        Action {
+            label: root.vesc-update-mode ? "Exit BLE update mode" : "Start BLE update mode";
+            enabled: !root.vesc-update-active && (root.vesc-update-mode || root.can-maintain);
+            activated => { root.vesc-update-mode-requested(!root.vesc-update-mode); }
+        }
+
+        if root.vesc-update-active: Action {
+            label: "Cancel VESC Tool upload";
+            activated => { root.vesc-update-cancel(); }
         }
     }
 }

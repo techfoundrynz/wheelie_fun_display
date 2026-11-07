@@ -18,6 +18,7 @@
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "ota_image.hpp"
 #include "psa/crypto.h"
 #include "transport.hpp"
 #include <algorithm>
@@ -266,14 +267,14 @@ void update() {
   status("Downloading and verifying firmware...");
   vTaskDelay(pdMS_TO_TICKS(250));
   auto client = open_https(download_url);
-  esp_ota_handle_t ota = 0;
+  ota_image::Image image;
   bool begun = false, success = false;
   const auto target = esp_ota_get_next_update_partition(nullptr);
   psa_hash_operation_t hash = PSA_HASH_OPERATION_INIT;
   const bool hash_ready = psa_crypto_init() == PSA_SUCCESS && psa_hash_setup(&hash, PSA_ALG_SHA_256) == PSA_SUCCESS;
   size_t total = 0;
   uint8_t buffer[2048];
-  if (hash_ready && client && target && esp_ota_begin(target, expected_size, &ota) == ESP_OK) {
+  if (hash_ready && client && target && image.begin(expected_size)) {
     begun = true;
     while (phase.load() == Phase::Downloading) {
       const int n = esp_http_client_read(client, reinterpret_cast<char *>(buffer), sizeof(buffer));
@@ -285,7 +286,7 @@ void update() {
         success = esp_http_client_is_complete_data_received(client) && total == expected_size;
         break;
       }
-      if (total + size_t(n) > expected_size || esp_ota_write(ota, buffer, n) != ESP_OK) {
+      if (total + size_t(n) > expected_size || !image.write(total, std::span(buffer).first(n))) {
         status("Invalid firmware or flash write failure");
         break;
       }
@@ -304,6 +305,8 @@ void update() {
   if (client)
     esp_http_client_cleanup(client);
   uint8_t result[32]{};
+  if (success)
+    status("Verifying downloaded firmware...");
   size_t hash_size = 0;
   success &= hash_ready && psa_hash_finish(&hash, result, sizeof(result), &hash_size) == PSA_SUCCESS &&
              hash_size == sizeof(result);
@@ -315,9 +318,10 @@ void update() {
              std::strncmp(desc.project_name, esp_app_get_description()->project_name, sizeof(desc.project_name)) == 0;
   Phase expected = Phase::Downloading;
   if (success && phase.compare_exchange_strong(expected, Phase::Committing)) {
-    const auto error = esp_ota_end(ota);
+    success = image.finish();
+    if (!success)
+      image.abort();
     begun = false;
-    success = error == ESP_OK && esp_ota_set_boot_partition(target) == ESP_OK;
     if (success) {
       phase.store(Phase::Ready);
       lock();
@@ -330,7 +334,7 @@ void update() {
   else
     success = false;
   if (begun)
-    esp_ota_abort(ota);
+    image.abort();
   if (!success) {
     status(phase.load() == Phase::Cancelled ? "Update cancelled; current firmware unchanged"
                                             : "Update failed validation; current firmware unchanged");
@@ -490,6 +494,7 @@ void start() {
 Snapshot snapshot() {
   lock();
   auto copy = state;
+  copy.cancellable = phase.load() == Phase::Downloading;
   unlock();
   return copy;
 }
