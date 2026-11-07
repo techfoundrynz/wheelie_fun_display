@@ -23,9 +23,10 @@
     "reference/vesc-protocol/index.html",
     "reference/wfb-bike-layer/index.html",
     "reference/theme/index.html",
-    "reference/notices/index.html"
+    "reference/notices/index.html",
+    "hardware/waveshare-206/case-mount/index.html"
   ],
   "simulator": "simulator/",
   "installer": "install/",
-  "sources": 22
+  "sources": 23
 }

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Waveshare case and mount · Wheelie Fun Display</title><meta name="description" content="STEP downloads, assembly views and hardware for the 2.06-inch casing and clamp."><meta name="theme-color" content="#080b0e">
+<link rel="icon" href="../../../assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../../../assets/style.css">
+<script defer src="../../../assets/search-index.js"></script><script defer src="../../../assets/site.js"></script></head>
+<body data-site-root="../../../" class="docs-page">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="site-header"><a class="brand" href="../../../"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 0 33 35" aria-hidden="true" fill="none" color="#63d9e5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <g id="bike-artwork" transform="translate(16 16) rotate(30) scale(-1 1) translate(-16 -16)">
+    <circle cx="7" cy="24" r="4.5" stroke-width="3"/>
+    <circle cx="25" cy="24" r="4.5" stroke-width="3"/>
+    <rect x="8" y="10" width="13" height="3" rx="0.8" stroke-width="2"/>
+    <path d="M7 24h5l-2-9h13l-1 9H12M10 15v-2h10M23 15l2 9M23 15 21 5h4m-4 0h-2"/>
+    <rect x="13" y="17" width="7" height="6" rx="1" stroke-width="1.5"/>
+    <path d="M15 19h3m-3 2h3M20 23h3" stroke-width="1.2"/>
+  </g>
+</svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
+<div class="header-actions"><a class="installer-link" href="../../../install/">Install firmware</a><a class="simulator-link" href="../../../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
+<button class="nav-overlay" type="button" aria-label="Close navigation"></button>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../../../">Overview</a><div class="nav-group"><span>Start here</span><a href="../../../getting-started/">Getting started</a><a href="../../../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../../../guide/">Using the display</a><a href="../../../connections/">Connections &amp; proxy</a><a href="../../../pins/">PINs, patterns &amp; pairing</a><a href="../../../maintenance/">Updates &amp; maintenance</a><a href="../../../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../">Waveshare S3 2.06-inch</a><a href="../../guition-43/">GUITION P4 4.3-inch</a><a href="./" aria-current="page">Waveshare case and mount</a></div><div class="nav-group"><span>For developers</span><a href="../../../building/">Build &amp; install</a><a href="../../../contributing/">Contributing</a><a href="../../../architecture/">Architecture</a><a href="../../../performance/">Performance</a><a href="../../../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../../../integrations/">Vehicle integrations</a><a href="../../../locking/">Locking internals</a><a href="../../../bluetooth/">Bluetooth internals</a><a href="../../../transports/">Transport internals</a><a href="../../../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../../../reference/vesc-protocol/">WFB protocol notes</a><a href="../../../reference/wfb-bike-layer/">WFB bike layer</a><a href="../../../reference/theme/">Theme guide</a><a href="../../../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">Hardware</div><h1>Waveshare case and mount</h1><p>STEP downloads, assembly views and hardware for the 2.06-inch casing and clamp.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/cad/waveshare-206/README.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>A compact casing and split handlebar clamp for the Waveshare ESP32-S3 Touch AMOLED 2.06 module. The Fusion assembly shows portrait and landscape installations of the same custom parts.</p>
+<p><img alt="Portrait and landscape display casings mounted on a handlebar" src="../../../assets/images/waveshare-206-mounted.png" /></p>
+<p>These are shaded CAD views of the current design. Display glass and the handlebar are reference geometry; the screen is shown blank.</p>
+<h2 id="editable-fusion-design">Editable Fusion design</h2>
+<p>Download the <a href="../../../cad/waveshare-206/wheelie-fun-display-waveshare-206.f3d">complete Fusion archive</a> to edit the assembly, user parameters and feature timeline. It includes both mounting orientations, standard hardware and the reference display and handlebar components.</p>
+<p>This is an <strong>F3D</strong> archive because all components are local to one Fusion design. <strong>F3Z</strong> is Fusion's package format for designs with external linked references; this design does not need that container. See <a href="https://help.autodesk.com/view/fusion360/ENU/?caas=caas%2Fsfdcarticles%2Fsfdcarticles%2FHow-to-make-a-local-archive-back-up-file-in-Fusion-360.html">Autodesk's archive format guide</a>.</p>
+<h2 id="download-the-parts">Download the parts</h2>
+<p>Each STEP file contains one solid component at its modelled size, in millimetres. Import at 1:1 scale. Standard fasteners, reference display geometry and the handlebar are excluded.</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Part</th>
+<th>STEP download</th>
+<th>Model designation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rear casing</td>
+<td><a href="../../../cad/waveshare-206/rear-casing.step">rear-casing.step</a></td>
+<td><code>01_Rear_body_PRINT</code> — printed shell</td>
+</tr>
+<tr>
+<td>Upper clamp saddle</td>
+<td><a href="../../../cad/waveshare-206/upper-saddle.step">upper-saddle.step</a></td>
+<td><code>03_Upper_saddle_AL6061</code> — aluminium 6061</td>
+</tr>
+<tr>
+<td>Lower clamp cap</td>
+<td><a href="../../../cad/waveshare-206/lower-clamp-cap.step">lower-clamp-cap.step</a></td>
+<td><code>04_Lower_cap_AL6061</code> — aluminium 6061</td>
+</tr>
+<tr>
+<td>Split rubber liner</td>
+<td><a href="../../../cad/waveshare-206/rubber-liner.step">rubber-liner.step</a></td>
+<td><code>HW_split_rubber_liner_0p5</code> — 0.5 mm wall</td>
+</tr>
+</tbody>
+</table></div>
+<p>The clamp parts are designated aluminium in the source model. The casing is the part designated for printing; no slicer profile or machining toolpaths are included.</p>
+<h2 id="portrait-or-landscape-mounting">Portrait or landscape mounting</h2>
+<p>The same casing and clamp can be assembled in <strong>portrait or landscape</strong>. Rotate the casing 90° relative to the upper saddle before fastening it; the square 20 × 20 mm mounting pattern supports both orientations without different printed parts. The mounted view above shows both arrangements side by side.</p>
+<p>On the display, open <strong>Settings &gt; Orientation</strong> to match the UI to the physical mounting. The firmware cycles through <strong>0°, 90°, 180° and 270°</strong>, so either portrait or landscape direction is available. The layout and touch coordinates rotate together.</p>
+<h2 id="fit-and-assembly">Fit and assembly</h2>
+<p>The source model uses these nominal dimensions:</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Dimension</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Casing outside width × height</td>
+<td>42 × 51 mm</td>
+</tr>
+<tr>
+<td>Shell depth, before rear mounting pad</td>
+<td>10.5 mm</td>
+</tr>
+<tr>
+<td>Display cavity width × height</td>
+<td>38.2 × 47 mm</td>
+</tr>
+<tr>
+<td>Handlebar outside diameter</td>
+<td>22.225 mm (7/8 inch)</td>
+</tr>
+<tr>
+<td>Rubber liner wall</td>
+<td>0.5 mm</td>
+</tr>
+<tr>
+<td>Clamp bore, including liner</td>
+<td>23.225 mm</td>
+</tr>
+<tr>
+<td>Clamp width along the handlebar</td>
+<td>16 mm</td>
+</tr>
+<tr>
+<td>Casing-to-saddle mounting pitch</td>
+<td>20 × 20 mm</td>
+</tr>
+<tr>
+<td>Cable bore</td>
+<td>6.5 mm</td>
+</tr>
+</tbody>
+</table></div>
+<p>The model shows the following hardware <strong>per display assembly</strong>:</p>
+<ul>
+<li>Four M3 × 6 ISO 4762 socket-head screws.</li>
+<li>Four M3 heat-set inserts, nominal 5 mm outside diameter × 4 mm long.</li>
+<li>Two M4 × 12 DIN 7984 low-head socket screws for the clamp.</li>
+<li>Two M2 × 5 countersunk display screws, modelled with a reference drive.</li>
+<li>One split rubber liner.</li>
+</ul>
+<p>The upper saddle has modelled 3.3 mm M4 tap-drill holes; STEP geometry does not supply a machining or tapping operation. Confirm the actual display, insert fit, screw engagement and cable clearance before fabrication. The source display component is explicitly marked as reference geometry to verify, rather than a vendor-accurate manufacturing model.</p>
+<h2 id="clamp-detail">Clamp detail</h2>
+<p><img alt="Underside view of the saddle, split clamp, liner and mounting screws" src="../../../assets/images/waveshare-206-clamp.png" /></p>
+<p>The underside view omits the handlebar so the liner, split and fastener access are visible.</p>
+<h2 id="casing-interior">Casing interior</h2>
+<p><img alt="Isolated printed casing showing the display cavity, mounting islands and cable opening" src="../../../assets/images/waveshare-206-casing.png" /></p>
+<h2 id="source-and-updates">Source and updates</h2>
+<p>Exported from <strong>Wheelie Fun Display - Waveshare 2.06</strong>, Fusion document version <strong>9</strong>, on <strong>7 November 2026</strong>. These STEP files are solid exports; they do not retain the Fusion parameter timeline. Re-export affected parts when the source design changes and update the views and dimensions here.</p>
+<p>These project CAD exports use the repository's <a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0 license</a>.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../../../reference/notices/">Notices</a></span></footer></main>
+<aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
+<ul>
+<li><a href="#editable-fusion-design">Editable Fusion design</a></li>
+<li><a href="#download-the-parts">Download the parts</a></li>
+<li><a href="#portrait-or-landscape-mounting">Portrait or landscape mounting</a></li>
+<li><a href="#fit-and-assembly">Fit and assembly</a></li>
+<li><a href="#clamp-detail">Clamp detail</a></li>
+<li><a href="#casing-interior">Casing interior</a></li>
+<li><a href="#source-and-updates">Source and updates</a></li>
+</ul>
+</div>
+</aside></div>
+<dialog class="search-dialog" aria-label="Search documentation"><form method="dialog"><button class="close-search" aria-label="Close search">×</button></form><label for="docs-search">Search Wheelie Fun Display</label><input id="docs-search" type="search" placeholder="Connection, PIN, build…" autocomplete="off"><div class="search-results" aria-live="polite"></div><p class="search-hint">Search the guides and implementation notes. Press Esc to close.</p></dialog>
+</body></html>
