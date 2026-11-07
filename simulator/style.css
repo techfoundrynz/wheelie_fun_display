@@ -172,12 +172,17 @@ canvas:focus-visible {
   margin-bottom: 9px;
 }
 .simulator-main select {
+  appearance: none;
   width: 100%;
-  background: var(--raised);
+  background-color: var(--raised);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23a1adb6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 20px;
   color: var(--text);
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 10px;
+  padding: 10px 46px 10px 10px;
   margin-bottom: 18px;
   font-size: 14px;
 }
@@ -291,5 +296,12 @@ summary {
   }
   .site-header nav a:first-child {
     display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .simulator-main select {
+    appearance: auto;
+    background-image: none;
   }
 }

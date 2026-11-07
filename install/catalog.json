@@ -1,17 +1,33 @@
 {
   "channel": "release",
-  "version": null,
-  "release_url": null,
+  "version": "0.1.1",
+  "release_url": "https://github.com/techfoundrynz/wheelie_fun_display/releases/tag/v0.1.1",
   "boards": [
     {
       "environment": "waveshare_esp32s3_206",
       "label": "Waveshare ESP32-S3 AMOLED 2.06",
-      "available": false
+      "available": true,
+      "compatibility": "",
+      "chip_family": "ESP32-S3",
+      "version": "0.1.1",
+      "file": "waveshare_esp32s3_206-factory.bin",
+      "size": 4404336,
+      "sha256": "838165707c64775864dad2e12e97160355e8e250ad6fac872b89b51754f375d9",
+      "manifest": "firmware/waveshare_esp32s3_206-838165707c64775864dad2e12e97160355e8e250ad6fac872b89b51754f375d9/waveshare_esp32s3_206.json",
+      "download": "firmware/waveshare_esp32s3_206-838165707c64775864dad2e12e97160355e8e250ad6fac872b89b51754f375d9/waveshare_esp32s3_206-factory.bin"
     },
     {
       "environment": "guition_jc4880p443c",
       "label": "GUITION JC4880P443C 4.3",
-      "available": false
+      "available": true,
+      "compatibility": "For ESP32-P4 revisions below 3.0. Check your board revision before installing.",
+      "chip_family": "ESP32-P4",
+      "version": "0.1.1",
+      "file": "guition_jc4880p443c-factory.bin",
+      "size": 4300336,
+      "sha256": "4356378cc3269768f1b10ae376e98429cf8acd4f060fa580f3dcf958f4fc7f7b",
+      "manifest": "firmware/guition_jc4880p443c-4356378cc3269768f1b10ae376e98429cf8acd4f060fa580f3dcf958f4fc7f7b/guition_jc4880p443c.json",
+      "download": "firmware/guition_jc4880p443c-4356378cc3269768f1b10ae376e98429cf8acd4f060fa580f3dcf958f4fc7f7b/guition_jc4880p443c-factory.bin"
     }
   ]
 }
