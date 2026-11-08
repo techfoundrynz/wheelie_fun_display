@@ -53,6 +53,10 @@ These previews are generated from the current shared UI with illustrative connec
 
 The [GUITION case and mount guide](../cad/guition-43/README.md) includes the shared editable Fusion archive, five STEP downloads, shaded views and an assembly animation. It covers the rear housing, aluminium clamp, split handlebar liner, cable grommet and additional display mounting screws. Check the real module against the CAD's explicitly unverified display-depth reference before fabrication.
 
+## CAN breakout board
+
+The [GUITION CAN breakout guide](../pcb/guition-43/README.md) includes the editable EasyEDA Pro project, labelled board views, schematic, connector pinouts and optional CAN firmware pin configuration. The board fits the display's expansion header and provides a CAN transceiver and six-pin vehicle connector.
+
 ## ESP32-C6 radio firmware
 
 The P4 has no built-in radio. Wi-Fi and both BLE roles use the C6 through ESP-Hosted: standard `esp_wifi` calls are supplied by `esp_wifi_remote`, and the P4 NimBLE host communicates with the C6 Bluetooth controller through the Hosted HCI tunnel.

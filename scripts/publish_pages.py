@@ -60,6 +60,7 @@ def validate_source(source):
         ".step",
         ".f3d",
         ".f3z",
+        ".epro2",
     }
     total = 0
     for entry in source.rglob("*"):

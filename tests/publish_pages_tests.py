@@ -78,7 +78,7 @@ class PagesPublicationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Unexpected static"):
             pages.assemble(self.site, self.source)
 
-    def test_cad_downloads_survive_production_and_preview_publication(self):
+    def test_hardware_downloads_survive_production_and_preview_publication(self):
         cad = self.source / "cad/waveshare-206"
         cad.mkdir(parents=True)
         files = {
@@ -88,6 +88,10 @@ class PagesPublicationTests(unittest.TestCase):
         }
         for name, payload in files.items():
             (cad / name).write_bytes(payload)
+        pcb = self.source / "pcb/guition-43"
+        pcb.mkdir(parents=True)
+        project = b"PK\x03\x04native PCB project"
+        (pcb / "Guition_CAN_PCB.epro2").write_bytes(project)
         images = self.source / "assets/images"
         images.mkdir(parents=True)
         animation = b"GIF89a assembly animation"
@@ -96,6 +100,9 @@ class PagesPublicationTests(unittest.TestCase):
         destination = "previews/pr-12/" + "a" * 40
         pages.assemble(self.site, self.source, destination)
         for prefix in (self.site, self.site / destination / "payload"):
+            self.assertEqual(
+                (prefix / "pcb/guition-43/Guition_CAN_PCB.epro2").read_bytes(), project
+            )
             self.assertEqual(
                 (prefix / "assets/images/assembly.gif").read_bytes(), animation
             )

@@ -94,6 +94,13 @@ PAGES = [
         "Case and clamp STEP downloads, Fusion archive, assembly animation and fit checks.",
     ),
     (
+        "pcb/guition-43/README.md",
+        "hardware/guition-43/can-breakout",
+        "GUITION CAN breakout",
+        "Hardware",
+        "Editable PCB source, labelled board views, schematic and CAN wiring.",
+    ),
+    (
         "docs/building.md",
         "building",
         "Build & install",
@@ -248,6 +255,11 @@ def rewrite_links(body: str, source: Path, route: str) -> str:
             ".f3z",
         }:
             path = relative("", route) + target.relative_to(ROOT).as_posix()
+        elif (
+            target.is_relative_to((ROOT / "pcb").resolve())
+            and target.suffix == ".epro2"
+        ):
+            path = relative("", route) + target.relative_to(ROOT).as_posix()
         elif target.is_relative_to(ROOT):
             path = REPO + "/blob/main/" + target.relative_to(ROOT).as_posix()
         else:
@@ -268,6 +280,8 @@ def navigation(route: str, available: list[tuple]) -> str:
         nested = slug.rpartition("/")[0] in routes
         child = ' class="nav-child"' if nested else ""
         label = "Case & mount (CAD)" if source.startswith("cad/") else title
+        if source.startswith("pcb/"):
+            label = "CAN breakout (PCB)"
         current = ' aria-current="page"' if slug == route else ""
         groups.setdefault(group, []).append(
             f'<a href="{relative(slug, route)}"{child}{current}>{escape(label)}</a>'
@@ -363,13 +377,17 @@ def build(output: Path, images: Path) -> None:
     (assets / "images").mkdir(exist_ok=True)
     for name in ["manifest.json"] + manifest["images"]:
         shutil.copyfile(images / name, assets / "images" / name)
-    # Ship CAD downloads with Pages so the guide works in offline artifacts too.
-    for source in sorted((ROOT / "cad").rglob("*")):
-        if not source.is_file() or source.suffix not in {".step", ".f3d", ".f3z"}:
-            continue
-        destination = output / source.relative_to(ROOT)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source, destination)
+    # Ship hardware downloads, excluding maintainer recipes and instructions.
+    for directory, extensions in (
+        ("cad", {".step", ".f3d", ".f3z"}),
+        ("pcb", {".epro2"}),
+    ):
+        for source in sorted((ROOT / directory).rglob("*")):
+            if not source.is_file() or source.suffix not in extensions:
+                continue
+            destination = output / source.relative_to(ROOT)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, destination)
     fonts = assets / "fonts"
     fonts.mkdir(exist_ok=True)
     shutil.copyfile(ROOT / "ui/fonts/Roboto.ttf", fonts / "Roboto.ttf")

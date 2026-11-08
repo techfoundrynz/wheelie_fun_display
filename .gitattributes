@@ -37,3 +37,6 @@
 # Native Fusion design archives
 *.f3d binary
 *.f3z binary
+
+# Native EasyEDA Pro project archives
+*.epro2 binary
