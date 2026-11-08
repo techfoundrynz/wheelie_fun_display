@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GUITION case and mount · Wheelie Fun Display</title><meta name="description" content="Case and clamp STEP downloads, Fusion archive, assembly animation and fit checks."><meta name="theme-color" content="#080b0e">
+<link rel="icon" href="../../../assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../../../assets/style.css">
+<script defer src="../../../assets/search-index.js"></script><script defer src="../../../assets/site.js"></script></head>
+<body data-site-root="../../../" class="docs-page">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="site-header"><a class="brand" href="../../../"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 0 33 35" aria-hidden="true" fill="none" color="#63d9e5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <g id="bike-artwork" transform="translate(16 16) rotate(30) scale(-1 1) translate(-16 -16)">
+    <circle cx="7" cy="24" r="4.5" stroke-width="3"/>
+    <circle cx="25" cy="24" r="4.5" stroke-width="3"/>
+    <rect x="8" y="10" width="13" height="3" rx="0.8" stroke-width="2"/>
+    <path d="M7 24h5l-2-9h13l-1 9H12M10 15v-2h10M23 15l2 9M23 15 21 5h4m-4 0h-2"/>
+    <rect x="13" y="17" width="7" height="6" rx="1" stroke-width="1.5"/>
+    <path d="M15 19h3m-3 2h3M20 23h3" stroke-width="1.2"/>
+  </g>
+</svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
+<div class="header-actions"><a class="installer-link" href="../../../install/">Install firmware</a><a class="simulator-link" href="../../../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
+<button class="nav-overlay" type="button" aria-label="Close navigation"></button>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../../../">Overview</a><div class="nav-group"><span>Start here</span><a href="../../../getting-started/">Getting started</a><a href="../../../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../../../guide/">Using the display</a><a href="../../../connections/">Connections &amp; proxy</a><a href="../../../pins/">PINs, patterns &amp; pairing</a><a href="../../../maintenance/">Updates &amp; maintenance</a><a href="../../../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../../waveshare-206/">Waveshare S3 2.06-inch</a><a href="../../waveshare-206/case-mount/" class="nav-child">Case &amp; mount (CAD)</a><a href="../">GUITION P4 4.3-inch</a><a href="./" class="nav-child" aria-current="page">Case &amp; mount (CAD)</a></div><div class="nav-group"><span>For developers</span><a href="../../../building/">Build &amp; install</a><a href="../../../contributing/">Contributing</a><a href="../../../architecture/">Architecture</a><a href="../../../performance/">Performance</a><a href="../../../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../../../integrations/">Vehicle integrations</a><a href="../../../locking/">Locking internals</a><a href="../../../bluetooth/">Bluetooth internals</a><a href="../../../transports/">Transport internals</a><a href="../../../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../../../reference/vesc-protocol/">WFB protocol notes</a><a href="../../../reference/wfb-bike-layer/">WFB bike layer</a><a href="../../../reference/theme/">Theme guide</a><a href="../../../reference/wfb-ride-controls/">WFB ride controls</a><a href="../../../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">Hardware</div><h1>GUITION case and mount</h1><p>Case and clamp STEP downloads, Fusion archive, assembly animation and fit checks.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/cad/guition-43/README.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>Part of the <a href="../">GUITION hardware guide</a>.</p>
+<p>A rear housing and handlebar mount for the GUITION JC4880P443C display, using the same aluminium saddle, lower clamp and split liner as the smaller Waveshare assembly. The source assembly shows the GUITION display mounted in landscape.</p>
+<p><img alt="GUITION display case and clamp mounted on a handlebar" src="../../../assets/images/guition-43-mounted.png" /></p>
+<p>These are shaded CAD views using the source materials and appearances. The blank display, cover glass, cable jacket and handlebar are reference geometry. The handlebar is cropped in the mounted view to keep the case visible.</p>
+<h2 id="editable-fusion-design">Editable Fusion design</h2>
+<p>Download the <a href="../../../cad/wheelie-fun-display-mounts.f3d">complete editable Fusion archive</a>. It contains the GUITION assembly, both Waveshare orientations, shared hardware, user parameters and the source timeline. All components are local, so the archive is F3D rather than an F3Z package.</p>
+<p>The source GUITION display component is explicitly named <code>G02_REF_OEM_display_DEPTH_UNVERIFIED</code>. Its <strong>5 mm module depth</strong>, including <strong>0.5 mm reference glass</strong>, is an assumption in this CAD, not a verified vendor dimension. Check your actual module thickness, mounting threads, screw engagement, PCB/components, USB access and cable clearance before manufacturing the case. Firmware support for this board is described separately in the hardware guide.</p>
+<h2 id="download-the-parts">Download the parts</h2>
+<p>Each STEP contains one solid at its modelled size and carries its own length units. Import at 1:1 scale and honour the file units; dimensions in this guide are in millimetres. Reference electronics, cable, handlebar and standard fasteners are excluded.</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Part</th>
+<th>STEP download</th>
+<th>Source component / material</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rear housing</td>
+<td><a href="../../../cad/guition-43/rear-casing.step">rear-casing.step</a></td>
+<td><code>G01_Rear_housing_PRINT_PROTO</code> / ABS Plastic</td>
+</tr>
+<tr>
+<td>Upper saddle</td>
+<td><a href="../../../cad/guition-43/upper-saddle.step">upper-saddle.step</a></td>
+<td><code>03_Upper_saddle_AL6061</code> / aluminium 6061</td>
+</tr>
+<tr>
+<td>Lower clamp cap</td>
+<td><a href="../../../cad/guition-43/lower-clamp-cap.step">lower-clamp-cap.step</a></td>
+<td><code>04_Lower_cap_AL6061</code> / aluminium 6061</td>
+</tr>
+<tr>
+<td>Split liner</td>
+<td><a href="../../../cad/guition-43/rubber-liner.step">rubber-liner.step</a></td>
+<td><code>HW_split_rubber_liner_0p5</code> / Rubber</td>
+</tr>
+<tr>
+<td>Cable grommet</td>
+<td><a href="../../../cad/guition-43/cable-grommet.step">cable-grommet.step</a></td>
+<td><code>G03_Snap_grommet_TPU75A</code> / Rubber, nominal TPU75A designation</td>
+</tr>
+</tbody>
+</table></div>
+<p>The clamp files are machining geometry for the model's aluminium parts. No slicer profiles or machining toolpaths are supplied. Check fit with the actual printed material and cable; the generic Fusion Rubber material does not qualify a specific TPU formulation.</p>
+<h2 id="dimensions-and-hardware">Dimensions and hardware</h2>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Nominal source dimension</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Housing outside width × height</td>
+<td>95 × 63 mm</td>
+</tr>
+<tr>
+<td>Housing overall depth, including rear pad</td>
+<td>11.2 mm</td>
+</tr>
+<tr>
+<td>Frame corner radius / wall parameter</td>
+<td>4 / 2.4 mm</td>
+</tr>
+<tr>
+<td>Reference display footprint</td>
+<td>94.5 × 62 mm</td>
+</tr>
+<tr>
+<td>Reference display depth, unverified</td>
+<td>5 mm, including 0.5 mm glass</td>
+</tr>
+<tr>
+<td>Display screw pattern</td>
+<td>84.5 × 52.5 mm</td>
+</tr>
+<tr>
+<td>Display screw head recess diameter / retaining web</td>
+<td>6.4 / 2 mm</td>
+</tr>
+<tr>
+<td>Case-to-saddle mounting pitch</td>
+<td>20 × 20 mm</td>
+</tr>
+<tr>
+<td>Handlebar diameter</td>
+<td>22.225 mm (7/8 inch)</td>
+</tr>
+<tr>
+<td>Clamp bore / width</td>
+<td>23.225 / 16 mm</td>
+</tr>
+<tr>
+<td>Liner wall / retained width / installation split</td>
+<td>0.5 / 14.3 / 0.5 mm</td>
+</tr>
+<tr>
+<td>Cable jacket OD / casing hole</td>
+<td>6 / 7.8 mm</td>
+</tr>
+<tr>
+<td>Grommet bore / barrel OD / panel grip</td>
+<td>5.8 / 7.9 / 3.8 mm</td>
+</tr>
+<tr>
+<td>Grommet inner / outer flange OD</td>
+<td>9.4 / 8.6 mm</td>
+</tr>
+</tbody>
+</table></div>
+<p>The model contains the following hardware per GUITION assembly:</p>
+<ul>
+<li>Eight M3 × 6 ISO 4762 socket-head screws: four for the case-to-saddle joint and four reference display screws.</li>
+<li>Four M3 heat-set inserts, nominal 5 mm OD × 4 mm long, for the case-to-saddle joint.</li>
+<li>Two M4 × 12 DIN 7984 low-head socket screws for the handlebar clamp.</li>
+<li>One split rubber liner and one one-piece cable grommet.</li>
+</ul>
+<p>The four display screws use the model's <code>GDisplayScrewLength_REF</code> parameter; their 6 mm length and thread compatibility must be checked against the real display. The upper saddle's 3.3 mm M4 tap-drill holes still require the appropriate tapping operation; STEP geometry does not provide threads or toolpaths.</p>
+<h2 id="housing-and-wiring">Housing and wiring</h2>
+<p><img alt="GUITION housing interior with corner display seats, mounting islands and cable entry" src="../../../assets/images/guition-43-casing.png" /></p>
+<p><img alt="GUITION snap-in cable grommet with its bore and retaining flanges" src="../../../assets/images/guition-43-grommet.png" /></p>
+<ol>
+<li>Verify the real display against the source's reference envelope and screw pattern. Check component and connector access before committing to a finished housing.</li>
+<li>Prepare the case and fit its four M3 heat-set inserts. Test the saddle mounting screws for engagement without contact with the display or wiring.</li>
+<li>Thread the cable through the <strong>one-piece, unsplit grommet</strong> before attaching any connector too large for its 5.8 mm bore. The 6 mm cable dimension is the outside jacket diameter, not an individual conductor.</li>
+<li>Feed the cable through the case opening and seat the grommet from inside. The <strong>larger 9.4 mm flange remains inside</strong>, the smaller 8.6 mm flange outside, and the 3.8 mm panel stack sits in its retaining groove. Check both lips are seated without folding.</li>
+<li>Route the wiring clear of the display, corner seats, insert bosses and mounting screws. Fit the display using its four verified screws from underneath; the source shows M3 × 6 reference screws on the 84.5 × 52.5 mm pattern.</li>
+<li>Fasten the housing to the upper saddle with four M3 × 6 screws, keeping the cable free of the joint.</li>
+</ol>
+<p>The grommet fit has not been qualified for a particular print, cable pull load or water-ingress rating. Check retention and any required sealing on the completed assembly.</p>
+<h2 id="clamp-and-split-liner">Clamp and split liner</h2>
+<p><img alt="GUITION underside view with the clamp, liner and fastener access" src="../../../assets/images/guition-43-clamp.png" /></p>
+<p><img alt="Split rubber liner for installation around an existing handlebar" src="../../../assets/images/guition-43-liner.png" /></p>
+<p>Open the liner's <strong>0.5 mm longitudinal split</strong> and wrap it around the bar without removing the grips. The split extends through the 0.5 mm wall and full 14.3 mm width. Seat the liner between the clamp's retaining lips, fit the lower cap and install its two M4 screws. Confirm the display and cable remain clear throughout the required handlebar and steering movement.</p>
+<h2 id="assembly-animation">Assembly animation</h2>
+<p><img alt="Exploded-to-assembled GUITION housing, grommet, clamp, liner and screws" src="../../../assets/images/guition-43-assembly.gif" /></p>
+<p>The animation shows how the parts fit, rather than prescribing a fastening or machining sequence. The handlebar, reference cable and entire reference display, including glass, are hidden. Both the display screws and clamp fasteners approach from underneath; the grommet seats into the case from inside. <a href="../../../assets/images/guition-43-exploded.png">View the static exploded image</a>.</p>
+<h2 id="orientation">Orientation</h2>
+<p>The CAD includes one GUITION landscape assembly. Its square 20 × 20 mm case-to-saddle pattern also permits a 90° change in case orientation, subject to checking the larger display's cable and mechanical clearance. A separate GUITION portrait assembly is not posed in this source.</p>
+<p>Set <strong>Settings &gt; Orientation</strong> to match the physical installation. The firmware supports 0°, 90°, 180° and 270° with matching touch coordinates.</p>
+<h2 id="source-and-updates">Source and updates</h2>
+<p>Exported from <strong>Wheelie Fun Display - Waveshare 2.06</strong>, saved Fusion version <strong>17</strong>, with no unsaved changes, on <strong>8 November 2026</strong>. Despite its historical document name, this source now contains both display families. STEP exports preserve solid geometry, while the shared F3D retains the editable source design.</p>
+<p>These project CAD exports use the repository's <a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0 license</a>.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../../../reference/notices/">Notices</a></span></footer></main>
+<aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
+<ul>
+<li><a href="#editable-fusion-design">Editable Fusion design</a></li>
+<li><a href="#download-the-parts">Download the parts</a></li>
+<li><a href="#dimensions-and-hardware">Dimensions and hardware</a></li>
+<li><a href="#housing-and-wiring">Housing and wiring</a></li>
+<li><a href="#clamp-and-split-liner">Clamp and split liner</a></li>
+<li><a href="#assembly-animation">Assembly animation</a></li>
+<li><a href="#orientation">Orientation</a></li>
+<li><a href="#source-and-updates">Source and updates</a></li>
+</ul>
+</div>
+</aside></div>
+<dialog class="search-dialog" aria-label="Search documentation"><form method="dialog"><button class="close-search" aria-label="Close search">×</button></form><label for="docs-search">Search Wheelie Fun Display</label><input id="docs-search" type="search" placeholder="Connection, PIN, build…" autocomplete="off"><div class="search-results" aria-live="polite"></div><p class="search-hint">Search the guides and implementation notes. Press Esc to close.</p></dialog>
+</body></html>

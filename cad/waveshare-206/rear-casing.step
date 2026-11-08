@@ -10,7 +10,7 @@ FILE_DESCRIPTION(
 
 FILE_NAME(
 /* name */ 'rear-casing.step',
-/* time_stamp */ '2026-11-08T11:23:42+13:00',
+/* time_stamp */ '2026-11-08T13:18:26+13:00',
 /* author */ (''),
 /* organization */ (''),
 /* preprocessor_version */ 'ST-DEVELOPER v20.2',
@@ -2471,17 +2471,17 @@ SOLID_ANGLE_UNIT()
 #2401=PRODUCT_DEFINITION_SHAPE('',$,#2404);
 #2402=SHAPE_REPRESENTATION('',(#1360),#2394);
 #2403=PRODUCT_DEFINITION_CONTEXT('part definition',#2408,'design');
-#2404=PRODUCT_DEFINITION('2026-11-08-11-23-42-038',
-'Casing STEP export only',#2405,#2403);
+#2404=PRODUCT_DEFINITION('2026-11-08-13-18-26-087','STEP export only',#2405,
+#2403);
 #2405=PRODUCT_DEFINITION_FORMATION('',$,#2410);
-#2406=PRODUCT_RELATED_PRODUCT_CATEGORY('Casing STEP export only',
-'Casing STEP export only',(#2410));
+#2406=PRODUCT_RELATED_PRODUCT_CATEGORY('STEP export only',
+'STEP export only',(#2410));
 #2407=APPLICATION_PROTOCOL_DEFINITION('international standard',
 'automotive_design',2009,#2408);
 #2408=APPLICATION_CONTEXT(
 'Core Data for Automotive Mechanical Design Process');
 #2409=PRODUCT_CONTEXT('part definition',#2408,'mechanical');
-#2410=PRODUCT('2026-11-08-11-23-42-038','Casing STEP export only',$,(#2409));
+#2410=PRODUCT('2026-11-08-13-18-26-087','STEP export only',$,(#2409));
 #2411=PRESENTATION_STYLE_ASSIGNMENT((#2413));
 #2412=PRESENTATION_STYLE_ASSIGNMENT((#2414));
 #2413=SURFACE_STYLE_USAGE(.BOTH.,#2415);

@@ -10,7 +10,7 @@ FILE_DESCRIPTION(
 
 FILE_NAME(
 /* name */ 'lower-clamp-cap.step',
-/* time_stamp */ '2026-11-08T11:23:29+13:00',
+/* time_stamp */ '2026-11-08T13:18:23+13:00',
 /* author */ (''),
 /* organization */ (''),
 /* preprocessor_version */ 'ST-DEVELOPER v20.2',
@@ -1505,17 +1505,17 @@ SOLID_ANGLE_UNIT()
 #1304=PRODUCT_DEFINITION_SHAPE('',$,#1307);
 #1305=SHAPE_REPRESENTATION('',(#500),#1297);
 #1306=PRODUCT_DEFINITION_CONTEXT('part definition',#1311,'design');
-#1307=PRODUCT_DEFINITION('2026-11-08-11-23-29-716',
-'04_Lower_cap_AL6061',#1308,#1306);
+#1307=PRODUCT_DEFINITION('2026-11-08-13-18-22-930','STEP export only',#1308,
+#1306);
 #1308=PRODUCT_DEFINITION_FORMATION('',$,#1313);
-#1309=PRODUCT_RELATED_PRODUCT_CATEGORY('04_Lower_cap_AL6061',
-'04_Lower_cap_AL6061',(#1313));
+#1309=PRODUCT_RELATED_PRODUCT_CATEGORY('STEP export only',
+'STEP export only',(#1313));
 #1310=APPLICATION_PROTOCOL_DEFINITION('international standard',
 'automotive_design',2009,#1311);
 #1311=APPLICATION_CONTEXT(
 'Core Data for Automotive Mechanical Design Process');
 #1312=PRODUCT_CONTEXT('part definition',#1311,'mechanical');
-#1313=PRODUCT('2026-11-08-11-23-29-716','04_Lower_cap_AL6061',$,(#1312));
+#1313=PRODUCT('2026-11-08-13-18-22-930','STEP export only',$,(#1312));
 #1314=PRESENTATION_STYLE_ASSIGNMENT((#1316));
 #1315=PRESENTATION_STYLE_ASSIGNMENT((#1317));
 #1316=SURFACE_STYLE_USAGE(.BOTH.,#1318);
