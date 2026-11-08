@@ -10,7 +10,7 @@ FILE_DESCRIPTION(
 
 FILE_NAME(
 /* name */ 'rubber-liner.step',
-/* time_stamp */ '2026-11-08T11:23:30+13:00',
+/* time_stamp */ '2026-11-08T13:18:24+13:00',
 /* author */ (''),
 /* organization */ (''),
 /* preprocessor_version */ 'ST-DEVELOPER v20.2',
@@ -244,17 +244,17 @@ SOLID_ANGLE_UNIT()
 #193=PRODUCT_DEFINITION_SHAPE('',$,#196);
 #194=SHAPE_REPRESENTATION('',(#116),#186);
 #195=PRODUCT_DEFINITION_CONTEXT('part definition',#200,'design');
-#196=PRODUCT_DEFINITION('2026-11-08-11-23-29-931',
-'HW_split_rubber_liner_0p5',#197,#195);
+#196=PRODUCT_DEFINITION('2026-11-08-13-18-24-468','STEP export only',#197,
+#195);
 #197=PRODUCT_DEFINITION_FORMATION('',$,#202);
-#198=PRODUCT_RELATED_PRODUCT_CATEGORY('HW_split_rubber_liner_0p5',
-'HW_split_rubber_liner_0p5',(#202));
+#198=PRODUCT_RELATED_PRODUCT_CATEGORY('STEP export only',
+'STEP export only',(#202));
 #199=APPLICATION_PROTOCOL_DEFINITION('international standard',
 'automotive_design',2009,#200);
 #200=APPLICATION_CONTEXT(
 'Core Data for Automotive Mechanical Design Process');
 #201=PRODUCT_CONTEXT('part definition',#200,'mechanical');
-#202=PRODUCT('2026-11-08-11-23-29-931','HW_split_rubber_liner_0p5',$,(#201));
+#202=PRODUCT('2026-11-08-13-18-24-468','STEP export only',$,(#201));
 #203=PRESENTATION_STYLE_ASSIGNMENT((#205));
 #204=PRESENTATION_STYLE_ASSIGNMENT((#206));
 #205=SURFACE_STYLE_USAGE(.BOTH.,#207);

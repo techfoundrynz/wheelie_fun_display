@@ -87,6 +87,13 @@ PAGES = [
         "P4/C6 board setup, companion firmware and hardware requirements.",
     ),
     (
+        "cad/guition-43/README.md",
+        "hardware/guition-43/case-mount",
+        "GUITION case and mount",
+        "Hardware",
+        "Case and clamp STEP downloads, Fusion archive, assembly animation and fit checks.",
+    ),
+    (
         "docs/building.md",
         "building",
         "Build & install",

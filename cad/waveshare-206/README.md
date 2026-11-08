@@ -6,17 +6,17 @@ A compact casing and split handlebar clamp for the Waveshare ESP32-S3 Touch AMOL
 
 ![Portrait and landscape display casings mounted on a handlebar](../../docs/images/waveshare-206-mounted.png)
 
-These are shaded CAD views of the current design. Display glass and the handlebar are reference geometry; the screen is shown blank.
+These are shaded CAD views of the current design. Display glass and the handlebar are reference geometry; the screen is shown blank. The long handlebar is cropped in the mounted view to keep the two cases visible.
 
 ## Editable Fusion design
 
-Download the [complete Fusion archive](wheelie-fun-display-waveshare-206.f3d) to edit the assembly, user parameters and feature timeline. It includes both mounting orientations, standard hardware and the reference display, handlebar and 6 mm cable-jacket components.
+Download the [complete Fusion archive](../wheelie-fun-display-mounts.f3d) to edit the assembly, user parameters and feature timeline. It includes both Waveshare mounting orientations, the GUITION case and mount, shared hardware, user parameters and reference displays, handlebar and cable jackets.
 
 This is an **F3D** archive because all components are local to one Fusion design. **F3Z** is Fusion's package format for designs with external linked references; this design does not need that container. See [Autodesk's archive format guide](https://help.autodesk.com/view/fusion360/ENU/?caas=caas%2Fsfdcarticles%2Fsfdcarticles%2FHow-to-make-a-local-archive-back-up-file-in-Fusion-360.html).
 
 ## Download the parts
 
-Each STEP file contains one solid component at its modelled size, in millimetres. Import at 1:1 scale. Standard fasteners, reference display geometry, the handlebar and the reference cable jacket are excluded. The casing export contains only the shell; its nested grommet is supplied separately.
+Each STEP file contains one solid component at its modelled size and carries its own length units. Import at 1:1 scale and honour the file units; dimensions in this guide are in millimetres. Standard fasteners, reference display geometry, the handlebar and the reference cable jacket are excluded. The casing export contains only the shell; its nested grommet is supplied separately.
 
 | Part | STEP download | Model designation |
 |---|---|---|
@@ -108,6 +108,6 @@ The underside view omits the handlebar so the liner, split and fastener access a
 
 ## Source and updates
 
-Exported from **Wheelie Fun Display - Waveshare 2.06**, Fusion document version **15** (saved source, with no unsaved changes), on **8 November 2026**. These STEP files are solid exports; they do not retain the Fusion parameter timeline. Re-export affected parts when the source design changes and update the views and dimensions here.
+Exported from **Wheelie Fun Display - Waveshare 2.06**, Fusion document version **17** (saved source, with no unsaved changes), on **8 November 2026**. These STEP files are solid exports; they do not retain the Fusion parameter timeline. Re-export affected parts when the source design changes and update the views and dimensions here.
 
 These project CAD exports use the repository's [GPL-3.0 license](../../LICENSE).
