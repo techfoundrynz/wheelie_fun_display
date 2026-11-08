@@ -12,6 +12,7 @@
     "hardware/waveshare-206/case-mount/index.html",
     "hardware/guition-43/index.html",
     "hardware/guition-43/case-mount/index.html",
+    "hardware/guition-43/can-breakout/index.html",
     "building/index.html",
     "contributing/index.html",
     "architecture/index.html",
@@ -30,5 +31,5 @@
   ],
   "simulator": "simulator/",
   "installer": "install/",
-  "sources": 25
+  "sources": 26
 }
