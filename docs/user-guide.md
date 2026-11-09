@@ -1,106 +1,130 @@
 # Using the display
 
-The main screens keep the ride information close and the configuration controls deliberate. The same interface works at 0°, 90°, 180° and 270°. Tap **Settings > Orientation** to advance through those angles; the selection is saved across restarts.
+Use the bottom tabs or swipe horizontally to move between **Ride**, **Stats** and **Tune**. Tap the cog in the upper-right corner for Settings. Scroll vertically on longer pages.
 
 ![Landscape ride dashboard](images/ride-landscape.png)
 
 ## Ride
 
-Speed uses your saved km/h or mph preference. Temperature units are configured separately. Pitch is shown with the degree symbol. In portrait, TRIP and ODOMETER occupy the upper-left and upper-right corners of the speedometer area. The gauge's layout box follows its actual painted and text bounds rather than a full-circle placeholder. The dashboard uses the selected integration's live VESC data; it does not calculate a substitute speed when messages are missing.
+Ride shows speed, battery, power, pitch and connection state. Speed uses your saved km/h or mph preference; temperature units are set separately. Pitch is shown in degrees.
 
-On larger displays such as the GUITION 4.3-inch, landscape Ride places a full-width battery gauge at the top, then a larger speed dial on the left and trip and odometer above the four telemetry cards on the right. Portrait uses larger telemetry cards and distance readings. The arrangement follows the available screen space and selected orientation.
+Trip and odometer readings sit above the speedometer in portrait. Larger landscape screens put the speed dial on the left and distance readings above the telemetry cards on the right. The layout adapts to the display and orientation.
 
-Connection setup and data freshness are separate. A Bluetooth or wired link can be established before valid telemetry arrives. Readings become `--` when they expire, and configuration controls stay unavailable until their requirements are met.
+**Connected** describes the bike connection. A reading of `--` means data is unavailable or out of date, even if the connection is still present. It never means a measured zero.
 
 ## Stats
 
-The bottom tabs are **Ride**, **Stats** and **Tune**. Stats is a read-only, vertically scrolling view. Wide screens use a three-column overview so more readings fit together; narrower screens keep the grouped two-column cards. It follows your independent speed and temperature units; missing or expired values show `--`.
+Stats is read-only. Scroll to see more readings; wide screens show more cards side by side.
 
-| Group | Available controller values |
+| Group | Readings |
 | --- | --- |
 | Ride and distance | Speed, power, trip and lifetime distance. |
-| Electrical and energy | Voltage, battery charge, input/motor current, duty cycle, eRPM, consumed/charged Ah and Wh. |
+| Electrical and energy | Voltage, battery charge, input/motor current, duty cycle, electrical RPM (eRPM), consumed/charged Ah and Wh. |
 | Temperatures and attitude | Controller/motor temperatures, pitch and roll. |
-| Controller | PID position, controller ID/count and reported uptime. |
-
-When available, the BMS section adds pack values, cell voltages, balancing state, temperatures, state of charge (SOC) and state of health (SOH). These are read-only standard BMS command 96 replies. The display makes an initial probe when the vehicle becomes Ready, then polls at 1 Hz while Stats is open. While a phone is connected, BMS polling is enabled only after a command-96 reply has established support in the current vehicle session. They are values cached by the VESC, without a BMS-source timestamp: a newly received reply does not prove that the underlying BMS measurement is new. A real BMS has not yet been validated with this display.
+| Controller | Position, controller ID/count and reported uptime. |
 
 ![Detailed live stats](images/stats.png)
 
-Scroll further to inspect optional BMS details and cell values:
+### Battery management system (BMS)
+
+If your controller supplies BMS data, scroll further for pack values, cell voltages, balancing and temperatures. **SOC** means state of charge; **SOH** means state of health.
 
 ![Optional BMS pack and temperature values](images/stats-bms.png)
 
 ![Optional BMS cell voltages and balancing states](images/stats-cells.png)
 
+The display checks for BMS support when the bike becomes ready and requests readings once per second while Stats is open. During a phone connection, it only polls BMS data if support was already established in that vehicle session.
+
+These readings are cached by the VESC and have no original measurement timestamp. A newly received reply does not prove the battery measurement is current. Real BMS hardware has not yet been validated with this display.
+
 ## Tune
 
-WFB tuning begins by reading the bike's configuration schema and profile. The display verifies the schema signature and supported encodings before enabling changes. **Read from bike** values remain separate from your drafts; an initially selected preset is never treated as a configuration readback. An unsupported or unreadable schema leaves tuning disabled with a status message and a retry button.
+Tune is currently available for supported **Wheelie Fun Bike** configurations. For wheel-e, use VESC Tool; generic VESC has no tuning controls here.
 
-The quick response choices are **Eco**, **Cruise** and **Sport**. Eco sets a 90 A motor-current limit; Cruise and Sport use 150 A, with different throttle ramps. Eco also has a different braking ramp. A read profile that does not match these exact values is labelled **Custom**. The speed-limit slider covers 5–35 mph and a final **No limit** position, restricted by the bike's reported schema. It shows your preferred units, while the bike stores whole mph; km/h steps can therefore vary by one or two.
+Before editing, stop the bike, unlock the display and disconnect the phone proxy. Wait for fresh readings and clear any controller fault. The display must successfully read a supported bike configuration before enabling tuning. If it cannot, read the status message and use Retry.
 
-For individual controls, choose a section:
+### Choose a preset or adjust individual controls
 
-- **Response:** ten-stop throttle/brake strength sliders cover 60–150 A, with braking stored as a negative current. Responsiveness has ten documented stops, ending with Instant.
-- **Button:** choose Wheelie, Turbo, Horn or Disabled. Wheelie angle covers 5–55°; maintain-on-throttle and maintain-on-brake switches apply to the wheelie button.
-- **Throttle:** throttle/brake tilt, signed tilt angles (−20 to +20°), anti-loop angle, linked button angle and wheel lift resistance. Linked or disabled controls remain visible with an explanation. Lift resistance is shown as 0–10 and stored as 0–3.
-- **Horn:** when Horn is selected as the button action, set strength (1–10) and a musical note from G#3 to B5; the display also shows its frequency.
+The quick response choices are **Eco**, **Cruise** and **Sport**. A bike configuration that differs from those presets is labelled **Custom**.
 
-Tap **Adjust** to open a focused slider editor; quick −/+ controls also work on the Tune card. The editor keeps slider drags separate from page swipes and blocks taps on the page behind it. **Done** returns to Tune without sending changes. Sliders have tick marks and an amber reference-default marker. The readback label remains separate from the draft. A custom value outside the documented stops is shown unchanged; moving its slider explicitly selects a supported stop. The [WFB ride-controls reference](wheelie-ride-controls.md) records the mappings and limits. All controls also respect narrower limits reported by the bike.
+| Section | What you can adjust |
+| --- | --- |
+| Response | Throttle strength, brake strength and responsiveness. |
+| Button | Wheelie, Turbo, Horn or Disabled; wheelie angle and maintain-on-throttle/brake options. |
+| Throttle | Throttle/brake tilt, tilt angles, anti-loop angle, linked button angle and wheel lift resistance. |
+| Horn | Strength and musical note, when Horn is the selected button action. |
+
+The speed-limit slider covers 5–35 mph plus **No limit**, subject to the bike's limits. It displays your preferred units. The bike stores whole mph, so km/h steps can vary in size.
+
+Tap **Adjust** for a larger slider editor, or use the quick −/+ buttons. **Done** returns to Tune and keeps the draft; it does not save to the bike. The amber slider marker shows the reference default. **Read from bike** values show what the bike reported, separately from your edits.
 
 ![Wheelie tuning controls](images/tune-wheelie.png)
 
 ![Focused wheelie angle slider editor](images/tune-slider.png)
 
-Edits stay in the display's draft until you tap Apply or **Save tuning changes** and confirm. **Discard tuning draft** restores the last read profile. Re-reading the bike replaces unsaved drafts with its reported configuration. The save prompt lists the changed values and scrolls when needed; its buttons stay visible inside a solid rounded panel over a dimmed backdrop. Tuning editors and update confirmations use the same panel styling.
+Unavailable or linked controls stay visible with an explanation. A custom value between supported slider stops stays unchanged until you move that slider. See the [WFB ride-controls reference](wheelie-ride-controls.md) for exact ranges and mappings.
+
+### Save or discard changes
+
+1. Make your edits. They remain a draft on the display.
+2. Tap **Apply** or **Save tuning changes**.
+3. Review the list of changed values and confirm.
+4. Wait for **Saved profile verified by readback** before treating the save as confirmed.
 
 ![Bike tuning save confirmation](images/tune-confirmation.png)
 
-Before sending, the firmware reads the profile again. If another client changed it, the save is cancelled and the new values are shown for review. Saving requires the same verified vehicle session, an unlocked display, fresh fault-free telemetry and a stopped bike. The display then compares the entire returned profile with the requested settings. **Saved profile verified by readback** confirms those reported values; it is not a power-cycle retention test. A queued write, acknowledgment, timeout or mismatching response is never presented as a verified save.
+Before saving, the display reads the bike again. If another app changed its settings, the save is cancelled and the new values are shown for review. After sending, it compares the returned profile with your requested settings. The verified message confirms the reported values; it does not test whether they survive a bike power cycle.
 
-The phone must be disconnected while reading or saving tuning; ordinary display telemetry continues while the phone proxy is connected. Connecting a phone or changing vehicle session invalidates pending tuning work. An interrupted save that was already transmitted may still have reached the bike; re-read its profile before trying again.
+**Discard tuning draft** restores the last read profile. Reading the bike again also replaces unsaved edits.
 
-Wheel-e and generic VESC currently have no tuning backend, so these controls remain unavailable for them. The shared tuning UI and transport can support another integration once its schema and write semantics have been implemented and verified.
+If a save is interrupted, it may already have reached the bike. Read the profile again before retrying. Connecting a phone or changing the bike connection invalidates pending tuning work.
 
 ## Vehicle settings
 
-Leave the integration at **Auto** (the default) to detect a supported package through controller probes. Choose a specific integration to require that package. Disconnect or forget the bike to change the selection. The main-controller discovery status explains which controller the display is using; **Find main controller again** reruns the read-only discovery process when the link is available.
+Open **Settings > Vehicle** to select the connection and integration. **Auto** detects supported WFB or wheel-e packages, then falls back to standard VESC readings. Disconnect or forget the bike before changing the integration.
 
-These controls now live under **Settings > Vehicle**. Lock controls and the locked-screen timeout are grouped under **Settings > Screen lock**. Unsupported package features are not enabled by selecting a different page.
-
-![PIN entry screen](images/pin-entry.png)
+Check the main-controller discovery status here. **Find main controller again** repeats discovery when the link is available. See [connections](connections.md) for Bluetooth, CAN and UART setup.
 
 ## Settings
 
-The cog is always in the upper-right header. The vertically scrolling list groups **Display**, **Units**, **Vehicle**, **Screen lock**, **Phone connection** and **System** controls.
+The settings list groups **Display**, **Units**, **Vehicle**, **Screen lock**, **Phone connection** and **System** controls. Preferences are saved across restarts.
 
 ![Vehicle controls in Settings](images/vehicle-settings.png)
 
-| Setting | Behavior |
+| Setting | What to do |
 | --- | --- |
-| Orientation | Rotates the interface and touch mapping together. |
-| Speed units | Switches km/h and mph. |
-| Temperature units | Switches °C and °F independently of speed units. |
-| Brightness | Sets the brightness restored after waking the locked display. |
-| Vehicle connection | Selects BLE, CAN or UART when wired interfaces are configured for the target. |
-| BLE name | Active WFB forces `WFB` and hides this control. Wheel-e and generic VESC use the editable saved name (default `WB Disp`). Leaving WFB restores that preference without writing a replacement to NVS. |
-| BLE proxy | Enables the phone connection; off by default. |
-| Wi-Fi | Scans, connects, forgets a network or enters a hidden SSID. |
-| Firmware updates | Checks and installs a matching GitHub release image. |
-| About | Shows version, board identity and live diagnostics. |
+| Orientation | Tap to cycle through 0°, 90°, 180° and 270°. Touch rotates with the screen. |
+| Speed units | Choose km/h or mph. |
+| Temperature units | Choose °C or °F independently of speed units. |
+| Brightness | Set normal brightness; waking the locked display restores this level. |
+| Vehicle | Choose a bike, connection and integration. |
+| Screen lock | Set, change or remove a PIN/pattern; choose the locked-screen timeout. |
+| Phone connection | Enable the BLE proxy and, where available, edit its name. See [phone setup](connections.md#connect-a-phone-through-the-display). |
+| Wi-Fi | Connect to a listed or hidden network, or forget a saved network. |
+| Firmware updates | Check for and install a matching release. See [updates](maintenance.md). |
+| About | Find the firmware version, board identity and diagnostics. |
 
 ## Touch and gestures
 
-Horizontal swipes change the three primary pages and follow your finger. Short or reversed drags snap back. Vertical motion scrolls Stats and Tune content rather than changing pages. Moving pages do not accept accidental Apply or device-selection taps.
+- Swipe horizontally between Ride, Stats and Tune. There is no wrap from Tune back to Ride.
+- Short or reversed swipes return to the current page.
+- Drag vertically to scroll Stats, Tune and Settings.
+- After changing orientation, lift your finger before starting a new gesture.
 
-The layout keeps content inside the panel's rounded corners. Changing orientation cancels a held gesture; lift your finger before starting another touch. The keyboard and PIN entry also respect the safe area.
+## Locking and waking
+
+Set up a PIN or pattern under **Settings > Screen lock**. **Lock screen** protects local controls; **Lock bike and screen**, when supported, also requests a bike lock.
+
+![PIN entry screen](images/pin-entry.png)
+
+When the locked screen goes black, tap once to wake it, lift your finger, then enter the credential. The wake tap cannot activate a control. See [PINs, patterns and pairing](pins-and-locking.md) for setup and confirmation behavior.
 
 ## Bike BLE signal
 
-The bars beside the phone indicator show the display's BLE signal from the bike, sampled once per second. Fewer bars mean a weaker signal; one active bar is yellow. They are hidden for CAN/UART or while no valid BLE reading is available. Signal strength is not a distance or throughput measurement.
+Bars beside the phone indicator show the bike's Bluetooth signal. Fewer bars mean a weaker signal; one active bar is yellow. Bars are hidden for CAN/UART or when no valid signal reading is available. They do not measure distance or throughput.
 
 ## When a phone is connected
 
-A green phone icon immediately left of the cog indicates an authorized phone connection. The main header text remains the bike status, showing **Connected** for a healthy ready link. Read-only display telemetry continues alongside the phone connection. Phone traffic takes priority between complete packets; an unfinished phone packet or phone firmware transfer can temporarily pause display polls. The display uses its own tracked replies and may also reuse a phone setup reply when its controller identity proves it belongs to the selected bike. Replies from a different CAN controller cannot replace the display's vehicle readings. Configuration writes and display firmware updates remain paused until the phone disconnects. If main-controller discovery had not finished when the phone connected, discovery waits until it disconnects.
+A green phone icon beside the cog indicates an authorized phone connection. Ride readings normally continue, though busy phone traffic or firmware transfers can temporarily pause them.
 
-The phone chooses its own CAN controller. The proxy never substitutes the display's selected main controller. See [connections](connections.md).
+Disconnect the phone before reading or saving tuning, requesting a bike lock, or updating display firmware. The phone selects its own CAN controller. See [connections](connections.md) for pairing and proxy behavior.

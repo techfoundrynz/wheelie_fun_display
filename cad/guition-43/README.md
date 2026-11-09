@@ -8,11 +8,13 @@ A rear housing and handlebar mount for the GUITION JC4880P443C display, using th
 
 These are shaded CAD views using the source materials and appearances. The blank display, cover glass, cable jacket and handlebar are reference geometry. The handlebar is cropped in the mounted view to keep the case visible.
 
-## Editable Fusion design
-
-Download the [complete editable Fusion archive](../wheelie-fun-display-mounts.f3d). It contains the GUITION assembly, both Waveshare orientations, shared hardware, user parameters and the source timeline. All components are local, so the archive is F3D rather than an F3Z package.
-
 The source GUITION display component is explicitly named `G02_REF_OEM_display_DEPTH_UNVERIFIED`. Its **5 mm module depth**, including **0.5 mm reference glass**, is an assumption in this CAD, not a verified vendor dimension. Check your actual module thickness, mounting threads, screw engagement, PCB/components, USB access and cable clearance before manufacturing the case. Firmware support for this board is described separately in the hardware guide.
+
+## Before you make parts
+
+1. Check your real display, mounting screws and connector clearance against the model.
+2. Download the STEP files below for fabrication, or the Fusion archive near the end to edit the design.
+3. Gather the listed fasteners and test-fit the casing, liner and cable grommet before final assembly.
 
 ## Download the parts
 
@@ -90,6 +92,10 @@ The animation shows how the parts fit, rather than prescribing a fastening or ma
 The CAD includes one GUITION landscape assembly. Its square 20 × 20 mm case-to-saddle pattern also permits a 90° change in case orientation, subject to checking the larger display's cable and mechanical clearance. A separate GUITION portrait assembly is not posed in this source.
 
 Set **Settings > Orientation** to match the physical installation. The firmware supports 0°, 90°, 180° and 270° with matching touch coordinates.
+
+## Editable Fusion design
+
+Download the [complete editable Fusion archive](../wheelie-fun-display-mounts.f3d). It contains the GUITION assembly, both Waveshare orientations, shared hardware, user parameters and the source timeline. All components are local, so the archive is F3D rather than an F3Z package.
 
 ## Source and updates
 

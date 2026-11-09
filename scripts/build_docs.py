@@ -56,7 +56,7 @@ PAGES = [
         "maintenance",
         "Updates & maintenance",
         "For riders",
-        "Install updates, diagnose issues and prepare release artifacts.",
+        "Update your display over Wi-Fi, USB or VESC Tool and diagnose problems.",
     ),
     (
         "docs/troubleshooting.md",
@@ -106,6 +106,13 @@ PAGES = [
         "Build & install",
         "For developers",
         "Set up PlatformIO, install firmware and run the shared simulators.",
+    ),
+    (
+        "docs/site-maintenance.md",
+        "site-maintenance",
+        "Releases & site maintenance",
+        "For developers",
+        "Publish firmware, validate hardware and maintain the documentation site.",
     ),
     (
         "CONTRIBUTING.md",
@@ -343,10 +350,10 @@ def layout(
 
 
 def home_content() -> str:
-    return """<section class="hero"><div class="hero-copy"><div class="eyebrow"><span class="status-dot"></span> Touch display · VESC integrations</div><h1>Your ride.<br><span>A clearer view.</span></h1><p>A responsive bike display for Wheelie Fun Bike, wheel-e and VESC. Learn the controls, connect your bike and build the firmware.</p><div class="hero-actions"><a class="button primary" href="install/">Install firmware <span aria-hidden="true">→</span></a><a class="button secondary" href="simulator/">Open simulator</a></div><div class="hero-tags"><span>ESP32-S3 / P4</span><span>Slint UI</span><span>GPL-3.0</span></div></div><figure class="hero-preview"><div class="preview-glow"></div><img class="portrait-preview" src="assets/images/ride-portrait.png" width="410" height="502" alt="Portrait ride dashboard showing simulated speed and telemetry"><figcaption>Shared UI preview · simulated values</figcaption></figure></section>
-<section class="intro-cards" aria-label="Choose a guide"><a class="intro-card" href="guide/"><span class="card-number">01 / RIDE</span><h2>Know your display</h2><p>Three main pages, fluid gestures, clear telemetry and settings that stay with you.</p><span class="card-link">Explore the interface →</span></a><a class="intro-card" href="connections/"><span class="card-number">02 / CONNECT</span><h2>Choose your connection</h2><p>BLE by default. Add CAN or UART for your hardware, with a transparent phone proxy.</p><span class="card-link">Connect a bike →</span></a><a class="intro-card" href="building/"><span class="card-number">03 / BUILD</span><h2>Build the firmware</h2><p>Reproducible firmware builds, shared components and checks grounded in evidence.</p><span class="card-link">Build and contribute →</span></a></section>
-<section class="landscape-section"><div><div class="eyebrow">Made for the screen you have</div><h2>Portrait or landscape.<br>One familiar interface.</h2><p>Change orientation at runtime. Touch mapping, rounded-corner spacing and reusable controls follow the layout.</p><a class="text-link" href="guide/">See everyday controls →</a></div><figure><img src="assets/images/ride-landscape.png" width="502" height="410" alt="Landscape dashboard with simulated ride values"><figcaption>Landscape software preview</figcaption></figure></section>
-<section class="supported-section"><div class="eyebrow">Start with supported hardware</div><h2>Two displays. One shared interface.</h2><p>Waveshare ESP32-S3 AMOLED 2.06 pairs a 410 × 502 CO5300 panel with FT3168 touch. GUITION JC4880P443C uses a 480 × 800 ST7701S panel, GT911 touch and ESP32-P4 with a C6 radio companion. Choose the exact model when installing; board capabilities and optional wiring live in its PlatformIO profile.</p><div class="supported-links"><a href="getting-started/">First connection →</a><a href="install/">Install firmware →</a><a href="hardware/waveshare-206/">Waveshare board setup →</a><a href="hardware/guition-43/">GUITION board setup →</a><a href="maintenance/">Maintaining the display →</a></div></section>"""
+    return """<section class="hero"><div class="hero-copy"><div class="eyebrow"><span class="status-dot"></span> Touch display · VESC integrations</div><h1>Your ride.<br><span>A clearer view.</span></h1><p>A responsive bike display for Wheelie Fun Bike, wheel-e and VESC. Set up your display, connect your bike and learn the everyday controls.</p><div class="hero-actions"><a class="button primary" href="install/">Install firmware <span aria-hidden="true">→</span></a><a class="button secondary" href="simulator/">Open simulator</a></div><div class="hero-tags"><span>ESP32-S3 / P4</span><span>Slint UI</span><span>GPL-3.0</span></div></div><figure class="hero-preview"><div class="preview-glow"></div><picture><source media="(prefers-reduced-motion: reduce)" srcset="assets/images/ride-portrait.png"><img class="portrait-preview" src="assets/images/ride-portrait.webp" width="410" height="502" alt="Portrait ride dashboard with animated simulated speed and telemetry"></picture><figcaption>Shared UI preview · simulated values</figcaption></figure></section>
+<section class="intro-cards" aria-label="Choose a guide"><a class="intro-card" href="getting-started/"><span class="card-number">01 / SET UP</span><h2>Set up your display</h2><p>Follow the first-installation steps, choose your bike type and make your first connection.</p><span class="card-link">Get started →</span></a><a class="intro-card" href="guide/"><span class="card-number">02 / RIDE</span><h2>Know your display</h2><p>Learn Ride, Stats and Tune, change display settings and use the touchscreen.</p><span class="card-link">Explore the interface →</span></a><a class="intro-card" href="connections/"><span class="card-number">03 / CONNECT</span><h2>Choose your connection</h2><p>Connect over Bluetooth, set up a wired connection or use a phone app through the display.</p><span class="card-link">Connect a bike →</span></a></section>
+<section class="landscape-section"><div><div class="eyebrow">Made for the screen you have</div><h2>Portrait or landscape.<br>One familiar interface.</h2><p>Choose portrait or landscape in Settings to match your mount. The screen and touch controls rotate together.</p><a class="text-link" href="guide/">See everyday controls →</a></div><figure><img src="assets/images/ride-landscape.png" width="502" height="410" alt="Landscape dashboard with simulated ride values"><figcaption>Landscape software preview</figcaption></figure></section>
+<section class="supported-section"><div class="eyebrow">Start with supported hardware</div><h2>Two displays. One shared interface.</h2><p>Waveshare ESP32-S3 AMOLED 2.06 pairs a 410 × 502 CO5300 panel with FT3168 touch. GUITION JC4880P443C uses a 480 × 800 ST7701S panel, GT911 touch and ESP32-P4 with a C6 radio companion. Choose your exact model when installing, then follow its board guide for wiring and setup. The GUITION profile requires a P4 below revision 3.0 and compatible C6 radio firmware.</p><div class="supported-links"><a href="getting-started/">First connection →</a><a href="install/">Install firmware →</a><a href="hardware/waveshare-206/">Waveshare board setup →</a><a href="hardware/guition-43/">GUITION board setup →</a><a href="maintenance/">Maintaining the display →</a></div></section>"""
 
 
 def build(output: Path, images: Path) -> None:

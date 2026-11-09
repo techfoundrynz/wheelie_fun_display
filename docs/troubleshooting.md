@@ -1,47 +1,87 @@
 # Troubleshooting
 
-Start with what the display reports, then check the part of the connection it describes. Keep the bike stopped while investigating configuration or locking.
+Find the symptom below and work through its checks in order. Keep the bike stopped while investigating settings or locking. A reading of `--` means unavailable or out-of-date data, not zero.
 
 ## The screen is black
 
-If the display was locked, tap once, lift your finger and wait for the PIN screen. The timeout intentionally sets brightness to zero; waking restores your saved brightness.
+1. Tap once, lift your finger and wait for the unlock screen. A locked display intentionally turns the panel black after its timeout.
+2. Check power and the USB cable.
+3. After a first installation, confirm you selected the exact board model and completed the full USB installation.
+4. If the correct image still does not start, save the boot log if available and report the problem.
 
-For a first installation, confirm the exact board target and that the full USB upload completed. A 1.8-inch or 2.41-inch image is not supported by this repository. Capture the boot log if the correct 2.06-inch build never shows the interface.
+Only the listed Waveshare 2.06-inch and GUITION 4.3-inch targets are supported. See [Waveshare recovery](hardware-waveshare-206.md#usb-recovery-and-checks) or [GUITION requirements](hardware-guition-43.md).
 
 ## The USB port is missing
 
-Use a USB data cable and try another direct port. Check `pio device list`. Follow the manufacturer's BOOT/RESET download-mode procedure if the board is not enumerating. Do not assume the port number is the same as a previous session.
+1. Use a known USB **data** cable and try a direct computer port.
+2. Close any serial monitor or app already using the port.
+3. Follow your board's BOOT/RESET download-mode procedure, then reconnect in the installer. For Waveshare, hold BOOT, tap RESET and release BOOT.
+4. Select the newly detected port; its name may have changed.
+
+If using PlatformIO, `pio device list` lists available ports. See the [browser installer](https://techfoundrynz.github.io/wheelie_fun_display/install/) for USB installation.
 
 ## No bike appears over BLE
 
-Power the bike and open its BLE interface. Make sure another client has not occupied a single-connection module. Recognizable bike names sort first, but other VESC UART devices can still appear. Leave the integration at **Auto** to probe supported packages regardless of the BLE name. If selecting a package explicitly, check that it is installed on the intended motor controller.
+1. Power the bike and make its Bluetooth interface available.
+2. Disconnect another phone/app if the bike's module allows only one connection.
+3. Open **Settings > Vehicle** and look through the device list. Recognizable names sort first, but other compatible devices remain selectable.
+4. Leave integration at **Auto**, or confirm the explicitly selected WFB/wheel-e package is installed on the intended controller.
 
 ## The link connects but values stay unavailable
 
-Transport connection, main-controller discovery and telemetry freshness are separate. Check the main-controller status on the Settings vehicle section. The package must match WFB or wheel-e when that integration is selected; generic VESC does not expose package-specific controls.
+1. Check controller discovery status under **Settings > Vehicle**. A connected link can still be waiting for valid readings.
+2. Disconnect the phone proxy to let discovery and display polling proceed.
+3. Use **Find main controller again** when the link is available.
+4. Check the integration. Explicit WFB or wheel-e selection requires that package; generic VESC provides standard readings only.
 
-Read-only display polls normally continue while a phone uses the proxy, but unfinished phone packets and phone firmware transfers temporarily suppress them. Initial discovery also waits if the phone connected before it finished. Disconnect the phone to let discovery complete, then use **Find main controller again** if needed. BMS polls during a phone session require a command-96 reply earlier in the current vehicle session. `--` is an unavailable reading, not zero.
+Busy phone traffic or firmware transfers can temporarily pause readings. BMS data also depends on controller support and may be cached. See [Stats](user-guide.md#stats).
 
 ## The BLE PIN is rejected
 
-Use the PIN configured on the upstream BLE device when pairing the display to it. Use the local bike lock PIN when pairing the phone to this display. They are separate codes.
+Check which devices you are pairing:
 
-If credentials changed, retry pairing with the new upstream PIN. Changing or removing the bike PIN invalidates the phone's old security sessions/bonds. The phone may also need to forget its cached pairing before pairing again.
+| Connection | Code to enter |
+| --- | --- |
+| Display to the bike's Bluetooth device | The PIN configured on that bike device. |
+| Phone to the display | The code shown under **Settings > Phone BLE code** after unlocking. A pattern uses its six dot numbers. |
+
+If the bike's PIN changed, retry with its new PIN. If the display's screen lock changed or was removed, forget the display's old pairing on the phone and pair again. After restarting a secured display, unlock it locally before connecting the phone.
+
+See [PINs, patterns and pairing](pins-and-locking.md) for entry rules and cooldowns.
 
 ## CAN or UART is absent from Settings
 
-The target must define both pins for that interface. The stock profile leaves optional wired pins unset. Check the build flags, actual board wiring, CAN transceiver, bus bit rate, unique display CAN ID or UART baud as applicable. Rebuild after changing target configuration.
+These choices require firmware with both pins configured for that interface. Stock profiles leave optional wired pins unset.
+
+Check your board's wiring and firmware configuration. CAN also needs a transceiver, matching bus speed and a unique display ID; UART needs matching baud and compatible signal levels. Changing GPIO configuration requires rebuilding firmware. See [wired-interface setup](building.md#configure-an-optional-wired-interface).
 
 ## A tuning or lock action is unavailable
 
-The selected integration may not support it. Otherwise, wait for fresh stationary telemetry, a ready connection and no controller fault. Configuration writes remain blocked while a phone is connected to the proxy, even though read-only telemetry can continue. Draft values are not readbacks.
+1. Confirm the integration supports that feature. Tune currently requires a supported WFB configuration.
+2. Unlock the display and stop the bike.
+3. Disconnect the phone proxy.
+4. Wait for fresh readings, a ready connection and no controller fault.
+5. For tuning, read the bike's configuration successfully before editing.
 
-For a lock request, an unconfirmed state means the display has not received the required matching telemetry. Do not assume the motor is disabled merely because the request was queued.
+A draft is not a saved setting. After an interrupted tuning save, read the bike again before retrying. An **unconfirmed** lock means the required bike response has not arrived; do not assume propulsion is disabled. See [tuning](user-guide.md#tune) or [bike locking](pins-and-locking.md#lock-the-bike-and-screen).
 
 ## No update is offered
 
-Confirm Wi-Fi and the release feed, and look for a public release containing the exact board asset plus its digest. No release, a missing asset or a validation failure leaves the installed firmware in place. See [maintenance](maintenance.md).
+1. Confirm the display is connected to Wi-Fi.
+2. Disconnect the phone proxy and check again under **Settings > Firmware updates**.
+3. Check whether a public [release](https://github.com/techfoundrynz/wheelie_fun_display/releases) exists for your exact board.
+4. Record any message about a missing or invalid image.
+
+Unavailable releases or validation failures keep the current firmware selected. See [updates and maintenance](maintenance.md).
 
 ## Report a reproducible problem
 
-Include the board target, firmware version, integration, transport, controller/phone/app versions, the last working behavior, exact steps and a serial log. Never include Wi-Fi passwords or PINs. See [contributing](../CONTRIBUTING.md).
+Include:
+
+- Display model and firmware version from **Settings > About**.
+- Integration and connection type (BLE, CAN or UART).
+- Controller firmware and, if relevant, phone/app versions.
+- Steps to reproduce, expected behavior, actual behavior and the last version that worked.
+- A serial log if available, with passwords and PINs removed.
+
+Avoid erasing settings before collecting this information. See [contributing](../CONTRIBUTING.md) for reporting details.

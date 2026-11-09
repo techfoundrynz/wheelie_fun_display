@@ -1,51 +1,75 @@
 # Connections and the phone proxy
 
-BLE, CAN and UART share the vehicle integration layer. Choose the physical interface in Settings; choose the package integration on the Settings vehicle section.
+The display needs one connection to the bike. You can also connect a phone app through the display by enabling its **BLE proxy**: the display acts as a bridge between your phone and the bike.
+
+## Choose a connection
+
+| Connection | What you need |
+| --- | --- |
+| Bluetooth Low Energy (BLE) | A compatible bike Bluetooth interface. Available by default. |
+| CAN | A configured firmware build, an external CAN transceiver and matching bus wiring. |
+| UART | A configured firmware build and compatible serial wiring. |
+
+Choose the interface under **Settings > Vehicle**. The vehicle integration (Auto, WFB, wheel-e or VESC) is a separate choice in that section. Leave integration at **Auto** for automatic detection.
 
 ## Bluetooth to the bike
 
-BLE is available by default. The picker under **Settings > Vehicle** prioritizes recognizable names without excluding other VESC Nordic UART Service devices. Select the device, complete any pairing prompt, and wait for main-controller discovery and fresh telemetry.
+1. Power the bike and make its Bluetooth interface available.
+2. Open **Settings > Vehicle** and select the device. Recognizable bike names appear first; other compatible VESC Bluetooth devices are still listed.
+3. Complete any pairing prompt with the PIN configured on the bike's Bluetooth device.
+4. Wait for controller discovery and live readings before using bike controls.
 
-The saved association includes the verified BLE peer and selected integration. Bluetooth bonds are separate from that association. If an upstream device changes its pairing credentials, retry pairing with the new PIN rather than changing the bike lock PIN.
+![Bike Bluetooth pairing prompt](images/ble-pairing.png)
 
-![Upstream BLE pairing prompt in the browser simulator](images/ble-pairing.png)
-
-This pairing preview uses a simulated browser service; it does not establish radio interoperability.
+The display remembers the verified bike and integration. If the bike's Bluetooth PIN changes, pair again using its new PIN. Your display's screen-lock code is separate.
 
 ## Finding the main controller
 
-For BLE, the display sends the standard VESC CAN ping command, then queries firmware and package telemetry for the direct controller and CAN candidates. Native CAN performs CAN ping and firmware queries on the bus. A BMS is not selected as a motor controller.
+The display searches the directly connected controller and controllers reachable over CAN. It selects the first compatible motor controller; a BMS is not selected as the motor controller.
 
-The first compatible motor controller with a supported custom package installed is selected automatically. With **Auto** (the default), discovery probes both WFB and wheel-e packages and uses a verified reply, independently of the BLE name. A manual package selection requires that package to respond. No controller-choice prompt is required. Auto falls back to read-only standard VESC telemetry only when no supported package is found; generic VESC can also be selected explicitly.
+With **Auto**, it checks for WFB and wheel-e packages before falling back to standard VESC readings. Selecting WFB or wheel-e explicitly requires that package to respond. A device name does not enable package-specific features.
 
-Discovery is read-only. Tuning and lock requests wait until the route, connection generation and required telemetry are valid. Discovery repeats after the connection changes; old queued work is not replayed onto another controller.
+Check discovery status under **Settings > Vehicle**. Use **Find main controller again** to repeat discovery when the link is available. If a phone connected before discovery finished, disconnect the phone first.
 
 ## Native CAN
 
-The ESP32-S3 has a TWAI controller but needs an external CAN transceiver. Use the board schematic and the transceiver's electrical requirements when choosing GPIOs and wiring. The display's CAN identity must be unique on the bus.
+CAN appears only when the firmware has both CAN pins configured. The default bus speed is **500 kbit/s** and the display's default node ID is **254**. The bus speed must match the bike, and the display ID must be unique on that bus.
 
-The firmware exposes CAN in **Settings > Vehicle connection** only when both `CAN_TX` and `CAN_RX` are defined in that target's PlatformIO build flags. Defaults are 500 kbit/s and display node ID 254. The target motor-controller ID is discovered, not hard-coded into a bike command.
+Use a CAN transceiver and the wiring for your exact board. The motor-controller ID is discovered automatically. For the GUITION breakout, see [connector pinouts and setup](../pcb/guition-43/README.md). For custom wiring, see [wired-interface build configuration](building.md#configure-an-optional-wired-interface).
 
 ## UART
 
-UART appears only when both `UART_TX` and `UART_RX` are configured for the target. Match the vehicle's UART baud setting; the default is 115200. Vehicle UART defaults to port 1; port 0 remains reserved for the console.
+UART appears only when both UART pins are configured in the firmware. The default baud rate is **115200** and must match the bike.
 
-Use compatible logic levels, cross TX/RX as required, and share a signal ground. GPIO assignments are target configuration, not a setting that can be guessed from the screen model. See [building](building.md#configure-an-optional-wired-interface).
+Use compatible logic levels, connect TX to RX and RX to TX as required, and share a signal ground. Do not guess GPIOs from the screen model. Vehicle UART normally uses port 1; port 0 is reserved for the console. See [wired-interface build configuration](building.md#configure-an-optional-wired-interface).
 
 ## Connect a phone through the display
 
-1. Enable **Settings > Phone connection > BLE proxy**. It is off by default.
-2. Find the display in your phone app. Active WFB advertises as `WFB`. Wheel-e and generic VESC use your saved **BLE name**, initially `WB Disp`.
-3. If a screen lock is configured, pair using the code shown under **Settings > Phone BLE code** after unlocking. It is the local PIN or the six dot numbers of the pattern. Changing the credential clears old phone bonds; forget the old pairing on the phone if needed. The upstream device's pairing PIN is not reused. See [PINs, patterns and pairing](pins-and-locking.md).
-4. In the phone app, perform its normal VESC discovery and choose the controller you want to use.
-5. Read-only display telemetry continues while the phone is connected. Disconnect the phone before changing bike settings or installing display firmware. Normal disconnection drains complete admitted commands and resumes the display without reconnecting the bike; an incomplete frame that was never forwarded is discarded.
+1. Unlock the display and enable **Settings > Phone connection > BLE proxy**. It is off by default.
+2. In your phone app, find the display using the name below.
+3. If a screen lock is configured, open **Settings > Phone BLE code** after unlocking and enter that code in the phone's pairing prompt. A pattern uses its six dot numbers. See [PINs, patterns and pairing](pins-and-locking.md).
+4. Run the phone app's normal VESC discovery and select the controller you want to use.
+5. Disconnect the phone before reading or saving tuning, requesting a bike lock, or updating the display.
 
-The proxy supports the selected BLE, UART or CAN interface. BLE and UART preserve the underlying VESC byte stream. CAN exposes a generic adapter with firmware discovery, CAN ping and explicit CAN forwarding; the phone supplies the destination CAN ID. The proxy does not use the display's main-controller route. The display retains its own route for read-only polls; replies to those polls update the display only and are not forwarded to the phone. A phone setup reply can also update dashboard telemetry only when its controller ID matches the selected bike (and its sender matches the route on native CAN). Other phone replies are excluded. Phone traffic has priority at complete-packet boundaries. An unfinished phone packet or phone firmware transfer can temporarily pause injected display polls. If initial main-controller discovery was incomplete when the phone connected, it waits until the phone disconnects.
+| Active integration | Display name shown to the phone |
+| --- | --- |
+| WFB | `WFB`; the name editor is hidden. |
+| wheel-e or VESC | Your saved BLE name, initially `WB Disp`. Edit it under **Settings > Phone connection > BLE name**. |
 
-The name does not mirror the upstream BLE module. Only the active WFB integration overrides it to `WFB` and hides the editor. With wheel-e or generic VESC, edit **Settings > Phone connection > BLE name**. Leaving WFB restores your saved preference without changing it in NVS.
+Leaving WFB restores your saved name. The display's name does not copy the bike's Bluetooth name.
+
+## While the phone is connected
+
+The green phone icon beside the cog indicates an authorized phone connection. Read-only ride data normally continues. Busy phone traffic or a phone firmware transfer can temporarily pause display readings. Tuning and display firmware updates wait until the phone disconnects.
+
+The phone selects its own CAN controller; it does not automatically use the display's selected controller. Readings from another controller do not replace the display's bike readings. The bridge works with BLE, UART or CAN on the bike side.
+
+The proxy pauses while the screen is locked. With a configured lock, unlock locally after each display restart before connecting the phone. Without a screen lock, the enabled proxy has no PIN requirement.
 
 ## Pairing and changed PINs
 
-An encrypted upstream BLE connection has its own PIN prompt and saved bond. The local bike PIN determines the proxy's BLE pairing requirement. Changing or removing the bike PIN invalidates the old phone security sessions and bonds, so reconnect or re-pair the phone afterward.
+Changing or removing the screen-lock credential disconnects phone sessions and clears remembered phone pairings on the display. If the phone still remembers the old pairing, forget the display in the phone's Bluetooth settings and pair again.
 
-PIN pairing and physical CAN/UART behavior still require acceptance testing with the intended controller and phone. See [open work](../TODO.md) for the remaining hardware checks.
+Changing only the entry mode between PIN and pattern preserves pairings for the same credential. The bike's own Bluetooth pairing remains separate.
+
+Phone pairing and wired operation still need validation with your exact hardware and app. [Troubleshooting](troubleshooting.md) covers common connection problems; [Bluetooth internals](bluetooth.md) and [transport internals](transports.md) explain implementation details.

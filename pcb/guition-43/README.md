@@ -2,11 +2,14 @@
 
 This board adds a CAN transceiver and vehicle connector to the GUITION 4.3-inch display's expansion header. It is a separate PCB project from the [case and handlebar mount](../../cad/guition-43/README.md).
 
-## Editable source
+## Setup checklist
 
-[Download the EasyEDA Pro project](Guition_CAN_PCB.epro2). The supplied archive records editor version **3.2.209** and includes the schematic, PCB, footprints and component metadata. Import it into EasyEDA Pro as a project archive; keep the `.epro2` extension.
+1. Check the connector pin numbers and mating-side orientation before making a cable.
+2. Confirm 5 V power, ground, CANH and CANL against the tables below.
+3. Fit the 120 Ω termination only if this board is at a bus end that needs it.
+4. Use firmware configured for **CAN TX GPIO51 / RX GPIO52**, then select CAN in Settings.
 
-The supplied layout is **35 × 18 mm**, with 1 mm corner radii and an approximately 1.6 mm two-layer stack. These details describe the supplied design, rather than a verified fabricated assembly. Gerbers, drill files and an assembly-ready manufacturing package are not included here.
+The supplied design has not been verified as a fabricated assembly. Check the native project before manufacturing or wiring.
 
 ## Labelled board views
 
@@ -83,3 +86,9 @@ The schematic connects U2 TXD to **GPIO51** and RXD to **GPIO52**. To enable thi
 ```
 
 The supplied firmware profile does not enable those pins automatically. Once configured, choose **CAN** in Settings and use a bitrate matching the vehicle; the default is 500 kbit/s. See [connections and proxy](../../docs/connections.md) for transport selection and controller discovery, and [GUITION hardware](../../docs/hardware-guition-43.md) for the rest of the board setup.
+
+## Editable source
+
+[Download the EasyEDA Pro project](Guition_CAN_PCB.epro2). The supplied archive records editor version **3.2.209** and includes the schematic, PCB, footprints and component metadata. Import it into EasyEDA Pro as a project archive; keep the `.epro2` extension.
+
+The supplied layout is **35 × 18 mm**, with 1 mm corner radii and an approximately 1.6 mm two-layer stack. These details describe the supplied design, rather than a verified fabricated assembly. Gerbers, drill files and an assembly-ready manufacturing package are not included here.

@@ -9,10 +9,13 @@ from __future__ import annotations
 import argparse
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from io import BytesIO
 import json
+import math
 from pathlib import Path
 import threading
 
+from PIL import Image
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -98,6 +101,40 @@ def main() -> None:
 
             fresh()
             capture("ride-portrait.png")
+            # Animate the actual dashboard using a smooth, looping ride fixture.
+            # Keep the still capture for guides and reduced-motion readers.
+            frames = []
+            for index in range(48):
+                phase = math.tau * index / 48
+                page.evaluate(
+                    """([speed, power, pitch]) => {
+                        const simulator = window.wheelieFunDisplay;
+                        simulator.set_control('speed', speed);
+                        simulator.set_control('power', power);
+                        simulator.set_control('pitch', pitch);
+                    }""",
+                    [
+                        24.6 + 8 * math.sin(phase),
+                        640 + 250 * math.sin(phase),
+                        4.2 + 2 * math.sin(phase),
+                    ],
+                )
+                page.wait_for_timeout(100)
+                frames.append(
+                    Image.open(BytesIO(page.locator("#display").screenshot())).convert(
+                        "RGB"
+                    )
+                )
+            frames[0].save(
+                args.output / "ride-portrait.webp",
+                save_all=True,
+                append_images=frames[1:],
+                duration=100,
+                loop=0,
+                lossless=True,
+                method=6,
+            )
+            images.append("ride-portrait.webp")
             fresh("?orientation=landscape")
             capture("ride-landscape.png")
             fresh("?display=guition&orientation=landscape")

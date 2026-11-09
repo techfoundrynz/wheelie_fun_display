@@ -8,11 +8,11 @@ A compact casing and split handlebar clamp for the Waveshare ESP32-S3 Touch AMOL
 
 These are shaded CAD views of the current design. Display glass and the handlebar are reference geometry; the screen is shown blank. The long handlebar is cropped in the mounted view to keep the two cases visible.
 
-## Editable Fusion design
+## Before you make parts
 
-Download the [complete Fusion archive](../wheelie-fun-display-mounts.f3d) to edit the assembly, user parameters and feature timeline. It includes both Waveshare mounting orientations, the GUITION case and mount, shared hardware, user parameters and reference displays, handlebar and cable jackets.
-
-This is an **F3D** archive because all components are local to one Fusion design. **F3Z** is Fusion's package format for designs with external linked references; this design does not need that container. See [Autodesk's archive format guide](https://help.autodesk.com/view/fusion360/ENU/?caas=caas%2Fsfdcarticles%2Fsfdcarticles%2FHow-to-make-a-local-archive-back-up-file-in-Fusion-360.html).
+1. Check your real display, mounting screws and connector clearance against the model.
+2. Download the STEP files below for fabrication, or the Fusion archive near the end to edit the design.
+3. Gather the listed fasteners and test-fit the casing, liner and cable grommet before final assembly.
 
 ## Download the parts
 
@@ -78,7 +78,7 @@ The rubber liner has a **0.5 mm longitudinal split** through its full **0.5 mm w
 
 ![One-piece snap-in cable grommet with its flanges, panel groove and cable bore](../../docs/images/waveshare-206-grommet.png)
 
-The wiring entry uses a **one-piece snap-in grommet**, modelled for **TPU 75A** and a **6 mm outside-diameter cable jacket**. Download [cable-grommet.step](cable-grommet.step). The views use the grommet material and appearance from the Fusion source. Fusion now assigns the physical material **Rubber**; the component designation and nominal Shore 75A parameter still provide the **TPU75A** printing reference.
+The wiring entry uses a **one-piece snap-in grommet**, modelled for **TPU 75A** and a **6 mm outside-diameter cable jacket**. Download [cable-grommet.step](cable-grommet.step). The Fusion material is labelled Rubber; use the nominal TPU75A designation as the printing reference and test the actual material fit.
 
 Its nominal **5.8 mm bore** provides 0.2 mm diametral interference with the cable jacket. Its **7.9 mm barrel** fits the casing's **7.8 mm hole**, with a **3.8 mm grip length** matching the modelled panel stack. The **9.4 mm inner flange** stays inside the casing; the **8.6 mm outer flange** sits outside. These are design dimensions, so test the printed fit with your actual material and cable before final assembly.
 
@@ -105,6 +105,12 @@ The underside view omits the handlebar so the liner, split and fastener access a
 ## Casing interior
 
 ![Isolated printed casing showing the display cavity, mounting islands and cable opening](../../docs/images/waveshare-206-casing.png)
+
+## Editable Fusion design
+
+Download the [complete Fusion archive](../wheelie-fun-display-mounts.f3d) to edit the assembly, user parameters and feature timeline. It includes both Waveshare mounting orientations, the GUITION case and mount, shared hardware, user parameters and reference displays, handlebar and cable jackets.
+
+The F3D archive keeps the editable components, parameters and feature timeline together.
 
 ## Source and updates
 

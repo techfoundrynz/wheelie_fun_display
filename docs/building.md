@@ -98,4 +98,4 @@ cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks 
 cargo run --locked --manifest-path simulator/Cargo.toml --bin transition-checks -- 502 410
 ```
 
-See [contributing](../CONTRIBUTING.md) for choosing checks appropriate to a change and [maintenance](maintenance.md) for release packaging.
+See [contributing](../CONTRIBUTING.md) for choosing checks appropriate to a change and [release maintenance](site-maintenance.md) for release packaging.

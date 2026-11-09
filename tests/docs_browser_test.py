@@ -120,6 +120,27 @@ def browser_checks(site: Path, executable: str | None, output: Path, base_path: 
             manifest = json.loads(
                 (site / "docs-manifest.json").read_text(encoding="utf-8")
             )
+            # Home, articles and short pages must share a stable sidebar edge,
+            # including when the TOC disappears or the document needs no scroll.
+            for width in (1024, 1180, 1181, 1280, 1440, 1600, 1920):
+                page.set_viewport_size({"width": width, "height": 1050})
+                page.goto(url, wait_until="networkidle")
+                baseline = page.locator(".sidebar").bounding_box()
+                for title in ("Getting started", "Using the display"):
+                    page.locator("#site-navigation").get_by_role(
+                        "link", name=title, exact=True
+                    ).click()
+                    page.wait_for_load_state("networkidle")
+                    bounds = page.locator(".sidebar").bounding_box()
+                    assert all(
+                        abs(bounds[key] - baseline[key]) < 1
+                        for key in ("x", "y", "width")
+                    ), f"Sidebar shifted at {width}: {baseline} -> {bounds}"
+                page.goto(url + "404.html", wait_until="networkidle")
+                bounds = page.locator(".sidebar").bounding_box()
+                assert abs(bounds["x"] - baseline["x"]) < 1, (
+                    f"Sidebar shifted on a short page at {width}"
+                )
             for width, height in [(1440, 1050), (390, 844)]:
                 page.set_viewport_size({"width": width, "height": height})
                 for route in [""] + [

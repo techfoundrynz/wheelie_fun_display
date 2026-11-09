@@ -1,6 +1,6 @@
 # PINs, patterns and BLE pairing
 
-There are two separate credentials: the upstream device passkey used to connect to VESC Express, and your own local PIN or pattern used to protect the display and its phone BLE proxy.
+Use the bike’s Bluetooth PIN to pair the display with the bike. Use your own screen-lock PIN or pattern to unlock the display and pair a phone with it. These are separate credentials.
 
 | PIN | Where it comes from | What it controls |
 | --- | --- | --- |
@@ -11,7 +11,13 @@ The upstream pairing PIN never becomes the proxy PIN.
 
 ## Set or change the screen lock
 
-Open **Settings > Screen lock > Set screen lock** and enter the new credential twice. Use **Use PIN** or **Use pattern** on the entry screen to choose how to enter it; the display remembers that entry mode in NVS. The entry screen owns this mode choice. **Change screen lock** and **Remove screen lock** require the current credential first. There is no default code or recovery-code screen.
+1. Open **Settings > Screen lock > Set screen lock**.
+2. Choose **Use PIN** or **Use pattern** on the entry screen.
+3. Enter your new six-digit PIN or six-dot pattern twice.
+
+To change or remove it, choose **Change screen lock** or **Remove screen lock** and enter the current credential first. There is no default code or recovery-code screen.
+
+### Enter a PIN or pattern
 
 Both entry modes use the same six-digit credential. A pattern can be entered numerically using its dot numbers. Codes containing zeroes or repeated digits require PIN entry. Switching entry mode clears only the partial entry; it does not change the credential, reset the retry counter or revoke phone bonds.
 
@@ -31,7 +37,7 @@ The dots are numbered left to right, top to bottom:
 
 For example, drawing 1 → 3 → 9 → 8 includes 2 and 6 automatically, producing the six-dot sequence **123698**. This is also the phone proxy's numeric BLE pairing code.
 
-NVS stores the entry-mode preference and a salted credential digest, preserving existing six-digit PIN records. Plaintext PINs and patterns are not stored or logged. The numeric proxy passkey is held in RAM after setup or successful local unlock. Boot with a configured lock requires local unlock before the secured proxy becomes available.
+The display remembers your lock and entry mode across restarts. After restarting a locked display, unlock it locally before connecting a phone. Plaintext credentials are not stored or logged; see [locking internals](locking.md) for storage details.
 
 ## Lock only the screen
 
@@ -41,23 +47,29 @@ When it times out, the panel becomes black. Tap once to restore your brightness 
 
 ## Lock the bike and screen
 
-When supported, **Lock bike and screen** requests the package's explicit LOCK command. The bike must have fresh stationary telemetry, no controller fault and a ready exclusive connection. The screen stays locked while the display waits for matching telemetry from the same connection.
+When supported, **Lock bike and screen** asks the bike to lock, then locks the display. Stop the bike, disconnect the phone proxy and wait for fresh readings with no controller fault before using it. The screen stays locked while the display waits for the bike to confirm its state.
 
 A command being queued is not proof that propulsion is disabled. If the controller does not confirm the state, the interface reports it as unconfirmed. Validate lock behavior on the exact bike firmware before relying on it. The supplied WFB protocol notes do not establish vendor firmware compatibility by themselves.
 
 ## Pair the phone to the display
 
-Enable **Settings > Phone connection > BLE proxy**. The active WFB integration advertises as **WFB** and hides the name editor. Wheel-e and generic VESC use your editable saved **BLE name**, initially **WB Disp**. Leaving WFB restores that saved preference without writing a new NVS value. Connect the phone app to the name currently advertised by the display. With a screen lock configured, the proxy requires authenticated BLE pairing using your own credential:
+1. Unlock the display and enable **Settings > Phone connection > BLE proxy**.
+2. Find the display in the phone app: **WFB** for an active WFB integration, or your saved **BLE name** for wheel-e/VESC (initially **WB Disp**).
+3. Open **Settings > Phone BLE code** and enter the shown code in the phone’s numeric pairing prompt.
 
-- For a PIN, enter the same six digits on the phone.
-- For a pattern, enter its six dot numbers in order, including automatically inserted middle dots.
-- After setting up or unlocking, **Settings > Phone BLE code** shows the exact numeric code to enter. This is a numeric phone pairing prompt even when the display itself unlocks with a pattern.
+For a PIN, this is the same six digits. For a pattern, it is the six dot numbers in order, including automatically inserted middle dots.
+
+To rename the display for wheel-e/VESC, use **Settings > Phone connection > BLE name**. WFB hides that editor; leaving WFB restores your saved name.
 
 ![Phone BLE pairing code shown in Settings](images/proxy-pairing-code.png)
 
 The proxy stays paused while the display is locked. This policy applies whether the display connects to the bike over BLE, CAN or UART. With no screen-lock credential, the enabled proxy has no PIN requirement.
 
-Successful pairing creates a remembered bond on the phone and display. Changing the credential disconnects old proxy sessions and clears old phone bonds. Switching entry mode for the same credential preserves the bonds. Removing the lock does the same. If the phone retains an old bond, forget the display in the phone's Bluetooth settings and pair again with the current code. Restarting the display preserves valid bonds, but local unlock is still required before the secured proxy is available.
+### After changing your lock
+
+Changing or removing the credential disconnects phones and clears their remembered pairings on the display. Forget the old pairing in the phone’s Bluetooth settings, then pair again. Switching only the PIN/pattern entry mode preserves pairings for the same credential.
+
+Restarting preserves valid pairings, but you must still unlock locally before a secured phone connection becomes available.
 
 ## Pair the display to VESC Express
 
@@ -65,7 +77,7 @@ The VESC Express pairing screen always uses numeric entry and hides the mode swi
 
 ![Upstream BLE passkey screen with explicit submission](images/ble-pairing.png)
 
-This upstream passkey never replaces the display's own proxy code. The upstream bond is remembered independently; the entered passkey itself is cleared after submission and is not saved as a credential. Changing your local PIN or pattern does not change the PIN configured on VESC Express or remove its independent upstream bond.
+This upstream passkey never replaces the display's own proxy code. The bike pairing is remembered independently; the entered passkey is cleared after submission. Changing your local PIN or pattern does not change the PIN configured on VESC Express or remove its independent upstream bond.
 
 ## Keep the security boundaries clear
 

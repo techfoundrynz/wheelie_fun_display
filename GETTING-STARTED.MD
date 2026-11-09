@@ -1,68 +1,85 @@
 # Getting started
 
-Turn the display on, choose your vehicle integration, and connect to your bike. Start with the browser simulator if you want to learn the screens before installing firmware.
-
-> Screenshots in these guides are software previews with simulated values. They show the interface, not a measured ride or a completed hardware acceptance test.
-
-![Ride dashboard in portrait](docs/images/ride-portrait.png)
+Install the firmware for your display, connect your bike, then choose your everyday settings. You can try the [browser simulator](simulator/) first to learn the screens without hardware.
 
 ## What you need
 
-- A supported Waveshare ESP32-S3 Touch AMOLED 2.06-inch or GUITION JC4880P443C 4.3-inch board, and a USB data cable.
-- A VESC-based bike running Wheelie Fun Bike, wheel-e, or a compatible generic VESC setup.
-- The firmware image matching your exact board. Use the [browser installer](https://techfoundrynz.github.io/wheelie_fun_display/install/) for the first USB installation, or follow [building and installing](docs/building.md) for PlatformIO.
+- A supported **Waveshare ESP32-S3 Touch AMOLED 2.06-inch** or **GUITION JC4880P443C 4.3-inch** display.
+- A USB data cable for the first installation.
+- A VESC-based bike with Wheelie Fun Bike, wheel-e or a compatible generic VESC setup.
 
-The Waveshare target is 410 × 502 pixels with CO5300 display and FT3168 touch. GUITION is 480 × 800 with ST7701S display and GT911 touch; its ESP32-C6 companion needs compatible radio firmware. See [Waveshare setup and USB recovery](docs/hardware-waveshare-206.md) or the [GUITION setup and silicon revision requirements](docs/hardware-guition-43.md) before installation. Firmware for different boards and revisions is not interchangeable.
+Check your board before installing: [Waveshare setup](docs/hardware-waveshare-206.md) or [GUITION setup](docs/hardware-guition-43.md). The GUITION profile requires an ESP32-P4 below revision 3.0 and compatible C6 radio firmware. Images for other boards or revisions are not interchangeable.
 
-## 1. Power up
+## 1. Install and power up
 
-Connect USB power and let the dashboard appear. If a screen lock was previously configured, unlock the display before continuing. With no saved bike, **Disconnected** is normal while the Settings vehicle section fills with nearby devices. A saved connection may show **Reconnecting**.
+1. Open the [browser installer](https://techfoundrynz.github.io/wheelie_fun_display/install/) and choose your exact display model.
+2. Connect the display with a USB data cable and follow the installation prompts. Keep it powered until installation finishes.
+3. Let the display start. The Ride dashboard should appear. Unlock it if a screen lock was already configured.
 
-Tap the cog in the upper-right corner to open Settings. Set your preferred brightness, speed units and temperature units. **Settings > Orientation** cycles through 0°, 90°, 180° and 270°; touch coordinates rotate with the interface. These preferences are saved across restarts.
+A complete USB installation can reset saved settings. For later updates, use [the display's update menu](docs/maintenance.md).
 
-## 2. Choose the bike integration
+**Disconnected** is normal before you select a bike. **Reconnecting** means the display is trying a saved connection.
 
-Open **Settings > Vehicle > Vehicle integration** before connecting. **Auto** is the default: it probes discovered motor controllers for the supported WFB and wheel-e packages and uses the first verified match. This works over BLE, CAN and UART, including renamed devices. Choose a specific integration when you want to require that package; generic VESC provides read-only standard telemetry.
+![Ride dashboard in portrait](docs/images/ride-portrait.png)
 
-| Integration | What to expect |
+Screenshots throughout these guides use simulated values. The simulator does not connect to or control a real bike.
+
+## 2. Choose your bike type
+
+Tap the cog in the upper-right corner, then open **Settings > Vehicle > Vehicle integration** before connecting. Leave it at **Auto** unless you need a specific integration.
+
+| Integration | Available features |
 | --- | --- |
-| Wheelie Fun Bike | Dashboard, ride-response presets, speed-limit controls and supported bike locking. |
-| wheel-e | Dashboard and supported bike locking. Configure wheel-e tuning through VESC Tool. |
-| VESC | Standard telemetry and local display features. Package-specific tuning and bike locking are unavailable. |
+| Auto | Detects WFB or wheel-e; falls back to standard VESC telemetry if neither package is found. |
+| Wheelie Fun Bike | Ride data, supported tuning controls and bike locking. |
+| wheel-e | Ride data and supported bike locking. Use VESC Tool for wheel-e tuning. |
+| VESC | Standard ride data and local display settings. |
 
-The branding and available controls follow the integration. A matching name only affects discovery ranking; it does not establish which package is installed. Auto verifies package replies before enabling integration-specific features.
+The display checks the controller's replies before enabling package features. A Bluetooth device name alone does not identify its installed package.
 
-## 3. Connect
+## 3. Connect your bike
 
-BLE is the default. Open **Settings > Vehicle** and select your device. Recognizable bike names appear first, while other VESC UART devices remain selectable. If the upstream device requires encrypted BLE, enter its six-digit pairing PIN when prompted.
+1. Power the bike and make its Bluetooth interface available. Disconnect another phone or app if it occupies the bike's only Bluetooth connection.
+2. Open **Settings > Vehicle** and select the bike. Bluetooth Low Energy (BLE) is the default connection.
+3. If prompted, enter the pairing PIN configured on the bike's Bluetooth device.
+4. Wait for controller discovery to finish and live readings to appear.
 
-The display then discovers the main VESC using CAN ping and firmware/package queries. It uses the first matching motor controller with the custom package installed. This controller may be the one directly connected to BLE, or another controller reached through CAN.
+The display finds a compatible motor controller automatically, including one reached through the bike's CAN bus. **Auto** works with renamed devices too.
 
-Wait for live values before using tuning or bike-lock controls. `--` means data is unavailable or stale; it does not mean the measured value is zero. See [connections](docs/connections.md) for CAN, UART and phone proxy setup.
+A reading of `--` means the value is missing or out of date; it does not mean zero. If readings do not appear, follow [troubleshooting](docs/troubleshooting.md#the-link-connects-but-values-stay-unavailable). For wired connections or a phone app, see [connections](docs/connections.md).
 
-## 4. Learn the screens
+## 4. Set up the screen
 
-- **Ride** shows speed, battery, power, pitch and connection state. In portrait, TRIP and ODOMETER sit in the upper corners of the speedometer area.
-- **Tune** exposes only the controls supported by the selected integration. Draft changes take effect only after Apply and confirmation.
-- **Stats** shows read-only electrical, distance, temperature, attitude and controller information, plus BMS details when available.
-- The **cog** opens Settings. Its sections contain display/units, vehicle connection and integration, screen lock, phone connection, and system controls.
+Open Settings with the cog. Choose brightness, speed units and temperature units. Speed and temperature units are independent.
 
-Swipe horizontally between Ride, Stats and Tune. Vertical drags scroll lists and longer pages. A short horizontal swipe returns to the current page; there is no wrap from Tune back to Ride.
+Tap **Settings > Orientation** to cycle through 0°, 90°, 180° and 270°. Touch controls rotate with the screen. These preferences are saved across restarts.
 
-## 5. Add a screen lock, if wanted
+Use the bottom tabs or swipe horizontally:
 
-Open **Settings > Set screen lock**, choose **Use PIN** or **Use pattern** on the entry page, and enter the six-digit code or six-dot pattern twice. There is no default credential or recovery-code interface. After unlocking, **Settings > Phone BLE code** shows the numeric passkey for pairing your phone to the display. See [PINs, patterns and pairing](docs/pins-and-locking.md) for dot numbering and bond changes.
+- **Ride:** speed, battery, power, pitch and connection status.
+- **Stats:** detailed readings; scroll vertically for more.
+- **Tune:** supported bike settings. Changes remain drafts until you save and confirm them.
 
-**Lock screen** protects the display controls. **Lock bike and screen** also requests the package's supported lock command. The display waits for matching telemetry before reporting the bike lock as confirmed. A locked display dims to black after its selected timeout; tap once to wake it, then enter the PIN or draw the configured pattern. The wake tap is consumed.
+See [using the display](docs/user-guide.md) for tuning steps and screen details.
 
-The configured screen-lock credential also protects the phone BLE proxy when enabled. An upstream VESC Express pairing PIN is separate and does not become the proxy PIN. See [PINs and locking](docs/pins-and-locking.md).
+## 5. Add a screen lock (optional)
 
-## 6. Keep it up to date
+1. Open **Settings > Screen lock > Set screen lock**.
+2. Choose **Use PIN** or **Use pattern**.
+3. Enter the six-digit PIN or six-dot pattern twice.
 
-Open **Settings > Wi-Fi**, select a network and enter its password. Then open **Settings > Firmware updates**, check the release, and confirm installation. Keep power connected while updating; restart only when offered.
+There is no default credential or recovery-code screen. Keep a record of your chosen credential.
 
-An image must match the board and pass validation. If no public release is available, the display reports that without replacing the installed firmware. See [updates and maintenance](docs/maintenance.md).
+**Lock screen** protects the display controls. **Lock bike and screen**, when supported, also asks the bike to lock and waits for confirmation. An unconfirmed request does not establish that the bike is locked.
+
+When the locked screen goes black, tap once to wake it, lift your finger, then unlock. See [PINs, patterns and pairing](docs/pins-and-locking.md) for phone pairing and credential changes.
+
+## 6. Check for updates
+
+Connect under **Settings > Wi-Fi**, then open **Settings > Firmware updates**. Review the version and confirm installation. Keep power connected and restart when offered.
+
+See [updates and maintenance](docs/maintenance.md) for update methods and recovery checks.
 
 ## Where next
 
-[Use the display](docs/user-guide.md) · [Connections and phone proxy](docs/connections.md) · [Troubleshooting](docs/troubleshooting.md) · [Build the firmware](docs/building.md) · [Contribute](CONTRIBUTING.md)
+[Using the display](docs/user-guide.md) · [Connect a phone](docs/connections.md#connect-a-phone-through-the-display) · [Troubleshooting](docs/troubleshooting.md)

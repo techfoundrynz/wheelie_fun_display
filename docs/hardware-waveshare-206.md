@@ -6,27 +6,20 @@ Use the `waveshare_esp32s3_206` target for the **Waveshare ESP32-S3 Touch AMOLED
 
 The picture is generated from the current shared UI during the documentation build. Its connected values are illustrative.
 
-## Install and build
+## Install the firmware
 
-Choose **Waveshare ESP32-S3 AMOLED 2.06** in the [browser firmware installer](https://techfoundrynz.github.io/wheelie_fun_display/install/), using a USB data cable. Select the exact board model rather than another Waveshare display size.
+1. Open the [browser firmware installer](https://techfoundrynz.github.io/wheelie_fun_display/install/) in a supported desktop browser.
+2. Choose **Waveshare ESP32-S3 AMOLED 2.06**. Other Waveshare sizes use different firmware.
+3. Connect a USB data cable, select the display’s port and follow the prompts.
+4. After startup, check touch and orientation, then follow [getting started](../GETTING-STARTED.MD) to connect your bike.
 
-To build this target locally:
-
-```sh
-pio run -e waveshare_esp32s3_206
-```
-
-The application is `.pio/build/waveshare_esp32s3_206/firmware.bin`. Release packaging produces `waveshare_esp32s3_206.bin` for OTA and `waveshare_esp32s3_206-factory.bin` for a complete USB installation. The complete image can reset saved settings; prefer the display's Wi-Fi/OTA flow for an ordinary update.
-
-Both supported boards use the common PlatformIO and ESP-IDF pins and the matching, checksum-verified Slint release. Shared settings are in `sdkconfig.defaults`, S3 settings in `config/sdkconfig.s3`, and board capabilities in [platformio.ini](../platformio.ini). No Rust toolchain is needed for firmware builds.
+A complete USB installation can reset saved settings. For ordinary updates, use **Settings > Firmware updates**; see [updates and maintenance](maintenance.md).
 
 ## Display, touch and orientation
 
-The profile runs the CPU at 240 MHz, flash and octal PSRAM at 80 MHz, and the panel's QSPI interface at 80 MHz. It uses internal DMA scanline buffers for rendering, with immutable font metadata kept in flash.
+Tap **Settings > Orientation** to cycle through 0°, 90°, 180° and 270°. The screen and touch controls rotate together, and your choice is saved.
 
-CO5300 uses the managed SH8601-compatible QSPI transport with a 22-pixel column offset. FT3168 uses the compatible FT5x06 touch driver. Display and touch resets use direct GPIO control; there is no I/O expander.
-
-The rounded panel uses a 32-pixel horizontal safe inset and a 16-pixel vertical inset (`DISPLAY_SAFE_INSET_X` / `DISPLAY_SAFE_INSET_Y`). The axes follow the logical UI in every orientation. **Settings > Orientation** cycles through 0°, 90°, 180° and 270° and saves the preference. The layout and touch transform follow the selected orientation; the native panel dimensions remain 410 × 502.
+The layout leaves room for the panel’s rounded corners. Check that you can reach the cog, bottom tabs and keyboard in your chosen mounting orientation.
 
 ## Board wiring
 
@@ -41,18 +34,32 @@ These are the shipped profile's internal connections, not suggested pins for ext
 | Touch reset / interrupt | 9 / 38 |
 | Panel column offset | 22 pixels |
 
-BLE is the default vehicle transport. CAN and UART appear in Settings only after their pin pairs are configured in the target profile. Choose available pins and provide the required external CAN transceiver or UART wiring; see [vehicle transports](transports.md).
+BLE is the default vehicle transport. CAN and UART appear in Settings only after their pin pairs are configured in the target profile. Use a firmware build configured for your wiring and provide an external CAN transceiver if using CAN; see [connections](connections.md).
 
 ## Case and handlebar mount
 
 ![Portrait and landscape Waveshare 2.06 cases with handlebar clamps](images/waveshare-206-mounted.png)
 
-The [case and mount guide](../cad/waveshare-206/README.md) includes the editable Fusion archive and STEP downloads for the printed casing, aluminium upper saddle and lower clamp cap, plus the split rubber liner and one-piece TPU cable grommet. The [cable gland / grommet installation instructions](../cad/waveshare-206/README.md#cable-grommet-installation) cover the 6 mm cable jacket, revised 7.8 mm casing opening and fitting the grommet before terminating oversized connectors. The same casing can be rotated on the clamp for **portrait or landscape mounting** using its square mounting pattern. Set **Settings > Orientation** to match; all four UI rotations (0°, 90°, 180° and 270°) are supported. The guide also covers model dimensions, fasteners and assembly details for the nominal 22.225 mm (7/8-inch) handlebar design.
+The [case and mount guide](../cad/waveshare-206/README.md) has part downloads, dimensions, a fastener list and assembly views for a nominal **22.225 mm (7/8-inch)** handlebar.
+
+- Rotate the same casing on its square mounting pattern for portrait or landscape, then match **Settings > Orientation**.
+- Fit the [cable grommet](../cad/waveshare-206/README.md#cable-grommet-installation) to the 6 mm cable jacket before attaching oversized connectors.
+- Check your real display and printed parts against the model before final assembly.
 
 ## USB recovery and checks
 
-If the serial device is missing, hold **BOOT**, tap **RESET**, then release **BOOT**. Check the USB data cable and run `pio device list` to identify the board's current port.
+If the USB port is missing:
+
+1. Use a known USB data cable.
+2. Hold **BOOT**, tap **RESET**, then release **BOOT**.
+3. Select the newly detected port in the installer. With PlatformIO, use `pio device list` to identify it.
 
 After installation, confirm the dashboard, cog, Settings scrolling and touch at all four orientations. The connected S3 board has passed SDK 6.1 startup and rendering checks; real-bike, phone-proxy and OTA acceptance remain listed in [TODO](../TODO.md). Occasional touch I2C read errors are also tracked there; save the serial log when diagnosing a touch issue.
 
 See [troubleshooting](troubleshooting.md), [performance configuration](performance.md), the [Waveshare product page](https://www.waveshare.com/esp32-s3-touch-amoled-2.06.htm) and [vendor examples](https://github.com/waveshareteam/ESP32-S3-Touch-AMOLED-2.06).
+
+## Build and driver reference
+
+To build from source, follow [building and installing](building.md) with environment `waveshare_esp32s3_206`. Release application images are `waveshare_esp32s3_206.bin`; full USB images are `waveshare_esp32s3_206-factory.bin`.
+
+The profile uses a 240 MHz CPU, 80 MHz flash/octal PSRAM and 80 MHz panel QSPI. CO5300 uses an SH8601-compatible transport with a 22-pixel column offset; FT3168 uses the compatible FT5x06 driver. Display and touch resets use GPIOs directly. Safe insets are 32 pixels horizontally and 16 vertically. See [performance configuration](performance.md) for rendering details and [platformio.ini](../platformio.ini) for the profile.
