@@ -115,6 +115,11 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install platformio==6.2.0 -r requirements-release.txt
+      - name: Cache verified Slint release downloads
+        uses: actions/cache@v4
+        with:
+          path: .pio/cache/slint
+          key: slint-firmware-${{ runner.os }}-${{ hashFiles('platformio.ini', 'firmware/components/slint_runtime/release-hashes.cmake') }}
       - run: pio run
       - run: python scripts/check_sdkconfig.py --all
       - run: python scripts/package_release.py
