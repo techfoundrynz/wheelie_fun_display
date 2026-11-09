@@ -17,17 +17,59 @@
 </svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
 <div class="header-actions"><a class="installer-link" href="../../install/">Install firmware</a><a class="simulator-link" href="../../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
 <button class="nav-overlay" type="button" aria-label="Close navigation"></button>
-<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../../">Overview</a><div class="nav-group"><span>Start here</span><a href="../../getting-started/">Getting started</a><a href="../../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../../guide/">Using the display</a><a href="../../connections/">Connections &amp; proxy</a><a href="../../pins/">PINs, patterns &amp; pairing</a><a href="../../maintenance/">Updates &amp; maintenance</a><a href="../../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../waveshare-206/">Waveshare S3 2.06-inch</a><a href="../waveshare-206/case-mount/" class="nav-child">Case &amp; mount (CAD)</a><a href="./" aria-current="page">GUITION P4 4.3-inch</a><a href="case-mount/" class="nav-child">Case &amp; mount (CAD)</a><a href="can-breakout/" class="nav-child">CAN breakout (PCB)</a></div><div class="nav-group"><span>For developers</span><a href="../../building/">Build &amp; install</a><a href="../../contributing/">Contributing</a><a href="../../architecture/">Architecture</a><a href="../../performance/">Performance</a><a href="../../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../../integrations/">Vehicle integrations</a><a href="../../locking/">Locking internals</a><a href="../../bluetooth/">Bluetooth internals</a><a href="../../transports/">Transport internals</a><a href="../../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../../reference/vesc-protocol/">WFB protocol notes</a><a href="../../reference/wfb-bike-layer/">WFB bike layer</a><a href="../../reference/theme/">Theme guide</a><a href="../../reference/wfb-ride-controls/">WFB ride controls</a><a href="../../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../../">Overview</a><div class="nav-group"><span>Start here</span><a href="../../getting-started/">Getting started</a><a href="../../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../../guide/">Using the display</a><a href="../../connections/">Connections &amp; proxy</a><a href="../../pins/">PINs, patterns &amp; pairing</a><a href="../../maintenance/">Updates &amp; maintenance</a><a href="../../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../waveshare-206/">Waveshare S3 2.06-inch</a><a href="../waveshare-206/case-mount/" class="nav-child">Case &amp; mount (CAD)</a><a href="./" aria-current="page">GUITION P4 4.3-inch</a><a href="case-mount/" class="nav-child">Case &amp; mount (CAD)</a><a href="can-breakout/" class="nav-child">CAN breakout (PCB)</a></div><div class="nav-group"><span>For developers</span><a href="../../building/">Build &amp; install</a><a href="../../site-maintenance/">Releases &amp; site maintenance</a><a href="../../contributing/">Contributing</a><a href="../../architecture/">Architecture</a><a href="../../performance/">Performance</a><a href="../../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../../integrations/">Vehicle integrations</a><a href="../../locking/">Locking internals</a><a href="../../bluetooth/">Bluetooth internals</a><a href="../../transports/">Transport internals</a><a href="../../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../../reference/vesc-protocol/">WFB protocol notes</a><a href="../../reference/wfb-bike-layer/">WFB bike layer</a><a href="../../reference/theme/">Theme guide</a><a href="../../reference/wfb-ride-controls/">WFB ride controls</a><a href="../../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
 <main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">Hardware</div><h1>GUITION P4 4.3-inch</h1><p>P4/C6 board setup, companion firmware and hardware requirements.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/hardware-guition-43.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>The <code>guition_jc4880p443c</code> target is for the GUITION <strong>JC4880P443C_I_W</strong> / enclosed <code>_Y</code> board, described as JC4880P433 in the original article. It has a 480 × 800 ST7701S MIPI-DSI panel, GT911 touch, 16 MB flash, 32 MB PSRAM and an ESP32-C6 radio companion.</p>
 <p>The supplied profile selects <strong>ESP32-P4 revisions below 3.0</strong>, including the original v1.3 engineering-sample board. ESP-IDF treats those chips and production v3.x chips as incompatible targets. Do not use this profile on a v3.x board; check the boot log or vendor revision before installation.</p>
-<h2 id="build">Build</h2>
+<h2 id="install-the-firmware">Install the firmware</h2>
+<ol>
+<li>Confirm your P4 revision is <strong>below 3.0</strong> using the boot log or vendor information. This profile cannot be used on a v3.x board.</li>
+<li>Check that the C6 has compatible radio firmware; see <a href="#esp32-c6-radio-firmware">ESP32-C6 radio firmware</a> below.</li>
+<li>Open the <a href="../../install/">browser installer</a>, choose <strong>GUITION JC4880P443C</strong> and connect to the P4 with a USB data cable.</li>
+<li>Complete installation, then check the screen and touch before <a href="../../getting-started/">connecting your bike</a>.</li>
+</ol>
+<p>The installer flashes the P4 application and its flash layout. It does not provision or replace the C6 firmware. A full USB installation can reset saved settings; use <a href="../../maintenance/">on-device updates</a> for routine maintenance.</p>
+<p>The supplied profile starts in 90° landscape (800 × 480). Tap <strong>Settings &gt; Orientation</strong> to cycle through all four angles; the choice is saved and touch rotates with the screen.</p>
+<h2 id="large-screen-layout">Large-screen layout</h2>
+<p>Landscape Ride uses a full-width battery gauge at the top, then a larger speed dial on the left and trip and odometer above the four telemetry cards on the right. In portrait, telemetry cards and distance readings are larger. Stats groups its overview into three columns when the screen is wide; controller and BMS details remain scrollable.</p>
+<p><img alt="GUITION landscape Ride layout" src="../../assets/images/ride-guition-landscape.png" /></p>
+<p><img alt="GUITION portrait Ride layout" src="../../assets/images/ride-guition-portrait.png" /></p>
+<p><img alt="GUITION landscape Stats overview" src="../../assets/images/stats-guition-landscape.png" /></p>
+<p>These previews are generated from the current shared UI with illustrative connected values during the Pages build. In the <a href="../../simulator/">browser simulator</a>, select <strong>GUITION 4.3-inch</strong> under <strong>Display model</strong>, then use Rotate to explore all four orientations.</p>
+<h2 id="case-and-handlebar-mount">Case and handlebar mount</h2>
+<p><img alt="GUITION case and handlebar clamp" src="../../assets/images/guition-43-mounted.png" /></p>
+<p>The <a href="case-mount/">GUITION case and mount guide</a> includes the shared editable Fusion archive, five STEP downloads, shaded views and an assembly animation. It covers the rear housing, aluminium clamp, split handlebar liner, cable grommet and additional display mounting screws. Check the real module against the CAD's explicitly unverified display-depth reference before fabrication.</p>
+<h2 id="can-breakout-board">CAN breakout board</h2>
+<p>The <a href="can-breakout/">GUITION CAN breakout guide</a> includes the editable EasyEDA Pro project, labelled board views, schematic, connector pinouts and optional CAN firmware pin configuration. The board fits the display's expansion header and provides a CAN transceiver and six-pin vehicle connector.</p>
+<h2 id="esp32-c6-radio-firmware">ESP32-C6 radio firmware</h2>
+<p>The P4 relies on its separate C6 chip for both Wi-Fi and Bluetooth. A working vendor Wi-Fi demo alone does not establish that the companion supports this application.</p>
+<p>Before replacing C6 firmware, check whether the existing image supports <strong>ESP-Hosted over SDIO, Wi-Fi and Bluetooth controller HCI</strong>. A compatible existing image may work. The profile pins ESP-Hosted 3.1.0 and esp_wifi_remote 1.6.5; a matching 3.1.0 companion is recommended.</p>
+<p>If provisioning is needed:</p>
+<ol>
+<li>Use Espressif’s matching <a href="https://github.com/espressif/esp-hosted-mcu/tree/v3.1.0/examples/bluetooth/esp_hosted_nimble/bleprph_wifi_coex/cp">ESP-Hosted coexistence companion project</a>.</li>
+<li>Build for <code>esp32c6</code> with ESP-IDF 6.1. Verify SDIO and the board’s C6 wiring in menuconfig. Hosted 3.x uses the example’s <code>cp/</code> project in place of the old <code>slave/</code> project.</li>
+<li>Follow the board vendor’s C6 boot-mode and programming-connector instructions. Flash through the <strong>C6 programming connection</strong>, not the P4 application port.</li>
+<li>Test a bike BLE connection, encrypted pairing, phone connection, Wi-Fi and OTA together. Check responsiveness and the serial log for DSI underruns.</li>
+</ol>
+<p>These checks require the physical board and compatible C6 firmware. See the <a href="https://github.com/espressif/esp-hosted-mcu/blob/v3.1.0/docs/migration.md">Hosted compatibility notes</a> before changing an existing installation.</p>
+<h2 id="scope">Scope</h2>
+<p>Camera, audio, microSD, battery telemetry and RS-485 are not initialized by this application. Optional vehicle CAN/UART pins can be configured in the hardware profile after wiring the required interface; they are not guessed from expansion-header availability. The radio SDIO bus must remain reserved for the C6.</p>
+<h2 id="sources-and-notices">Sources and notices</h2>
+<ul>
+<li><a href="https://www.guition.com/icms/upload/fb081940d6fc11f09850077a33e1404f/file/productmanager-productfile/5dfbe9a7c0fc44869270528bd2411b1e/Directory/JC4880P443C_I_W%20Specifications-EN-V1.0_1776241869964.pdf">GUITION product specifications</a>.</li>
+<li><a href="https://github.com/espressif/esp-idf/blob/v6.1/components/esp_hw_support/port/esp32p4/Kconfig.hw_support">ESP-IDF P4 revision selection</a>.</li>
+<li><a href="https://github.com/espressif/esp-hosted-mcu/tree/v3.1.0/examples/bluetooth/esp_hosted_nimble/bleprph_wifi_coex">Espressif hosted NimBLE/VHCI example</a>.</li>
+<li><a href="https://github.com/espressif/esp-hosted-mcu/blob/v3.1.0/docs/migration.md">Espressif Hosted migration and companion compatibility</a>.</li>
+<li><a href="https://github.com/espressif/esp-hosted-mcu/tree/v3.1.0/examples/bluetooth/esp_hosted_nimble/bleprph_wifi_coex/cp">Espressif hosted companion project</a>.</li>
+<li><a href="https://github.com/ultramcu/guition-jc4880p4-bsp/tree/324970bade0d1f4e52880fe8016580368bc1e06e">MIT-licensed board initialization reference</a>. Its panel register table is retained with the original copyright and MIT notice in <code>firmware/main/boards/</code>; the display lifecycle and rendering integration are implemented in this project.</li>
+</ul>
+<h2 id="build-reference">Build reference</h2>
 <p>This board is included in the supported <code>default_envs</code>. To build it on its own:</p>
 <pre><code class="language-sh">pio run -e guition_jc4880p443c
 </code></pre>
 <p>The pinned Slint release supplies matching compiler and MCU runtime assets for ESP32-S3 and ESP32-P4. Firmware builds download and verify those assets; a local Rust runtime bootstrap is not required.</p>
 <p>Both profiles use the common PlatformIO Espressif32 8.0.0 and ESP-IDF 6.1 pins. The P4 profile selects pre-v3 silicon and its qualified 360 MHz CPU setting. Shared settings live in <code>sdkconfig.defaults</code>; architecture-specific values live in <code>config/</code>. Managed component versions are pinned once in <code>firmware/main/idf_component.yml</code>; each chip has its own generated dependency lock.</p>
-<p>For a published release, the <a href="../../install/">browser installer</a> flashes the complete P4 image. It does not replace the C6 companion firmware; prepare that separately as described below.</p>
-<h2 id="display-and-touch">Display and touch</h2>
+<p>For a published release, the <a href="../../install/">browser installer</a> flashes the complete P4 image. It does not replace the C6 companion firmware; prepare that separately as described in <a href="#esp32-c6-radio-firmware">ESP32-C6 radio firmware</a>.</p>
+<h2 id="display-and-touch-reference">Display and touch reference</h2>
 <div class="table-scroll" tabindex="0"><table>
 <thead>
 <tr>
@@ -79,30 +121,18 @@
 </tbody>
 </table></div>
 <p>Slint renders into a persistent, full-screen RGB565 canvas in PSRAM. The P4 pixel processing accelerator (PPA) rotates each completed frame into the inactive native DSI framebuffer; two native framebuffers keep scanout separate from rendering. Presentation waits for refresh completion before reusing the old front buffer. This uses three full-screen allocations (2.30 MB total), with no internal-RAM scanline buffers. All four display orientations use PPA rotation and the matching native-coordinate touch transforms. PSRAM runs at 200 MHz. The supplied profile starts at 90° (800 × 480 landscape). <code>DISPLAY_ROTATION</code> sets the initial angle in the hardware profile; runtime selection is saved in NVS.</p>
-<h2 id="large-screen-layout">Large-screen layout</h2>
-<p>Landscape Ride uses a full-width battery gauge at the top, then a larger speed dial on the left and trip and odometer above the four telemetry cards on the right. In portrait, telemetry cards and distance readings are larger. Stats groups its overview into three columns when the screen is wide; controller and BMS details remain scrollable.</p>
-<p><img alt="GUITION landscape Ride layout" src="../../assets/images/ride-guition-landscape.png" /></p>
-<p><img alt="GUITION portrait Ride layout" src="../../assets/images/ride-guition-portrait.png" /></p>
-<p><img alt="GUITION landscape Stats overview" src="../../assets/images/stats-guition-landscape.png" /></p>
-<p>These previews are generated from the current shared UI with illustrative connected values during the Pages build. In the <a href="../../simulator/">browser simulator</a>, select <strong>GUITION 4.3-inch</strong> under <strong>Display model</strong>, then use Rotate to explore all four orientations.</p>
-<h2 id="case-and-handlebar-mount">Case and handlebar mount</h2>
-<p><img alt="GUITION case and handlebar clamp" src="../../assets/images/guition-43-mounted.png" /></p>
-<p>The <a href="case-mount/">GUITION case and mount guide</a> includes the shared editable Fusion archive, five STEP downloads, shaded views and an assembly animation. It covers the rear housing, aluminium clamp, split handlebar liner, cable grommet and additional display mounting screws. Check the real module against the CAD's explicitly unverified display-depth reference before fabrication.</p>
-<h2 id="can-breakout-board">CAN breakout board</h2>
-<p>The <a href="can-breakout/">GUITION CAN breakout guide</a> includes the editable EasyEDA Pro project, labelled board views, schematic, connector pinouts and optional CAN firmware pin configuration. The board fits the display's expansion header and provides a CAN transceiver and six-pin vehicle connector.</p>
-<h2 id="esp32-c6-radio-firmware">ESP32-C6 radio firmware</h2>
-<p>The P4 has no built-in radio. Wi-Fi and both BLE roles use the C6 through ESP-Hosted: standard <code>esp_wifi</code> calls are supplied by <code>esp_wifi_remote</code>, and the P4 NimBLE host communicates with the C6 Bluetooth controller through the Hosted HCI tunnel.</p>
+<h3 id="p4-to-c6-wiring">P4-to-C6 wiring</h3>
 <div class="table-scroll" tabindex="0"><table>
 <thead>
 <tr>
-<th>P4-to-C6 signal</th>
-<th>P4 GPIO</th>
+<th>Signal</th>
+<th>P4 GPIO / configuration</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>SDIO slot</td>
-<td>1, four-bit bus, 25 MHz</td>
+<td>SDIO</td>
+<td>Slot 1, four-bit bus, 25 MHz</td>
 </tr>
 <tr>
 <td>CLK / CMD</td>
@@ -118,30 +148,21 @@
 </tr>
 </tbody>
 </table></div>
-<p>The target pins <code>esp_hosted</code> 3.1.0 and <code>esp_wifi_remote</code> 1.6.5. The C6 must run compatible ESP-Hosted firmware with <strong>SDIO transport, Wi-Fi and Bluetooth controller HCI</strong> enabled. An arbitrary vendor Wi-Fi demo is not sufficient. The P4 application image does not overwrite or automatically replace the C6 firmware. Hosted 3.x MCU hosts also support compatible older Hosted streaming/1.x/2.x companion images, so an existing image may work if those radio features are enabled. A matching 3.1.0 companion is recommended; verify its firmware and configuration before replacing it.</p>
-<p>Use the matching ESP-Hosted 3.1.0 <code>examples/bluetooth/esp_hosted_nimble/bleprph_wifi_coex/cp</code> project when preparing the companion. Hosted 3.x replaces the old <code>slave/</code> project with per-example <code>cp/</code> projects. This coexistence profile enables Wi-Fi, controller-only Bluetooth and HCI over the Hosted transport. Build it for <code>esp32c6</code> using ESP-IDF 6.1, and verify SDIO and the board's C6 wiring in menuconfig before building. Flash it only through the C6's documented programming connection, not the P4 application port. Follow the board vendor's instructions for C6 boot mode and connector access.</p>
-<p>After provisioning, test a normal BLE vehicle connection, encrypted pairing, phone proxy connection, Wi-Fi and OTA together. Verify the display stays responsive during flash writes and that no DSI underruns appear in the serial log. Those checks require this physical board and a compatible C6 image.</p>
-<h2 id="scope">Scope</h2>
-<p>Camera, audio, microSD, battery telemetry and RS-485 are not initialized by this application. Optional vehicle CAN/UART pins can be configured in the hardware profile after wiring the required interface; they are not guessed from expansion-header availability. The radio SDIO bus must remain reserved for the C6.</p>
-<h2 id="sources-and-notices">Sources and notices</h2>
-<ul>
-<li><a href="https://www.guition.com/icms/upload/fb081940d6fc11f09850077a33e1404f/file/productmanager-productfile/5dfbe9a7c0fc44869270528bd2411b1e/Directory/JC4880P443C_I_W%20Specifications-EN-V1.0_1776241869964.pdf">GUITION product specifications</a>.</li>
-<li><a href="https://github.com/espressif/esp-idf/blob/v6.1/components/esp_hw_support/port/esp32p4/Kconfig.hw_support">ESP-IDF P4 revision selection</a>.</li>
-<li><a href="https://github.com/espressif/esp-hosted-mcu/tree/v3.1.0/examples/bluetooth/esp_hosted_nimble/bleprph_wifi_coex">Espressif hosted NimBLE/VHCI example</a>.</li>
-<li><a href="https://github.com/espressif/esp-hosted-mcu/blob/v3.1.0/docs/migration.md">Espressif Hosted migration and companion compatibility</a>.</li>
-<li><a href="https://github.com/espressif/esp-hosted-mcu/tree/v3.1.0/examples/bluetooth/esp_hosted_nimble/bleprph_wifi_coex/cp">Espressif hosted companion project</a>.</li>
-<li><a href="https://github.com/ultramcu/guition-jc4880p4-bsp/tree/324970bade0d1f4e52880fe8016580368bc1e06e">MIT-licensed board initialization reference</a>. Its panel register table is retained with the original copyright and MIT notice in <code>firmware/main/boards/</code>; the display lifecycle and rendering integration are implemented in this project.</li>
-</ul></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../../reference/notices/">Notices</a></span></footer></main>
+<p>Wi-Fi uses esp_wifi_remote, and the P4 NimBLE host reaches the C6 controller through the ESP-Hosted HCI tunnel. Keep this SDIO bus reserved for the radio companion.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../../reference/notices/">Notices</a></span></footer></main>
 <aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
 <ul>
-<li><a href="#build">Build</a></li>
-<li><a href="#display-and-touch">Display and touch</a></li>
+<li><a href="#install-the-firmware">Install the firmware</a></li>
 <li><a href="#large-screen-layout">Large-screen layout</a></li>
 <li><a href="#case-and-handlebar-mount">Case and handlebar mount</a></li>
 <li><a href="#can-breakout-board">CAN breakout board</a></li>
 <li><a href="#esp32-c6-radio-firmware">ESP32-C6 radio firmware</a></li>
 <li><a href="#scope">Scope</a></li>
 <li><a href="#sources-and-notices">Sources and notices</a></li>
+<li><a href="#build-reference">Build reference</a></li>
+<li><a href="#display-and-touch-reference">Display and touch reference</a><ul>
+<li><a href="#p4-to-c6-wiring">P4-to-C6 wiring</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </aside></div>

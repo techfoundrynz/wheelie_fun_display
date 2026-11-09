@@ -17,43 +17,95 @@
 </svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
 <div class="header-actions"><a class="installer-link" href="../install/">Install firmware</a><a class="simulator-link" href="../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
 <button class="nav-overlay" type="button" aria-label="Close navigation"></button>
-<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../">Overview</a><div class="nav-group"><span>Start here</span><a href="../getting-started/">Getting started</a><a href="../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../guide/">Using the display</a><a href="./" aria-current="page">Connections &amp; proxy</a><a href="../pins/">PINs, patterns &amp; pairing</a><a href="../maintenance/">Updates &amp; maintenance</a><a href="../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../hardware/waveshare-206/case-mount/" class="nav-child">Case &amp; mount (CAD)</a><a href="../hardware/guition-43/">GUITION P4 4.3-inch</a><a href="../hardware/guition-43/case-mount/" class="nav-child">Case &amp; mount (CAD)</a><a href="../hardware/guition-43/can-breakout/" class="nav-child">CAN breakout (PCB)</a></div><div class="nav-group"><span>For developers</span><a href="../building/">Build &amp; install</a><a href="../contributing/">Contributing</a><a href="../architecture/">Architecture</a><a href="../performance/">Performance</a><a href="../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../integrations/">Vehicle integrations</a><a href="../locking/">Locking internals</a><a href="../bluetooth/">Bluetooth internals</a><a href="../transports/">Transport internals</a><a href="../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../reference/vesc-protocol/">WFB protocol notes</a><a href="../reference/wfb-bike-layer/">WFB bike layer</a><a href="../reference/theme/">Theme guide</a><a href="../reference/wfb-ride-controls/">WFB ride controls</a><a href="../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
-<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">For riders</div><h1>Connections &amp; proxy</h1><p>BLE, CAN, UART and your phone&#x27;s transparent VESC connection.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/connections.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>BLE, CAN and UART share the vehicle integration layer. Choose the physical interface in Settings; choose the package integration on the Settings vehicle section.</p>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../">Overview</a><div class="nav-group"><span>Start here</span><a href="../getting-started/">Getting started</a><a href="../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../guide/">Using the display</a><a href="./" aria-current="page">Connections &amp; proxy</a><a href="../pins/">PINs, patterns &amp; pairing</a><a href="../maintenance/">Updates &amp; maintenance</a><a href="../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../hardware/waveshare-206/case-mount/" class="nav-child">Case &amp; mount (CAD)</a><a href="../hardware/guition-43/">GUITION P4 4.3-inch</a><a href="../hardware/guition-43/case-mount/" class="nav-child">Case &amp; mount (CAD)</a><a href="../hardware/guition-43/can-breakout/" class="nav-child">CAN breakout (PCB)</a></div><div class="nav-group"><span>For developers</span><a href="../building/">Build &amp; install</a><a href="../site-maintenance/">Releases &amp; site maintenance</a><a href="../contributing/">Contributing</a><a href="../architecture/">Architecture</a><a href="../performance/">Performance</a><a href="../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../integrations/">Vehicle integrations</a><a href="../locking/">Locking internals</a><a href="../bluetooth/">Bluetooth internals</a><a href="../transports/">Transport internals</a><a href="../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../reference/vesc-protocol/">WFB protocol notes</a><a href="../reference/wfb-bike-layer/">WFB bike layer</a><a href="../reference/theme/">Theme guide</a><a href="../reference/wfb-ride-controls/">WFB ride controls</a><a href="../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">For riders</div><h1>Connections &amp; proxy</h1><p>BLE, CAN, UART and your phone&#x27;s transparent VESC connection.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/connections.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>The display needs one connection to the bike. You can also connect a phone app through the display by enabling its <strong>BLE proxy</strong>: the display acts as a bridge between your phone and the bike.</p>
+<h2 id="choose-a-connection">Choose a connection</h2>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Connection</th>
+<th>What you need</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bluetooth Low Energy (BLE)</td>
+<td>A compatible bike Bluetooth interface. Available by default.</td>
+</tr>
+<tr>
+<td>CAN</td>
+<td>A configured firmware build, an external CAN transceiver and matching bus wiring.</td>
+</tr>
+<tr>
+<td>UART</td>
+<td>A configured firmware build and compatible serial wiring.</td>
+</tr>
+</tbody>
+</table></div>
+<p>Choose the interface under <strong>Settings &gt; Vehicle</strong>. The vehicle integration (Auto, WFB, wheel-e or VESC) is a separate choice in that section. Leave integration at <strong>Auto</strong> for automatic detection.</p>
 <h2 id="bluetooth-to-the-bike">Bluetooth to the bike</h2>
-<p>BLE is available by default. The picker under <strong>Settings &gt; Vehicle</strong> prioritizes recognizable names without excluding other VESC Nordic UART Service devices. Select the device, complete any pairing prompt, and wait for main-controller discovery and fresh telemetry.</p>
-<p>The saved association includes the verified BLE peer and selected integration. Bluetooth bonds are separate from that association. If an upstream device changes its pairing credentials, retry pairing with the new PIN rather than changing the bike lock PIN.</p>
-<p><img alt="Upstream BLE pairing prompt in the browser simulator" src="../assets/images/ble-pairing.png" /></p>
-<p>This pairing preview uses a simulated browser service; it does not establish radio interoperability.</p>
+<ol>
+<li>Power the bike and make its Bluetooth interface available.</li>
+<li>Open <strong>Settings &gt; Vehicle</strong> and select the device. Recognizable bike names appear first; other compatible VESC Bluetooth devices are still listed.</li>
+<li>Complete any pairing prompt with the PIN configured on the bike's Bluetooth device.</li>
+<li>Wait for controller discovery and live readings before using bike controls.</li>
+</ol>
+<p><img alt="Bike Bluetooth pairing prompt" src="../assets/images/ble-pairing.png" /></p>
+<p>The display remembers the verified bike and integration. If the bike's Bluetooth PIN changes, pair again using its new PIN. Your display's screen-lock code is separate.</p>
 <h2 id="finding-the-main-controller">Finding the main controller</h2>
-<p>For BLE, the display sends the standard VESC CAN ping command, then queries firmware and package telemetry for the direct controller and CAN candidates. Native CAN performs CAN ping and firmware queries on the bus. A BMS is not selected as a motor controller.</p>
-<p>The first compatible motor controller with a supported custom package installed is selected automatically. With <strong>Auto</strong> (the default), discovery probes both WFB and wheel-e packages and uses a verified reply, independently of the BLE name. A manual package selection requires that package to respond. No controller-choice prompt is required. Auto falls back to read-only standard VESC telemetry only when no supported package is found; generic VESC can also be selected explicitly.</p>
-<p>Discovery is read-only. Tuning and lock requests wait until the route, connection generation and required telemetry are valid. Discovery repeats after the connection changes; old queued work is not replayed onto another controller.</p>
+<p>The display searches the directly connected controller and controllers reachable over CAN. It selects the first compatible motor controller; a BMS is not selected as the motor controller.</p>
+<p>With <strong>Auto</strong>, it checks for WFB and wheel-e packages before falling back to standard VESC readings. Selecting WFB or wheel-e explicitly requires that package to respond. A device name does not enable package-specific features.</p>
+<p>Check discovery status under <strong>Settings &gt; Vehicle</strong>. Use <strong>Find main controller again</strong> to repeat discovery when the link is available. If a phone connected before discovery finished, disconnect the phone first.</p>
 <h2 id="native-can">Native CAN</h2>
-<p>The ESP32-S3 has a TWAI controller but needs an external CAN transceiver. Use the board schematic and the transceiver's electrical requirements when choosing GPIOs and wiring. The display's CAN identity must be unique on the bus.</p>
-<p>The firmware exposes CAN in <strong>Settings &gt; Vehicle connection</strong> only when both <code>CAN_TX</code> and <code>CAN_RX</code> are defined in that target's PlatformIO build flags. Defaults are 500 kbit/s and display node ID 254. The target motor-controller ID is discovered, not hard-coded into a bike command.</p>
+<p>CAN appears only when the firmware has both CAN pins configured. The default bus speed is <strong>500 kbit/s</strong> and the display's default node ID is <strong>254</strong>. The bus speed must match the bike, and the display ID must be unique on that bus.</p>
+<p>Use a CAN transceiver and the wiring for your exact board. The motor-controller ID is discovered automatically. For the GUITION breakout, see <a href="../hardware/guition-43/can-breakout/">connector pinouts and setup</a>. For custom wiring, see <a href="../building/#configure-an-optional-wired-interface">wired-interface build configuration</a>.</p>
 <h2 id="uart">UART</h2>
-<p>UART appears only when both <code>UART_TX</code> and <code>UART_RX</code> are configured for the target. Match the vehicle's UART baud setting; the default is 115200. Vehicle UART defaults to port 1; port 0 remains reserved for the console.</p>
-<p>Use compatible logic levels, cross TX/RX as required, and share a signal ground. GPIO assignments are target configuration, not a setting that can be guessed from the screen model. See <a href="../building/#configure-an-optional-wired-interface">building</a>.</p>
+<p>UART appears only when both UART pins are configured in the firmware. The default baud rate is <strong>115200</strong> and must match the bike.</p>
+<p>Use compatible logic levels, connect TX to RX and RX to TX as required, and share a signal ground. Do not guess GPIOs from the screen model. Vehicle UART normally uses port 1; port 0 is reserved for the console. See <a href="../building/#configure-an-optional-wired-interface">wired-interface build configuration</a>.</p>
 <h2 id="connect-a-phone-through-the-display">Connect a phone through the display</h2>
 <ol>
-<li>Enable <strong>Settings &gt; Phone connection &gt; BLE proxy</strong>. It is off by default.</li>
-<li>Find the display in your phone app. Active WFB advertises as <code>WFB</code>. Wheel-e and generic VESC use your saved <strong>BLE name</strong>, initially <code>WB Disp</code>.</li>
-<li>If a screen lock is configured, pair using the code shown under <strong>Settings &gt; Phone BLE code</strong> after unlocking. It is the local PIN or the six dot numbers of the pattern. Changing the credential clears old phone bonds; forget the old pairing on the phone if needed. The upstream device's pairing PIN is not reused. See <a href="../pins/">PINs, patterns and pairing</a>.</li>
-<li>In the phone app, perform its normal VESC discovery and choose the controller you want to use.</li>
-<li>Read-only display telemetry continues while the phone is connected. Disconnect the phone before changing bike settings or installing display firmware. Normal disconnection drains complete admitted commands and resumes the display without reconnecting the bike; an incomplete frame that was never forwarded is discarded.</li>
+<li>Unlock the display and enable <strong>Settings &gt; Phone connection &gt; BLE proxy</strong>. It is off by default.</li>
+<li>In your phone app, find the display using the name below.</li>
+<li>If a screen lock is configured, open <strong>Settings &gt; Phone BLE code</strong> after unlocking and enter that code in the phone's pairing prompt. A pattern uses its six dot numbers. See <a href="../pins/">PINs, patterns and pairing</a>.</li>
+<li>Run the phone app's normal VESC discovery and select the controller you want to use.</li>
+<li>Disconnect the phone before reading or saving tuning, requesting a bike lock, or updating the display.</li>
 </ol>
-<p>The proxy supports the selected BLE, UART or CAN interface. BLE and UART preserve the underlying VESC byte stream. CAN exposes a generic adapter with firmware discovery, CAN ping and explicit CAN forwarding; the phone supplies the destination CAN ID. The proxy does not use the display's main-controller route. The display retains its own route for read-only polls; replies to those polls update the display only and are not forwarded to the phone. A phone setup reply can also update dashboard telemetry only when its controller ID matches the selected bike (and its sender matches the route on native CAN). Other phone replies are excluded. Phone traffic has priority at complete-packet boundaries. An unfinished phone packet or phone firmware transfer can temporarily pause injected display polls. If initial main-controller discovery was incomplete when the phone connected, it waits until the phone disconnects.</p>
-<p>The name does not mirror the upstream BLE module. Only the active WFB integration overrides it to <code>WFB</code> and hides the editor. With wheel-e or generic VESC, edit <strong>Settings &gt; Phone connection &gt; BLE name</strong>. Leaving WFB restores your saved preference without changing it in NVS.</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Active integration</th>
+<th>Display name shown to the phone</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WFB</td>
+<td><code>WFB</code>; the name editor is hidden.</td>
+</tr>
+<tr>
+<td>wheel-e or VESC</td>
+<td>Your saved BLE name, initially <code>WB Disp</code>. Edit it under <strong>Settings &gt; Phone connection &gt; BLE name</strong>.</td>
+</tr>
+</tbody>
+</table></div>
+<p>Leaving WFB restores your saved name. The display's name does not copy the bike's Bluetooth name.</p>
+<h2 id="while-the-phone-is-connected">While the phone is connected</h2>
+<p>The green phone icon beside the cog indicates an authorized phone connection. Read-only ride data normally continues. Busy phone traffic or a phone firmware transfer can temporarily pause display readings. Tuning and display firmware updates wait until the phone disconnects.</p>
+<p>The phone selects its own CAN controller; it does not automatically use the display's selected controller. Readings from another controller do not replace the display's bike readings. The bridge works with BLE, UART or CAN on the bike side.</p>
+<p>The proxy pauses while the screen is locked. With a configured lock, unlock locally after each display restart before connecting the phone. Without a screen lock, the enabled proxy has no PIN requirement.</p>
 <h2 id="pairing-and-changed-pins">Pairing and changed PINs</h2>
-<p>An encrypted upstream BLE connection has its own PIN prompt and saved bond. The local bike PIN determines the proxy's BLE pairing requirement. Changing or removing the bike PIN invalidates the old phone security sessions and bonds, so reconnect or re-pair the phone afterward.</p>
-<p>PIN pairing and physical CAN/UART behavior still require acceptance testing with the intended controller and phone. See <a href="../todo/">open work</a> for the remaining hardware checks.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../reference/notices/">Notices</a></span></footer></main>
+<p>Changing or removing the screen-lock credential disconnects phone sessions and clears remembered phone pairings on the display. If the phone still remembers the old pairing, forget the display in the phone's Bluetooth settings and pair again.</p>
+<p>Changing only the entry mode between PIN and pattern preserves pairings for the same credential. The bike's own Bluetooth pairing remains separate.</p>
+<p>Phone pairing and wired operation still need validation with your exact hardware and app. <a href="../troubleshooting/">Troubleshooting</a> covers common connection problems; <a href="../bluetooth/">Bluetooth internals</a> and <a href="../transports/">transport internals</a> explain implementation details.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../reference/notices/">Notices</a></span></footer></main>
 <aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
 <ul>
+<li><a href="#choose-a-connection">Choose a connection</a></li>
 <li><a href="#bluetooth-to-the-bike">Bluetooth to the bike</a></li>
 <li><a href="#finding-the-main-controller">Finding the main controller</a></li>
 <li><a href="#native-can">Native CAN</a></li>
 <li><a href="#uart">UART</a></li>
 <li><a href="#connect-a-phone-through-the-display">Connect a phone through the display</a></li>
+<li><a href="#while-the-phone-is-connected">While the phone is connected</a></li>
 <li><a href="#pairing-and-changed-pins">Pairing and changed PINs</a></li>
 </ul>
 </div>

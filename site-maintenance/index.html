@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Releases &amp; site maintenance · Wheelie Fun Display</title><meta name="description" content="Publish firmware, validate hardware and maintain the documentation site."><meta name="theme-color" content="#080b0e">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../assets/style.css">
+<script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head>
+<body data-site-root="../" class="docs-page">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="site-header"><a class="brand" href="../"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 0 33 35" aria-hidden="true" fill="none" color="#63d9e5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <g id="bike-artwork" transform="translate(16 16) rotate(30) scale(-1 1) translate(-16 -16)">
+    <circle cx="7" cy="24" r="4.5" stroke-width="3"/>
+    <circle cx="25" cy="24" r="4.5" stroke-width="3"/>
+    <rect x="8" y="10" width="13" height="3" rx="0.8" stroke-width="2"/>
+    <path d="M7 24h5l-2-9h13l-1 9H12M10 15v-2h10M23 15l2 9M23 15 21 5h4m-4 0h-2"/>
+    <rect x="13" y="17" width="7" height="6" rx="1" stroke-width="1.5"/>
+    <path d="M15 19h3m-3 2h3M20 23h3" stroke-width="1.2"/>
+  </g>
+</svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
+<div class="header-actions"><a class="installer-link" href="../install/">Install firmware</a><a class="simulator-link" href="../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
+<button class="nav-overlay" type="button" aria-label="Close navigation"></button>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../">Overview</a><div class="nav-group"><span>Start here</span><a href="../getting-started/">Getting started</a><a href="../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../guide/">Using the display</a><a href="../connections/">Connections &amp; proxy</a><a href="../pins/">PINs, patterns &amp; pairing</a><a href="../maintenance/">Updates &amp; maintenance</a><a href="../troubleshooting/">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../hardware/waveshare-206/case-mount/" class="nav-child">Case &amp; mount (CAD)</a><a href="../hardware/guition-43/">GUITION P4 4.3-inch</a><a href="../hardware/guition-43/case-mount/" class="nav-child">Case &amp; mount (CAD)</a><a href="../hardware/guition-43/can-breakout/" class="nav-child">CAN breakout (PCB)</a></div><div class="nav-group"><span>For developers</span><a href="../building/">Build &amp; install</a><a href="./" aria-current="page">Releases &amp; site maintenance</a><a href="../contributing/">Contributing</a><a href="../architecture/">Architecture</a><a href="../performance/">Performance</a><a href="../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../integrations/">Vehicle integrations</a><a href="../locking/">Locking internals</a><a href="../bluetooth/">Bluetooth internals</a><a href="../transports/">Transport internals</a><a href="../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../reference/vesc-protocol/">WFB protocol notes</a><a href="../reference/wfb-bike-layer/">WFB bike layer</a><a href="../reference/theme/">Theme guide</a><a href="../reference/wfb-ride-controls/">WFB ride controls</a><a href="../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">For developers</div><h1>Releases &amp; site maintenance</h1><p>Publish firmware, validate hardware and maintain the documentation site.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/site-maintenance.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>Contributor instructions for publishing firmware and maintaining the help site. For on-device updates, see <a href="../maintenance/">updates and maintenance</a>.</p>
+<h2 id="automatic-releases-and-pr-previews">Automatic releases and PR previews</h2>
+<p>Increase <code>[common].custom_firmware_version</code> in <code>platformio.ini</code>, commit and push to <code>main</code>. CI compares the configured version with the highest semantic version actually published on GitHub, including prereleases. An unpublished newer version stays eligible on subsequent pushes, so a failed build followed by a formatting or code fix can still release the same version. The first version is eligible when no releases exist. Already published versions, downgrades and build-metadata-only changes do not trigger another release. Draft releases and tags without a published release do not count as publication; failure to query GitHub stops release detection.</p>
+<p>The pipeline runs formatting, sanitizer tests and native UI checks, builds every supported <code>default_envs</code> target once, then tests the browser simulator and installer using those firmware artifacts. Only after those stages succeed does it create <code>v&lt;version&gt;</code> at that commit and publish the OTA/factory images, notices and source references. An existing tag must identify the same commit; published assets are never replaced. Re-running the same published commit leaves its release unchanged.</p>
+<p>For an explicit manual publication, run <strong>Actions &gt; CI, firmware and previews &gt; Run workflow</strong> on <code>main</code> with <strong>publish_release</strong> enabled. A manual run without that option validates only. Pushed version tags also work, but the tag must match the configuration. Prerelease versions are marked as prereleases on GitHub; separate OTA channels are not implemented.</p>
+<p>PRs run the same validation and produce a hosted simulator link and browser-test gallery in one updated bot comment and the publication run summary. Each URL includes the PR number and exact head revision. Preview frames isolate PR scripts from the parent and disable hardware APIs. Superseded builds are skipped, and closing a PR removes its preview and updates the comment.</p>
+<p>A separate trusted publisher runs after successful CI, verifies artifact provenance, refreshes only the tested installer's release catalog and firmware files from published releases and deploys Pages. It executes only default-branch publication code, never PR publication scripts. Generated site content is retained on the <code>gh-pages</code> storage branch so production updates preserve open PR previews. The first successful <code>main</code> pipeline initializes that storage automatically; PR publication cannot replace an uninitialized production site. Downloadable site and firmware artifacts remain available as a fallback.</p>
+<h2 id="release-artifacts">Release artifacts</h2>
+<p>Build the supported environments before packaging:</p>
+<pre><code class="language-sh">pio run
+python scripts/check_sdkconfig.py --all
+python -m pip install -r requirements-release.txt
+python scripts/package_release.py
+</code></pre>
+<p>Packaging writes OTA applications <code>.pio/releases/&lt;environment&gt;.bin</code>, complete USB images <code>&lt;environment&gt;-factory.bin</code>, <code>manifest.json</code>, <code>licenses.zip</code> and <code>source-references.json</code>. The notices archive preserves the project, font, icon and bundled component licenses. Source references record the application repository/commit and pinned Slint tag/commit; local uncommitted changes are marked explicitly. The supported list comes from <code>default_envs</code>; removed board images are not carried forward. CI builds that supported list at the configured version and passes the verified artifacts to the release stage.</p>
+<p>The complete USB image is merged from the build's actual bootloader, partition-table, OTA initialization and application offsets; it is not interchangeable with an OTA application image. USB installation can reset NVS settings.</p>
+<p>Review the version, board identity, sizes and hashes before publishing. App slots are 7 MiB each. A newly booted image is accepted only after initialization and ten seconds of a functioning UI loop; an early failure leaves rollback available.</p>
+<h2 id="hardware-acceptance">Hardware acceptance</h2>
+<p>A successful build and simulator check do not establish radio or wired interoperability. For a release, record the exact board, controller firmware and phone/app used, then exercise:</p>
+<ul>
+<li>Cold boot, all four orientations, corner-safe layout and touch alignment.</li>
+<li>Settings scrolling, PIN entry, locked timeout and wake-contact consumption.</li>
+<li>Disconnect/reconnect, upstream encrypted pairing and changed/removed local PINs.</li>
+<li>CAN/UART operation with the actual transceiver/wiring and controller discovery.</li>
+<li>Phone proxy behavior, CAN forwarding, MTU differences, sustained traffic and lease release.</li>
+<li>Wi-Fi/OTA success, failure, cancellation and first-boot acceptance.</li>
+</ul>
+<p>Track remaining hardware work in <a href="../todo/">TODO</a>. Record repeatable performance measurements in <a href="../performance/">performance notes</a>; a startup sample does not establish a sustained frame rate.</p>
+<h2 id="documentation-and-pages">Documentation and Pages</h2>
+<p>CI builds the browser simulator, renders documentation pictures from that current shared Slint UI, then assembles and tests the site. Screenshots are generated artifacts under <code>.cache/pages/docs-images</code>; do not check them in or regenerate them before committing.</p>
+<p>To reproduce the complete Pages build locally:</p>
+<pre><code class="language-sh">python -m pip install -r requirements-docs.txt -r simulator/requirements-browser-test.txt
+python -m playwright install chromium
+python scripts/build_web_simulator.py --output .cache/pages/site/simulator
+python scripts/generate_docs_screenshots.py --site .cache/pages/site
+python scripts/build_docs.py --output .cache/pages/site
+python scripts/build_flash_site.py --site .cache/pages/site --github-release
+python tests/flasher_browser_test.py --site .cache/pages/site
+python tests/simulator_browser_test.py --site .cache/pages/site
+python scripts/package_browser_results.py --site .cache/pages/site
+python tests/docs_browser_test.py --site .cache/pages/site
+</code></pre>
+<p>The <a href="../install/">browser installer</a> uses pinned ESP Web Tools and same-origin, SHA256-verified release images. After successful CI and any release publication, the trusted Pages publisher refreshes the installer from published images without rebuilding the simulator. Before the first release, the installer lists supported boards and reports that firmware is unavailable. For local packaging checks, use <code>--release-dir .pio/releases</code> instead of <code>--github-release</code>; that preview is clearly labelled unpublished.</p>
+<p>The <a href="../simulator/">interactive simulator</a> is the clean end-user preview. The separate <a href="../ci/">CI browser evidence gallery</a> contains touchscreen checks and their captured images. Browser checks cover root and project-subpath hosting, navigation, search, touch, rotation, PIN entry, telemetry and responsive layout. Screenshots support visual review; they are not pixel-baseline comparisons or real-device acceptance.</p>
+<p>Preview the generated site through a local HTTP server. Both the downloadable site artifact and GitHub Pages include the simulator and separate CI gallery. Generated HTML and screenshots are build outputs, not a second hand-edited copy of the source.</p>
+<h2 id="test-discovery">Test discovery</h2>
+<p>CI runs the same framework entry points used locally:</p>
+<pre><code class="language-sh">python -m unittest discover -s tests -p '*_tests.py' -v
+node --test tests/*_tests.cjs
+cargo test --locked --manifest-path simulator/Cargo.toml
+ctest --test-dir .cache/host-tests --output-on-failure
+</code></pre>
+<p>Add Python unit tests as <code>tests/*_tests.py</code> and Node suites as <code>tests/*_tests.cjs</code>. Cargo automatically discovers <code>#[test]</code> cases under <code>simulator/tests/</code>; display scenarios share the supported viewport list and launch isolated fixture processes to avoid sharing Slint platform state. Register C++ suites with CTest in <code>tests/CMakeLists.txt</code>. New test cases do not require workflow edits. Browser acceptance checks run in the Pages build after its simulator and installer artifacts exist.</p>
+<p>The P4 board profile explicitly selects <code>build.toolchain = riscv32-esp</code>. A pre-build hook applies it immediately before framework build environments are created, and the matching compiler package is pinned in the common configuration. This compensates for espressif32 8.0.0's incomplete MCU architecture table; do not patch the locally installed platform builder.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../reference/notices/">Notices</a></span></footer></main>
+<aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
+<ul>
+<li><a href="#automatic-releases-and-pr-previews">Automatic releases and PR previews</a></li>
+<li><a href="#release-artifacts">Release artifacts</a></li>
+<li><a href="#hardware-acceptance">Hardware acceptance</a></li>
+<li><a href="#documentation-and-pages">Documentation and Pages</a></li>
+<li><a href="#test-discovery">Test discovery</a></li>
+</ul>
+</div>
+</aside></div>
+<dialog class="search-dialog" aria-label="Search documentation"><form method="dialog"><button class="close-search" aria-label="Close search">×</button></form><label for="docs-search">Search Wheelie Fun Display</label><input id="docs-search" type="search" placeholder="Connection, PIN, build…" autocomplete="off"><div class="search-results" aria-live="polite"></div><p class="search-hint">Search the guides and implementation notes. Press Esc to close.</p></dialog>
+</body></html>

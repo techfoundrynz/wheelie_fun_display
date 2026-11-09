@@ -21,6 +21,7 @@
   box-sizing: border-box;
 }
 html {
+  scrollbar-gutter: stable;
   scroll-padding-top: 94px;
   scroll-behavior: smooth;
 }
@@ -171,7 +172,7 @@ input {
 }
 .site-layout {
   display: grid;
-  grid-template-columns: 236px minmax(0, 820px) 190px;
+  grid-template-columns: 236px minmax(0, 820px) minmax(190px, 1fr);
   max-width: 1500px;
   margin: auto;
   justify-content: center;
@@ -278,6 +279,7 @@ input {
   margin-left: 4px;
 }
 .page-toc {
+  max-width: 190px;
   position: sticky;
   top: var(--header);
   height: fit-content;
@@ -467,7 +469,6 @@ input {
 }
 .home-page .site-layout {
   grid-template-columns: 236px minmax(0, 1fr);
-  max-width: 1600px;
 }
 .home-page .page-toc {
   display: none;
@@ -559,6 +560,9 @@ input {
   flex-direction: column;
   align-items: center;
 }
+.hero-preview picture {
+  display: contents;
+}
 .preview-glow {
   position: absolute;
   inset: 18% 0 0;
@@ -576,7 +580,6 @@ input {
   box-shadow:
     0 25px 60px #000a,
     0 0 0 4px #0b1015;
-  transform: rotate(2deg);
 }
 figcaption {
   font-size: 9px;

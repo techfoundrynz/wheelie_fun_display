@@ -14,6 +14,7 @@
     "hardware/guition-43/case-mount/index.html",
     "hardware/guition-43/can-breakout/index.html",
     "building/index.html",
+    "site-maintenance/index.html",
     "contributing/index.html",
     "architecture/index.html",
     "performance/index.html",
@@ -31,5 +32,5 @@
   ],
   "simulator": "simulator/",
   "installer": "install/",
-  "sources": 26
+  "sources": 27
 }

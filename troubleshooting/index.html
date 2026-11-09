@@ -17,30 +17,91 @@
 </svg><span>Wheelie Fun Display</span><span class="docs-label">Docs</span></a>
 <div class="header-actions"><a class="installer-link" href="../install/">Install firmware</a><a class="simulator-link" href="../simulator/">Try simulator <span aria-hidden="true">↗</span></a><button class="search-trigger" type="button" aria-label="Search documentation"><span aria-hidden="true">⌕</span><span>Search</span><kbd>/</kbd></button><button class="menu-trigger" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false">☰</button></div></header>
 <button class="nav-overlay" type="button" aria-label="Close navigation"></button>
-<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../">Overview</a><div class="nav-group"><span>Start here</span><a href="../getting-started/">Getting started</a><a href="../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../guide/">Using the display</a><a href="../connections/">Connections &amp; proxy</a><a href="../pins/">PINs, patterns &amp; pairing</a><a href="../maintenance/">Updates &amp; maintenance</a><a href="./" aria-current="page">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../hardware/waveshare-206/case-mount/" class="nav-child">Case &amp; mount (CAD)</a><a href="../hardware/guition-43/">GUITION P4 4.3-inch</a><a href="../hardware/guition-43/case-mount/" class="nav-child">Case &amp; mount (CAD)</a><a href="../hardware/guition-43/can-breakout/" class="nav-child">CAN breakout (PCB)</a></div><div class="nav-group"><span>For developers</span><a href="../building/">Build &amp; install</a><a href="../contributing/">Contributing</a><a href="../architecture/">Architecture</a><a href="../performance/">Performance</a><a href="../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../integrations/">Vehicle integrations</a><a href="../locking/">Locking internals</a><a href="../bluetooth/">Bluetooth internals</a><a href="../transports/">Transport internals</a><a href="../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../reference/vesc-protocol/">WFB protocol notes</a><a href="../reference/wfb-bike-layer/">WFB bike layer</a><a href="../reference/theme/">Theme guide</a><a href="../reference/wfb-ride-controls/">WFB ride controls</a><a href="../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
-<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">For riders</div><h1>Troubleshooting</h1><p>Find the right next check for connection, touch or update issues.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/troubleshooting.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>Start with what the display reports, then check the part of the connection it describes. Keep the bike stopped while investigating configuration or locking.</p>
+<div class="site-layout"><aside class="sidebar" id="site-navigation" aria-label="Documentation navigation"><a class="overview-link" href="../">Overview</a><div class="nav-group"><span>Start here</span><a href="../getting-started/">Getting started</a><a href="../install/">Install firmware</a></div><div class="nav-group"><span>For riders</span><a href="../guide/">Using the display</a><a href="../connections/">Connections &amp; proxy</a><a href="../pins/">PINs, patterns &amp; pairing</a><a href="../maintenance/">Updates &amp; maintenance</a><a href="./" aria-current="page">Troubleshooting</a></div><div class="nav-group"><span>Hardware</span><a href="../hardware/waveshare-206/">Waveshare S3 2.06-inch</a><a href="../hardware/waveshare-206/case-mount/" class="nav-child">Case &amp; mount (CAD)</a><a href="../hardware/guition-43/">GUITION P4 4.3-inch</a><a href="../hardware/guition-43/case-mount/" class="nav-child">Case &amp; mount (CAD)</a><a href="../hardware/guition-43/can-breakout/" class="nav-child">CAN breakout (PCB)</a></div><div class="nav-group"><span>For developers</span><a href="../building/">Build &amp; install</a><a href="../site-maintenance/">Releases &amp; site maintenance</a><a href="../contributing/">Contributing</a><a href="../architecture/">Architecture</a><a href="../performance/">Performance</a><a href="../todo/">Planned work</a></div><div class="nav-group"><span>Reference</span><a href="../integrations/">Vehicle integrations</a><a href="../locking/">Locking internals</a><a href="../bluetooth/">Bluetooth internals</a><a href="../transports/">Transport internals</a><a href="../reference/wheel-e-protocol/">wheel-e protocol notes</a><a href="../reference/vesc-protocol/">WFB protocol notes</a><a href="../reference/wfb-bike-layer/">WFB bike layer</a><a href="../reference/theme/">Theme guide</a><a href="../reference/wfb-ride-controls/">WFB ride controls</a><a href="../reference/notices/">Third-party notices</a></div><a class="github-link" href="https://github.com/techfoundrynz/wheelie_fun_display">Source on GitHub <span aria-hidden="true">↗</span></a></aside>
+<main id="content" tabindex="-1" class="article-main"><header class="article-header"><div class="eyebrow">For riders</div><h1>Troubleshooting</h1><p>Find the right next check for connection, touch or update issues.</p><a class="source-link" href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/docs/troubleshooting.md">View source <span aria-hidden="true">↗</span></a></header><article class="md-content"><p>Find the symptom below and work through its checks in order. Keep the bike stopped while investigating settings or locking. A reading of <code>--</code> means unavailable or out-of-date data, not zero.</p>
 <h2 id="the-screen-is-black">The screen is black</h2>
-<p>If the display was locked, tap once, lift your finger and wait for the PIN screen. The timeout intentionally sets brightness to zero; waking restores your saved brightness.</p>
-<p>For a first installation, confirm the exact board target and that the full USB upload completed. A 1.8-inch or 2.41-inch image is not supported by this repository. Capture the boot log if the correct 2.06-inch build never shows the interface.</p>
+<ol>
+<li>Tap once, lift your finger and wait for the unlock screen. A locked display intentionally turns the panel black after its timeout.</li>
+<li>Check power and the USB cable.</li>
+<li>After a first installation, confirm you selected the exact board model and completed the full USB installation.</li>
+<li>If the correct image still does not start, save the boot log if available and report the problem.</li>
+</ol>
+<p>Only the listed Waveshare 2.06-inch and GUITION 4.3-inch targets are supported. See <a href="../hardware/waveshare-206/#usb-recovery-and-checks">Waveshare recovery</a> or <a href="../hardware/guition-43/">GUITION requirements</a>.</p>
 <h2 id="the-usb-port-is-missing">The USB port is missing</h2>
-<p>Use a USB data cable and try another direct port. Check <code>pio device list</code>. Follow the manufacturer's BOOT/RESET download-mode procedure if the board is not enumerating. Do not assume the port number is the same as a previous session.</p>
+<ol>
+<li>Use a known USB <strong>data</strong> cable and try a direct computer port.</li>
+<li>Close any serial monitor or app already using the port.</li>
+<li>Follow your board's BOOT/RESET download-mode procedure, then reconnect in the installer. For Waveshare, hold BOOT, tap RESET and release BOOT.</li>
+<li>Select the newly detected port; its name may have changed.</li>
+</ol>
+<p>If using PlatformIO, <code>pio device list</code> lists available ports. See the <a href="../install/">browser installer</a> for USB installation.</p>
 <h2 id="no-bike-appears-over-ble">No bike appears over BLE</h2>
-<p>Power the bike and open its BLE interface. Make sure another client has not occupied a single-connection module. Recognizable bike names sort first, but other VESC UART devices can still appear. Leave the integration at <strong>Auto</strong> to probe supported packages regardless of the BLE name. If selecting a package explicitly, check that it is installed on the intended motor controller.</p>
+<ol>
+<li>Power the bike and make its Bluetooth interface available.</li>
+<li>Disconnect another phone/app if the bike's module allows only one connection.</li>
+<li>Open <strong>Settings &gt; Vehicle</strong> and look through the device list. Recognizable names sort first, but other compatible devices remain selectable.</li>
+<li>Leave integration at <strong>Auto</strong>, or confirm the explicitly selected WFB/wheel-e package is installed on the intended controller.</li>
+</ol>
 <h2 id="the-link-connects-but-values-stay-unavailable">The link connects but values stay unavailable</h2>
-<p>Transport connection, main-controller discovery and telemetry freshness are separate. Check the main-controller status on the Settings vehicle section. The package must match WFB or wheel-e when that integration is selected; generic VESC does not expose package-specific controls.</p>
-<p>Read-only display polls normally continue while a phone uses the proxy, but unfinished phone packets and phone firmware transfers temporarily suppress them. Initial discovery also waits if the phone connected before it finished. Disconnect the phone to let discovery complete, then use <strong>Find main controller again</strong> if needed. BMS polls during a phone session require a command-96 reply earlier in the current vehicle session. <code>--</code> is an unavailable reading, not zero.</p>
+<ol>
+<li>Check controller discovery status under <strong>Settings &gt; Vehicle</strong>. A connected link can still be waiting for valid readings.</li>
+<li>Disconnect the phone proxy to let discovery and display polling proceed.</li>
+<li>Use <strong>Find main controller again</strong> when the link is available.</li>
+<li>Check the integration. Explicit WFB or wheel-e selection requires that package; generic VESC provides standard readings only.</li>
+</ol>
+<p>Busy phone traffic or firmware transfers can temporarily pause readings. BMS data also depends on controller support and may be cached. See <a href="../guide/#stats">Stats</a>.</p>
 <h2 id="the-ble-pin-is-rejected">The BLE PIN is rejected</h2>
-<p>Use the PIN configured on the upstream BLE device when pairing the display to it. Use the local bike lock PIN when pairing the phone to this display. They are separate codes.</p>
-<p>If credentials changed, retry pairing with the new upstream PIN. Changing or removing the bike PIN invalidates the phone's old security sessions/bonds. The phone may also need to forget its cached pairing before pairing again.</p>
+<p>Check which devices you are pairing:</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Connection</th>
+<th>Code to enter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Display to the bike's Bluetooth device</td>
+<td>The PIN configured on that bike device.</td>
+</tr>
+<tr>
+<td>Phone to the display</td>
+<td>The code shown under <strong>Settings &gt; Phone BLE code</strong> after unlocking. A pattern uses its six dot numbers.</td>
+</tr>
+</tbody>
+</table></div>
+<p>If the bike's PIN changed, retry with its new PIN. If the display's screen lock changed or was removed, forget the display's old pairing on the phone and pair again. After restarting a secured display, unlock it locally before connecting the phone.</p>
+<p>See <a href="../pins/">PINs, patterns and pairing</a> for entry rules and cooldowns.</p>
 <h2 id="can-or-uart-is-absent-from-settings">CAN or UART is absent from Settings</h2>
-<p>The target must define both pins for that interface. The stock profile leaves optional wired pins unset. Check the build flags, actual board wiring, CAN transceiver, bus bit rate, unique display CAN ID or UART baud as applicable. Rebuild after changing target configuration.</p>
+<p>These choices require firmware with both pins configured for that interface. Stock profiles leave optional wired pins unset.</p>
+<p>Check your board's wiring and firmware configuration. CAN also needs a transceiver, matching bus speed and a unique display ID; UART needs matching baud and compatible signal levels. Changing GPIO configuration requires rebuilding firmware. See <a href="../building/#configure-an-optional-wired-interface">wired-interface setup</a>.</p>
 <h2 id="a-tuning-or-lock-action-is-unavailable">A tuning or lock action is unavailable</h2>
-<p>The selected integration may not support it. Otherwise, wait for fresh stationary telemetry, a ready connection and no controller fault. Configuration writes remain blocked while a phone is connected to the proxy, even though read-only telemetry can continue. Draft values are not readbacks.</p>
-<p>For a lock request, an unconfirmed state means the display has not received the required matching telemetry. Do not assume the motor is disabled merely because the request was queued.</p>
+<ol>
+<li>Confirm the integration supports that feature. Tune currently requires a supported WFB configuration.</li>
+<li>Unlock the display and stop the bike.</li>
+<li>Disconnect the phone proxy.</li>
+<li>Wait for fresh readings, a ready connection and no controller fault.</li>
+<li>For tuning, read the bike's configuration successfully before editing.</li>
+</ol>
+<p>A draft is not a saved setting. After an interrupted tuning save, read the bike again before retrying. An <strong>unconfirmed</strong> lock means the required bike response has not arrived; do not assume propulsion is disabled. See <a href="../guide/#tune">tuning</a> or <a href="../pins/#lock-the-bike-and-screen">bike locking</a>.</p>
 <h2 id="no-update-is-offered">No update is offered</h2>
-<p>Confirm Wi-Fi and the release feed, and look for a public release containing the exact board asset plus its digest. No release, a missing asset or a validation failure leaves the installed firmware in place. See <a href="../maintenance/">maintenance</a>.</p>
+<ol>
+<li>Confirm the display is connected to Wi-Fi.</li>
+<li>Disconnect the phone proxy and check again under <strong>Settings &gt; Firmware updates</strong>.</li>
+<li>Check whether a public <a href="https://github.com/techfoundrynz/wheelie_fun_display/releases">release</a> exists for your exact board.</li>
+<li>Record any message about a missing or invalid image.</li>
+</ol>
+<p>Unavailable releases or validation failures keep the current firmware selected. See <a href="../maintenance/">updates and maintenance</a>.</p>
 <h2 id="report-a-reproducible-problem">Report a reproducible problem</h2>
-<p>Include the board target, firmware version, integration, transport, controller/phone/app versions, the last working behavior, exact steps and a serial log. Never include Wi-Fi passwords or PINs. See <a href="../contributing/">contributing</a>.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../reference/notices/">Notices</a></span></footer></main>
+<p>Include:</p>
+<ul>
+<li>Display model and firmware version from <strong>Settings &gt; About</strong>.</li>
+<li>Integration and connection type (BLE, CAN or UART).</li>
+<li>Controller firmware and, if relevant, phone/app versions.</li>
+<li>Steps to reproduce, expected behavior, actual behavior and the last version that worked.</li>
+<li>A serial log if available, with passwords and PINs removed.</li>
+</ul>
+<p>Avoid erasing settings before collecting this information. See <a href="../contributing/">contributing</a> for reporting details.</p></article><footer class="page-footer"><span>Built for VESC bikes. Open source.</span><span><a href="https://github.com/techfoundrynz/wheelie_fun_display/blob/main/LICENSE">GPL-3.0-only</a> · <a href="../reference/notices/">Notices</a></span></footer></main>
 <aside class="page-toc" aria-label="On this page"><span>On this page</span><div class="toc">
 <ul>
 <li><a href="#the-screen-is-black">The screen is black</a></li>
