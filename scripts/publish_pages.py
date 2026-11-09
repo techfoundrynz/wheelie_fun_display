@@ -42,6 +42,7 @@ def validate_source(source):
         ".json",
         ".png",
         ".gif",
+        ".webp",
         ".jpg",
         ".jpeg",
         ".svg",

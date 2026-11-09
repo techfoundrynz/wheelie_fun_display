@@ -117,6 +117,18 @@ class PagesPublicationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "initialized"):
             pages.assemble(self.site, self.source, "previews/pr-1/" + "a" * 40)
 
+    def test_webp_survives_production_and_preview_publication(self):
+        image = Path("assets/images/ride-portrait.webp")
+        payload = b"RIFF\x04\x00\x00\x00WEBP"
+        (self.source / image).parent.mkdir(parents=True)
+        (self.source / image).write_bytes(payload)
+        pages.assemble(self.site, self.source)
+        destination = "previews/pr-12/" + "a" * 40
+        pages.assemble(self.site, self.source, destination)
+        for prefix in (self.site, self.site / destination / "payload"):
+            with self.subTest(destination=prefix):
+                self.assertEqual((prefix / image).read_bytes(), payload)
+
     def test_symlink_payload_is_rejected(self):
         outside = self.root / "private.txt"
         outside.write_text("private", encoding="utf-8")
