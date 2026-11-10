@@ -16,3 +16,5 @@
 - **ESP Web Tools** 10.4.0 powers the browser firmware installer under Apache-2.0. Its pinned distribution and runtime dependency versions are recorded in `docs/flasher/vendor-lock.json`. The site hosts the unmodified JavaScript and complete bundled license texts under `install/vendor/esp-web-tools/THIRD_PARTY_NOTICES.txt`. [Project source](https://github.com/esphome/esp-web-tools/tree/fab2ba48253d19fd29a15af57bec771d34978b62).
 
 - **GUITION ST7701S initialization table:** adapted from [ultramcu/guition-jc4880p4-bsp](https://github.com/ultramcu/guition-jc4880p4-bsp/tree/324970bade0d1f4e52880fe8016580368bc1e06e), under MIT. Original copyright and license are preserved in `firmware/main/boards/`.
+
+- **Documentation application:** React and the TanStack libraries use the MIT license. Exact runtime and build-tool versions are pinned in [pnpm-lock.yaml](pnpm-lock.yaml). The generated site includes [web dependency license texts](assets/web-dependency-notices.txt), including copyright notices for React, TanStack and their dependencies. Some listed packages are build tools rather than browser runtime code.

@@ -105,6 +105,8 @@ See [connections](docs/connections.md), [PINs and locking](docs/pins-and-locking
 The [GitHub Pages site](https://techfoundrynz.github.io/wheelie_fun_display/) combines rider guides, developer notes and the browser simulator. Its workflow builds one Pages artifact; simulator services are mocked and do not operate a vehicle.
 
 ```sh
+# Install the Node.js 24 / pnpm documentation app once.
+corepack pnpm --dir website install --frozen-lockfile
 python -m pip install -r requirements-docs.txt -r simulator/requirements-browser-test.txt
 python -m playwright install chromium
 python scripts/build_web_simulator.py --output .cache/pages/site/simulator
@@ -114,7 +116,7 @@ python scripts/build_flash_site.py --site .cache/pages/site --github-release
 python -m http.server --directory .cache/pages/site
 ```
 
-The documentation builder preserves the generated simulator and installer when rerun. The installer reports an unavailable state before the first public release. Use `--release-dir .pio/releases` instead of `--github-release` for an explicitly labelled local build preview. Source pages start at [GETTING-STARTED.MD](GETTING-STARTED.MD) and [CONTRIBUTING.md](CONTRIBUTING.md). Build and browser checks are described in [site maintenance](docs/site-maintenance.md).
+The TanStack Start documentation app preserves the generated simulator engine and installer assets when rebuilt. See [help-site development](website/README.md) for pnpm, TypeScript, Oxlint and Oxfmt commands. The installer reports an unavailable state before the first public release. Use `--release-dir .pio/releases` instead of `--github-release` for an explicitly labelled local build preview. Source pages start at [GETTING-STARTED.MD](GETTING-STARTED.MD) and [CONTRIBUTING.md](CONTRIBUTING.md). Build and browser checks are described in [site maintenance](docs/site-maintenance.md).
 
 ## License
 

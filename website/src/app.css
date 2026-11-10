@@ -1,0 +1,5 @@
+@import "tailwindcss" source("./");
+@import "./styles/theme.css";
+@import "./styles/docs.css";
+@import "./styles/simulator.css";
+@import "./styles/flasher.css";

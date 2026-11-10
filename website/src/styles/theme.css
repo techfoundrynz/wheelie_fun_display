@@ -1,0 +1,33 @@
+@theme {
+  --font-sans: Roboto, system-ui, sans-serif;
+  --color-page: #080b0e;
+  --color-panel: #10161c;
+  --color-outline: #25303a;
+  --color-ink: #edf3f5;
+  --color-accent: #63d9e5;
+}
+@font-face {
+  font-family: Roboto;
+  src: url("../../../ui/fonts/Roboto.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 700;
+  }
+}
+@layer components {
+  .md-content ul {
+    list-style: disc;
+  }
+  .md-content ol {
+    list-style: decimal;
+  }
+}

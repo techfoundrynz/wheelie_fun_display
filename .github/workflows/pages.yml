@@ -18,6 +18,20 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install documentation app dependencies
+        working-directory: website
+        run: |
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+      - name: Check documentation formatting, lint and content
+        working-directory: website
+        run: |
+          corepack pnpm format:check
+          corepack pnpm lint
+          corepack pnpm test
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
@@ -45,6 +59,9 @@ jobs:
         run: python scripts/generate_docs_screenshots.py --site .cache/pages/site
       - name: Build documentation site
         run: python scripts/build_docs.py --output .cache/pages/site
+      - name: Type-check documentation app and Vite plugins
+        working-directory: website
+        run: corepack pnpm check
       - uses: actions/download-artifact@v4
         with:
           name: firmware

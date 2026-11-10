@@ -46,11 +46,15 @@ Track remaining hardware work in [TODO](../TODO.md). Record repeatable performan
 
 ## Documentation and Pages
 
+The help site is a TypeScript TanStack Start app. See [help-site development](../website/README.md) for local Vite preview, pnpm setup, Oxlint and Oxfmt. The simulator and flasher are React routes; firmware catalogs, WASM and screenshots remain generated build inputs.
+
 CI builds the browser simulator, renders documentation pictures from that current shared Slint UI, then assembles and tests the site. Screenshots are generated artifacts under `.cache/pages/docs-images`; do not check them in or regenerate them before committing.
 
 To reproduce the complete Pages build locally:
 
 ```sh
+# Install the Node.js 24 / pnpm documentation app once.
+corepack pnpm --dir website install --frozen-lockfile
 python -m pip install -r requirements-docs.txt -r simulator/requirements-browser-test.txt
 python -m playwright install chromium
 python scripts/build_web_simulator.py --output .cache/pages/site/simulator

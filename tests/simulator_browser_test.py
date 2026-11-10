@@ -47,6 +47,49 @@ def main() -> None:
             browser = playwright.chromium.launch(
                 headless=True, executable_path=args.browser_executable
             )
+            manifest = site / "docs-manifest.json"
+            if (
+                manifest.is_file()
+                and json.loads(manifest.read_text(encoding="utf-8")).get("framework")
+                == "tanstack-start"
+            ):
+                for width in (1440, 390):
+                    loading = browser.new_page(
+                        viewport={"width": width, "height": 1050}
+                    )
+                    pending = []
+                    loading.route("**/*_bg.wasm", lambda route: pending.append(route))
+                    with loading.expect_request("**/*_bg.wasm"):
+                        loading.goto(
+                            f"http://127.0.0.1:{server.server_port}/wheelie_fun_display/simulator/",
+                            wait_until="domcontentloaded",
+                        )
+                    loading.evaluate("document.fonts.ready")
+                    assert loading.locator("#workspace").is_visible(), (
+                        "Simulator space must be reserved before WASM is ready"
+                    )
+                    before = {
+                        selector: loading.locator(selector).bounding_box()
+                        for selector in ("#workspace", ".display-frame", ".app-footer")
+                    }
+                    for request in pending:
+                        request.continue_()
+                    loading.wait_for_function(
+                        "window.wheelieFunDisplay && document.querySelector('#status').textContent.startsWith('Ready')"
+                    )
+                    for selector, initial in before.items():
+                        final = loading.locator(selector).bounding_box()
+                        assert (
+                            initial
+                            and final
+                            and all(
+                                abs(initial[key] - final[key]) < 1
+                                for key in ("x", "y", "width", "height")
+                            )
+                        ), (
+                            f"Layout shifted after simulator startup: {selector} at {width}: {initial} -> {final}"
+                        )
+                    loading.close()
             page = browser.new_page(
                 viewport={"width": 1280, "height": 1080}, device_scale_factor=1
             )

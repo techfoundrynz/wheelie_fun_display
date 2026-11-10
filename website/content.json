@@ -1,0 +1,191 @@
+[
+  {
+    "source": "GETTING-STARTED.MD",
+    "route": "getting-started",
+    "title": "Getting started",
+    "group": "Start here",
+    "description": "Power up, choose an integration and connect your first bike."
+  },
+  {
+    "source": "docs/user-guide.md",
+    "route": "guide",
+    "title": "Using the display",
+    "group": "For riders",
+    "description": "Ride, Stats, Tune, gestures and grouped settings."
+  },
+  {
+    "source": "docs/connections.md",
+    "route": "connections",
+    "title": "Connections & proxy",
+    "group": "For riders",
+    "description": "BLE, CAN, UART and your phone's transparent VESC connection."
+  },
+  {
+    "source": "docs/pins-and-locking.md",
+    "route": "pins",
+    "title": "PINs, patterns & pairing",
+    "group": "For riders",
+    "description": "Local PINs, patterns, upstream pairing and phone proxy bonds."
+  },
+  {
+    "source": "docs/maintenance.md",
+    "route": "maintenance",
+    "title": "Updates & maintenance",
+    "group": "For riders",
+    "description": "Update your display over Wi-Fi, USB or VESC Tool and diagnose problems."
+  },
+  {
+    "source": "docs/troubleshooting.md",
+    "route": "troubleshooting",
+    "title": "Troubleshooting",
+    "group": "For riders",
+    "description": "Find the right next check for connection, touch or update issues."
+  },
+  {
+    "source": "docs/hardware-waveshare-206.md",
+    "route": "hardware/waveshare-206",
+    "title": "Waveshare S3 2.06-inch",
+    "group": "Hardware",
+    "description": "AMOLED setup, board wiring, orientation and USB recovery."
+  },
+  {
+    "source": "cad/waveshare-206/README.md",
+    "route": "hardware/waveshare-206/case-mount",
+    "title": "Waveshare case and mount",
+    "group": "Hardware",
+    "description": "STEP downloads, assembly views and hardware for the 2.06-inch casing and clamp."
+  },
+  {
+    "source": "docs/hardware-guition-43.md",
+    "route": "hardware/guition-43",
+    "title": "GUITION P4 4.3-inch",
+    "group": "Hardware",
+    "description": "P4/C6 board setup, companion firmware and hardware requirements."
+  },
+  {
+    "source": "cad/guition-43/README.md",
+    "route": "hardware/guition-43/case-mount",
+    "title": "GUITION case and mount",
+    "group": "Hardware",
+    "description": "Case and clamp STEP downloads, Fusion archive, assembly animation and fit checks."
+  },
+  {
+    "source": "pcb/guition-43/README.md",
+    "route": "hardware/guition-43/can-breakout",
+    "title": "GUITION CAN breakout",
+    "group": "Hardware",
+    "description": "Editable PCB source, labelled board views, schematic and CAN wiring."
+  },
+  {
+    "source": "docs/building.md",
+    "route": "building",
+    "title": "Build & install",
+    "group": "For developers",
+    "description": "Set up PlatformIO, install firmware and run the shared simulators."
+  },
+  {
+    "source": "docs/site-maintenance.md",
+    "route": "site-maintenance",
+    "title": "Releases & site maintenance",
+    "group": "For developers",
+    "description": "Publish firmware, validate hardware and maintain the documentation site."
+  },
+  {
+    "source": "CONTRIBUTING.md",
+    "route": "contributing",
+    "title": "Contributing",
+    "group": "For developers",
+    "description": "Make a focused change and show the evidence that it works."
+  },
+  {
+    "source": "docs/architecture.md",
+    "route": "architecture",
+    "title": "Architecture",
+    "group": "For developers",
+    "description": "Ownership, integrations, transports and shared UI components."
+  },
+  {
+    "source": "docs/performance.md",
+    "route": "performance",
+    "title": "Performance",
+    "group": "For developers",
+    "description": "Configuration decisions and the limits of measured results."
+  },
+  {
+    "source": "TODO.md",
+    "route": "todo",
+    "title": "Planned work",
+    "group": "For developers",
+    "description": "Implementation and hardware acceptance tasks for contributors."
+  },
+  {
+    "source": "docs/integrations.md",
+    "route": "integrations",
+    "title": "Vehicle integrations",
+    "group": "Reference",
+    "description": "Capabilities and packet formats for WFB, wheel-e and VESC."
+  },
+  {
+    "source": "docs/locking.md",
+    "route": "locking",
+    "title": "Locking internals",
+    "group": "Reference",
+    "description": "State confirmation, local PIN storage and timeout policy."
+  },
+  {
+    "source": "docs/bluetooth.md",
+    "route": "bluetooth",
+    "title": "Bluetooth internals",
+    "group": "Reference",
+    "description": "Connection generations, proxy ownership and transport behavior."
+  },
+  {
+    "source": "docs/transports.md",
+    "route": "transports",
+    "title": "Transport internals",
+    "group": "Reference",
+    "description": "Physical interfaces, native CAN framing and controller discovery."
+  },
+  {
+    "source": "docs/wheel-e-protocol.md",
+    "route": "reference/wheel-e-protocol",
+    "title": "wheel-e protocol notes",
+    "group": "Reference",
+    "description": "Package identity, modern telemetry, locking and compatibility for wheel-e."
+  },
+  {
+    "source": "docs/wheelie-vesc-comms-api.md",
+    "route": "reference/vesc-protocol",
+    "title": "WFB protocol notes",
+    "group": "Reference",
+    "description": "VESC transport, telemetry and configuration reference for WFB."
+  },
+  {
+    "source": "docs/wheelie-wfb-bike-layer.md",
+    "route": "reference/wfb-bike-layer",
+    "title": "WFB bike layer",
+    "group": "Reference",
+    "description": "WFB command layouts and configuration details."
+  },
+  {
+    "source": "docs/wheelie-theming-guide.md",
+    "route": "reference/theme",
+    "title": "Theme guide",
+    "group": "Reference",
+    "description": "Colours, typography and component styling for the display."
+  },
+  {
+    "source": "docs/wheelie-ride-controls.md",
+    "route": "reference/wfb-ride-controls",
+    "title": "WFB ride controls",
+    "group": "Reference",
+    "description": "Control types, rider-facing ranges, presets and configuration limits."
+  },
+  {
+    "source": "THIRD_PARTY.md",
+    "route": "reference/notices",
+    "title": "Third-party notices",
+    "group": "Reference",
+    "description": "Licenses and notices for bundled components and assets."
+  }
+]

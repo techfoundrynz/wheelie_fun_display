@@ -190,6 +190,67 @@ def browser_checks(site: Path, executable: str | None, output: Path, base_path: 
                     page.keyboard.press("/")
                     page.locator(".search-dialog").wait_for(state="visible")
                     page.keyboard.press("Escape")
+            # The browser's root snapshot must never animate the persistent shell.
+            assert (
+                page.locator("html").evaluate(
+                    "node => getComputedStyle(node).viewTransitionName"
+                )
+                == "none"
+            )
+            # The tools are React routes and the single WASM platform survives SPA navigation.
+            page.set_viewport_size({"width": 1440, "height": 1050})
+            page.goto(url, wait_until="networkidle")
+            page.evaluate(
+                "window.docsNavigationToken = {}; window.docsHeader = document.querySelector('.site-header'); window.docsFooter = document.querySelector('.app-footer')"
+            )
+            page.locator(".site-header").get_by_role(
+                "link", name="Simulator", exact=True
+            ).click()
+            page.wait_for_function(
+                "window.wheelieFunDisplay && document.querySelector('#status').textContent.startsWith('Ready')"
+            )
+            page.evaluate(
+                "window.docsSimulator = window.wheelieFunDisplay; window.wheelieFunDisplay.set_control('speed', 18)"
+            )
+            page.locator(".site-header").get_by_role(
+                "link", name="Install firmware", exact=True
+            ).click()
+            page.locator("#board-select:not([disabled])").wait_for()
+            page.locator(".site-header").get_by_role(
+                "link", name="Documentation", exact=True
+            ).click()
+            page.get_by_role("heading", name="Your ride. A clearer view.").wait_for()
+            page.locator(".site-header").get_by_role(
+                "link", name="Simulator", exact=True
+            ).click()
+            page.wait_for_function(
+                "document.querySelector('#status').textContent.startsWith('Ready')"
+            )
+            assert page.evaluate(
+                "!!window.docsNavigationToken && window.docsHeader === document.querySelector('.site-header') && window.docsFooter === document.querySelector('.app-footer')"
+            ), "Tool navigation reloaded the document"
+            assert page.evaluate("window.docsSimulator === window.wheelieFunDisplay"), (
+                "Simulator platform was recreated"
+            )
+            page.locator(".site-header").get_by_role(
+                "link", name="Documentation", exact=True
+            ).click()
+            page.locator("#site-navigation").get_by_role(
+                "link", name="Getting started", exact=True
+            ).click()
+            page.locator(".md-content a[href='../guide/']").first.click()
+            page.get_by_role("heading", name="Using the display", exact=True).wait_for()
+            assert page.evaluate(
+                "!!window.docsNavigationToken && window.docsHeader === document.querySelector('.site-header')"
+            ), "Markdown links reloaded the shell"
+            page.emulate_media(reduced_motion="reduce")
+            assert (
+                page.locator(".page-content-vt:visible").evaluate(
+                    "node => getComputedStyle(node).viewTransitionName"
+                )
+                == "none"
+            )
+            page.emulate_media(reduced_motion="no-preference")
             # Public preview stays separate from maintainer-only CI evidence.
             for route in ["simulator/", "install/", "ci/"]:
                 page.goto(url + route, wait_until="networkidle")

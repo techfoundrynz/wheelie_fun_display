@@ -304,7 +304,15 @@ def main():
                 raise ValueError("Unsafe installer firmware directory")
             shutil.rmtree(firmware)
     else:
+        docs_manifest = args.site.resolve() / "docs-manifest.json"
+        react_site = (
+            docs_manifest.is_file()
+            and json.loads(docs_manifest.read_text(encoding="utf-8")).get("framework")
+            == "tanstack-start"
+        )
         for source in (ROOT / "docs/flasher").iterdir():
+            if react_site and source.suffix in {".html", ".js"}:
+                continue
             if source.suffix in {".html", ".css", ".js"}:
                 if source.suffix == ".html":
                     (output / source.name).write_text(

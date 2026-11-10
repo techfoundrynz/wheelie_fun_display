@@ -14,3 +14,11 @@ simulator/target/
 .slint/
 simulator/web/target/
 !config/sdkconfig.*
+# TanStack documentation app
+website/node_modules/
+website/dist/
+website/.tanstack/
+website/.output/
+website/src/routeTree.gen.ts
+node_modules/
+website/.github/skills/
