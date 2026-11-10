@@ -1,0 +1,161 @@
+var e={source:`docs/wheelie-theming-guide.md`,route:`reference/theme`,title:`Theme guide`,group:`Reference`,description:`Colours, typography and component styling for the display.`,body:`<p>This guide describes the styles used by the Slint firmware and shared simulator. The implementation lives in <code>ui/theme.slint</code> and the reusable components in <code>ui/</code>.</p>
+<h2 id="colour">Colour</h2>
+<p>Use a black background with raised dark cards. Reserve colour for live state, selection, warnings and the speed gauge.</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Theme token</th>
+<th>Colour</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bg</code></td>
+<td><code>#000000</code></td>
+<td>Screen and page backgrounds</td>
+</tr>
+<tr>
+<td><code>surface</code></td>
+<td><code>#1D1D1D</code></td>
+<td>Cards, rows and panels</td>
+</tr>
+<tr>
+<td><code>raised</code></td>
+<td><code>#2A2A2A</code></td>
+<td>Raised controls and selected surfaces</td>
+</tr>
+<tr>
+<td><code>sunken</code></td>
+<td><code>#141414</code></td>
+<td>Recessed or disabled surfaces</td>
+</tr>
+<tr>
+<td><code>control</code></td>
+<td><code>#444444</code></td>
+<td>Control borders and value fields</td>
+</tr>
+<tr>
+<td><code>track</code></td>
+<td><code>#555555</code></td>
+<td>Gauge and progress tracks</td>
+</tr>
+<tr>
+<td><code>accent</code></td>
+<td><code>#69D2DF</code></td>
+<td>Selection, active icons and battery fill</td>
+</tr>
+<tr>
+<td><code>text</code></td>
+<td><code>#FFFFFF</code></td>
+<td>Main text and values</td>
+</tr>
+<tr>
+<td><code>secondary</code></td>
+<td><code>#BBBBBB</code></td>
+<td>Secondary labels and units</td>
+</tr>
+<tr>
+<td><code>muted</code></td>
+<td><code>#AAAAAA</code></td>
+<td>Inactive labels</td>
+</tr>
+<tr>
+<td><code>dim</code></td>
+<td><code>#808080</code></td>
+<td>Unselected settings cog and subdued details</td>
+</tr>
+<tr>
+<td><code>success</code></td>
+<td><code>#60D394</code></td>
+<td>Healthy vehicle links and authorized phone connections</td>
+</tr>
+<tr>
+<td><code>danger</code></td>
+<td><code>#FF4444</code></td>
+<td>Disconnected/unavailable links, faults and overheating</td>
+</tr>
+<tr>
+<td><code>warning</code></td>
+<td><code>#FFC300</code></td>
+<td>Connecting, reconnecting, discovery, authentication waits and stale telemetry</td>
+</tr>
+<tr>
+<td><code>gauge</code></td>
+<td><code>#FFD700</code></td>
+<td>Speed arc</td>
+</tr>
+<tr>
+<td><code>eco</code></td>
+<td><code>#198E13</code></td>
+<td>Eco preset</td>
+</tr>
+<tr>
+<td><code>cruise</code></td>
+<td><code>#0E77AC</code></td>
+<td>Standard preset</td>
+</tr>
+<tr>
+<td><code>sport</code></td>
+<td><code>#AC0E0E</code></td>
+<td>Sport preset</td>
+</tr>
+</tbody>
+</table></div>
+<p>The battery bar uses dark text on cyan. Other cards keep light text on dark surfaces. Never use colour alone to communicate a fault or unavailable action.</p>
+<h2 id="typography">Typography</h2>
+<p>Use the bundled Roboto font with a clear weight hierarchy:</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Weight</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>500</td>
+<td>Body text, supporting values and units</td>
+</tr>
+<tr>
+<td>700</td>
+<td>Buttons, section labels and the connection header</td>
+</tr>
+<tr>
+<td>800</td>
+<td>Page headings and prominent numeric values</td>
+</tr>
+</tbody>
+</table></div>
+<p>Keep literal font weights in Slint so the embedded compiler includes the required faces. The firmware font plan includes 14, 16, 18, 20, 24, 28, 36, 48, 60, 72 and 84 px bitmaps. Large sizes use numeric glyph coverage for the speed readout. The browser simulator reads the same font plan.</p>
+<p>The connection header uses an 18 px label with a 10 px state dot. A fresh controller fault or temperature warning takes priority over the connection label and uses the danger colour. A healthy link says Connected. Otherwise show the most specific connection/probe/telemetry state; phone connection state belongs in its separate icon. Ignore expired fault text, and keep an unpaired display labelled Disconnected rather than replacing it with a generic telemetry message. Header text stays on one line within the fixed 48 px row. Overflow scrolls horizontally at a steady pace, pausing at both ends, while the Settings cog keeps its own hit area. Prominent page titles use 24 or 28 px. Metric values reduce to 18 px in compact landscape layouts so large readings retain their units. The speed readout scales with the gauge diameter, with units beneath it.</p>
+<p>Use <code>°</code> for angles and <code>°C</code> / <code>°F</code> for temperatures. Speed and temperature units have independent preferences.</p>
+<h2 id="header-and-navigation">Header and navigation</h2>
+<p>The top row contains vehicle connection state on the left and the settings cog on the right. The state dot uses success green for a fresh healthy link, yellow for pending/reconnecting/stale states, and red for disconnection, unavailability or a fresh fault. Keep the status text in the normal text colour across connection states; only a current controller fault or over-temperature alert changes it to danger red. An authorized phone connection has a compact green Lucide smartphone immediately left of the cog; enabling the proxy, advertising or an unauthenticated connection does not show it. Keep the primary message about the bike rather than replacing it with a phone-status label. Place compact four-bar bike BLE signal strength immediately left of the phone icon, or left of the cog when no phone is connected. Use secondary colour for active signal bars, warning for a single weak bar, and dim inactive bars. Hide signal strength for CAN/UART or an unavailable BLE reading. Vertically centre all indicators and the cog. Clip status text to the available width and use a marquee when it overflows. Reset to the start when the message or available width changes; short messages stay still.</p>
+<p>The header has no vehicle wordmark or fallback brand heading. Integration identity remains available on the Settings vehicle section; its verified capabilities determine the available controls.</p>
+<p>The bottom navigation contains Ride, Stats and Tune. Use cyan for the active item and a quieter surface for inactive items. Primary-page swipes keep the header and navigation stationary.</p>
+<h2 id="cards-and-controls">Cards and controls</h2>
+<p>Use shared <code>Action</code>, <code>IconAction</code>, <code>Metric</code>, <code>SettingsRow</code> and <code>InfoRow</code> components. Prefer consistent padding and spacing over per-page approximations.</p>
+<ul>
+<li>Button outlines are 2 px, using <code>Theme.control-border</code>.</li>
+<li>Compact metric cards use 8 px padding; larger cards retain their standard padding.</li>
+<li>A settings row has a clear label, current value and a chevron icon.</li>
+<li>Disabled controls use subdued text and borders and reject pointer input.</li>
+<li>Ride presets, limit steppers and Apply actions are unavailable without a connected bike. Sending changes also requires fresh, stationary telemetry and the normal access checks.</li>
+</ul>
+<h2 id="speed-gauge">Speed gauge</h2>
+<p>Use the gold speed arc over a dark grey track. The stroke scales from a 16 px reference at a 260 px diameter. The speed digits scale to 28% of the diameter and stay centred above the unit label.</p>
+<p>Portrait layouts use the space recovered from the single-row connection header for a larger gauge, with the battery meter below it. Anchor metric cards above the bottom navigation. Keep status messages in the header; do not add a second status line to the Ride body. Do not solve a clipped power value by removing its unit or shortening it to an ellipsis.</p>
+<h2 id="responsive-layout-and-touch">Responsive layout and touch</h2>
+<p>The supported rotations are 0°, 90°, 180° and 270°. Portrait and landscape layouts share components and theme tokens. A rotation cancels the current gesture and requires a new contact.</p>
+<p>Read the panel resolution and independent horizontal/vertical safe insets from the hardware profile. X controls left/right clearance and Y controls top/bottom clearance in the current UI orientation; retain these roles when rotating. Keep header controls, cards, dialogs, keyboard keys and PIN entry inside <code>SafeArea</code>. Rounded panels need additional corner clearance; rectangular panels can use the smaller inset defined by their profile.</p>
+<p>In portrait, place Trip and ODO at the outer lower corners of the speed dial, with each label and value left aligned. Position these readings within the dial area rather than reserving a separate layout row, and retain clearance below the rounded arc caps. Let the dial grow into the available width and height while keeping the telemetry cards aligned to the bottom.</p>
+<p>Check both supported display sizes in both aspect ratios: 410 × 502, 502 × 410, 480 × 800 and 800 × 480. Include long connection text, large power values, independent units, scrolling, PIN entry and keyboard editing.</p>
+<h2 id="motion-and-overlays">Motion and overlays</h2>
+<p>Primary page transitions use the shared page deck and a 250 ms easing curve. Swipes follow the finger, snap back when cancelled and stop at the first and last page. Vertical scrolling must remain distinct from horizontal navigation.</p>
+<p>Dialogs and PIN entry block the controls underneath. A sleeping locked screen is black. The wake contact restores the configured brightness and is consumed before another action is accepted.</p>
+<h2 id="documentation-and-web-tools">Documentation and web tools</h2>
+<p>The documentation site, simulator shell and firmware installer share the stylesheet, Roboto font, navigation and design tokens in <code>docs/site/</code>. Their app branding is <strong>Wheelie Fun Display</strong>. The shared bike artwork in <code>docs/site/bike.svg</code> depicts a 1970s-style minibike. Its orientation flips the bike horizontally, then rotates it 30° clockwise; headers and the favicon use the same oriented geometry.</p>
+<p>Documentation screenshots use deterministic, connected-looking values generated during the Pages build. They are illustrative previews; the interactive simulator identifies its hardware and services as simulated outside the display canvas.</p>
+<p>Keep third-party font, icon and artwork notices with the relevant assets. This guide does not change their licenses.</p>
+`,headings:[{id:`colour`,title:`Colour`,level:2},{id:`typography`,title:`Typography`,level:2},{id:`header-and-navigation`,title:`Header and navigation`,level:2},{id:`cards-and-controls`,title:`Cards and controls`,level:2},{id:`speed-gauge`,title:`Speed gauge`,level:2},{id:`responsive-layout-and-touch`,title:`Responsive layout and touch`,level:2},{id:`motion-and-overlays`,title:`Motion and overlays`,level:2},{id:`documentation-and-web-tools`,title:`Documentation and web tools`,level:2}],search:`This guide describes the styles used by the Slint firmware and shared simulator. The implementation lives in ui/theme.slint and the reusable components in ui/. Colour Use a black background with raised dark cards. Reserve colour for live state, selection, warnings and the speed gauge. Theme token Colour Use bg #000000 Screen and page backgrounds surface #1D1D1D Cards, rows and panels raised #2A2A2A Raised controls and selected surfaces sunken #141414 Recessed or disabled surfaces control #444444 Control borders and value fields track #555555 Gauge and progress tracks accent #69D2DF Selection, active icons and battery fill text #FFFFFF Main text and values secondary #BBBBBB Secondary labels and units muted #AAAAAA Inactive labels dim #808080 Unselected settings cog and subdued details success #60D394 Healthy vehicle links and authorized phone connections danger #FF4444 Disconnected/unavailable links, faults and overheating warning #FFC300 Connecting, reconnecting, discovery, authentication waits and stale telemetry gauge #FFD700 Speed arc eco #198E13 Eco preset cruise #0E77AC Standard preset sport #AC0E0E Sport preset The battery bar uses dark text on cyan. Other cards keep light text on dark surfaces. Never use colour alone to communicate a fault or unavailable action. Typography Use the bundled Roboto font with a clear weight hierarchy: Weight Use 500 Body text, supporting values and units 700 Buttons, section labels and the connection header 800 Page headings and prominent numeric values Keep literal font weights in Slint so the embedded compiler includes the required faces. The firmware font plan includes 14, 16, 18, 20, 24, 28, 36, 48, 60, 72 and 84 px bitmaps. Large sizes use numeric glyph coverage for the speed readout. The browser simulator reads the same font plan. The connection header uses an 18 px label with a 10 px state dot. A fresh controller fault or temperature warning takes priority over the connection label and uses the danger colour. A healthy link says Connected. Otherwise show the most specific connection/probe/telemetry state; phone connection state belongs in its separate icon. Ignore expired fault text, and keep an unpaired display labelled Disconnected rather than replacing it with a generic telemetry message. Header text stays on one line within the fixed 48 px row. Overflow scrolls horizontally at a steady pace, pausing at both ends, while the Settings cog keeps its own hit area. Prominent page titles use 24 or 28 px. Metric values reduce to 18 px in compact landscape layouts so large readings retain their units. The speed readout scales with the gauge diameter, with units beneath it. Use ° for angles and °C / °F for temperatures. Speed and temperature units have independent preferences. Header and navigation The top row contains vehicle connection state on the left and the settings cog on the right. The state dot uses success green for a fresh healthy link, yellow for pending/reconnecting/stale states, and red for disconnection, unavailability or a fresh fault. Keep the status text in the normal text colour across connection states; only a current controller fault or over-temperature alert changes it to danger red. An authorized phone connection has a compact green Lucide smartphone immediately left of the cog; enabling the proxy, advertising or an unauthenticated connection does not show it. Keep the primary message about the bike rather than replacing it with a phone-status label. Place compact four-bar bike BLE signal strength immediately left of the phone icon, or left of the cog when no phone is connected. Use secondary colour for active signal bars, warning for a single weak bar, and dim inactive bars. Hide signal strength for CAN/UART or an unavailable BLE reading. Vertically centre all indicators and the cog. Clip status text to the available width and use a marquee when it overflows. Reset to the start when the message or available width changes; short messages stay still. The header has no vehicle wordmark or fallback brand heading. Integration identity remains available on the Settings vehicle section; its verified capabilities determine the available controls. The bottom navigation contains Ride, Stats and Tune. Use cyan for the active item and a quieter surface for inactive items. Primary-page swipes keep the header and navigation stationary. Cards and controls Use shared Action, IconAction, Metric, SettingsRow and InfoRow components. Prefer consistent padding and spacing over per-page approximations. Button outlines are 2 px, using Theme.control-border. Compact metric cards use 8 px padding; larger cards retain their standard padding. A settings row has a clear label, current value and a chevron icon. Disabled controls use subdued text and borders and reject pointer input. Ride presets, limit steppers and Apply actions are unavailable without a connected bike. Sending changes also requires fresh, stationary telemetry and the normal access checks. Speed gauge Use the gold speed arc over a dark grey track. The stroke scales from a 16 px reference at a 260 px diameter. The speed digits scale to 28% of the diameter and stay centred above the unit label. Portrait layouts use the space recovered from the single-row connection header for a larger gauge, with the battery meter below it. Anchor metric cards above the bottom navigation. Keep status messages in the header; do not add a second status line to the Ride body. Do not solve a clipped power value by removing its unit or shortening it to an ellipsis. Responsive layout and touch The supported rotations are 0°, 90°, 180° and 270°. Portrait and landscape layouts share components and theme tokens. A rotation cancels the current gesture and requires a new contact. Read the panel resolution and independent horizontal/vertical safe insets from the hardware profile. X controls left/right clearance and Y controls top/bottom clearance in the current UI orientation; retain these roles when rotating. Keep header controls, cards, dialogs, keyboard keys and PIN entry inside SafeArea. Rounded panels need additional corner clearance; rectangular panels can use the smaller inset defined by their profile. In portrait, place Trip and ODO at the outer lower corners of the speed dial, with each label and value left aligned. Position these readings within the dial area rather than reserving a separate layout row, and retain clearance below the rounded arc caps. Let the dial grow into the available width and height while keeping the telemetry cards aligned to the bottom. Check both supported display sizes in both aspect ratios: 410 × 502, 502 × 410, 480 × 800 and 800 × 480. Include long connection text, large power values, independent units, scrolling, PIN entry and keyboard editing. Motion and overlays Primary page transitions use the shared page deck and a 250 ms easing curve. Swipes follow the finger, snap back when cancelled and stop at the first and last page. Vertical scrolling must remain disti`};export{e as default};

@@ -1,0 +1,137 @@
+var e={source:`docs/transports.md`,route:`transports`,title:`Transport internals`,group:`Reference`,description:`Physical interfaces, native CAN framing and controller discovery.`,body:`<p>Vehicle integrations exchange complete VESC application payloads through <code>transport::Interface</code>. BLE, CAN and UART implementations own their wire framing, input buffering and connection generations. Vehicle protocol selection is independent of the physical interface. The shared implementation lives under <code>firmware/components/bike/</code>; hardware drivers and transport ownership live under <code>firmware/main/</code>.</p>
+<p>BLE is the default. <strong>Settings → Vehicle connection</strong> cycles through interfaces available in the target profile. The selection is saved in NVS. An unavailable or invalid saved interface falls back to BLE. A switch invalidates telemetry, controller discovery and queued writes; it does not replay a pending setting change. OTA pauses the selected interface. A phone proxy lease blocks changes to its active upstream.</p>
+<h2 id="configuring-a-target">Configuring a target</h2>
+<p>Add definitions to that target's <code>build_flags</code> in <code>platformio.ini</code>. Both pins in a pair are required. Pins are deliberately absent from the supplied Waveshare 2.06 profile until the wiring is chosen; they are not inferred from the display size or assigned to arbitrary GPIOs.</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Meaning</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CAN_TX</code>, <code>CAN_RX</code></td>
+<td>ESP32 TWAI signal pins</td>
+<td>Not configured; CAN unavailable</td>
+</tr>
+<tr>
+<td><code>CAN_BITRATE</code></td>
+<td>CAN bit rate</td>
+<td>500000; also supports 125000, 250000 and 1000000</td>
+</tr>
+<tr>
+<td><code>CAN_LOCAL_ID</code></td>
+<td>This display/adapter's CAN address</td>
+<td>254; choose an unused ID from 0–254</td>
+</tr>
+<tr>
+<td><code>UART_TX</code>, <code>UART_RX</code></td>
+<td>Vehicle serial pins</td>
+<td>Not configured; UART unavailable</td>
+</tr>
+<tr>
+<td><code>BIKE_UART_PORT</code></td>
+<td>ESP32 UART peripheral</td>
+<td>1; supports 1 or 2, reserving UART0 for the console</td>
+</tr>
+<tr>
+<td><code>UART_BAUD</code></td>
+<td>Serial baud rate</td>
+<td>115200; allowed range 9600–1000000</td>
+</tr>
+</tbody>
+</table></div>
+<p>Use GPIO numbers appropriate for the actual board and free of its display/touch/storage connections. CAN requires an external compatible transceiver, common reference and correctly terminated bus; ESP32 TWAI pins are not CAN-H/CAN-L. UART uses compatible logic-level TX/RX, crossed between endpoints, a common reference and matching VESC serial configuration. It is 8N1 without hardware flow control.</p>
+<h2 id="framing-and-ownership">Framing and ownership</h2>
+<p>BLE and UART use ordinary VESC length/CRC serial framing. Native CAN uses extended frames with <code>FILL_RX_BUFFER</code> (5), <code>FILL_RX_BUFFER_LONG</code> (6), <code>PROCESS_RX_BUFFER</code> (7) and <code>PROCESS_SHORT_BUFFER</code> (8). Application UART frames are not sent as CAN payloads. The native receive path checks destination, sender, reply mode, contiguous offsets, bounds, assembly timeout and payload CRC before delivering a packet.</p>
+<p>The wired driver runs in a separate task with bounded queues and cancellable writes. CAN uses ESP-IDF 6.1's handle-based <code>esp_twai</code> node API. Eight persistent transmit slots retain each frame and its bytes until the completion callback returns ownership; a 64-frame internal queue copies received frames out of the ISR. Callbacks do not run vehicle protocols, allocate memory or block. This internal storage is allocated only while CAN is open. Transmit queue waits are bounded to 20 ms; a frame still pending after 250 ms triggers a session retry. Receive overflow, transmit failure and bus-off also restart the session rather than continuing with an incomplete packet stream. Packet storage and assembly buffers use the configured external-memory allocation policy; queue controls and task stacks remain internal. Driver failures, CAN bus-off, transport changes and reconnects invalidate the session. Late packets and writes from previous sessions are discarded. UART framing, native CAN framing and the phone's raw stream have separate parser state.</p>
+<h2 id="finding-the-main-controller">Finding the main controller</h2>
+<p>The display performs read-only discovery before normal polling or configuration writes:</p>
+<ol>
+<li>On BLE/UART, request <code>COMM_PING_CAN</code> (62), including the directly attached controller as a candidate. Native CAN sweeps controller IDs with CAN ping (17) and collects pong (18) responses addressed to this display.</li>
+<li>Query <code>COMM_FW_VERSION</code> (0) for candidates. Serial forwarding uses <code>COMM_FORWARD_CAN</code> (34); native CAN addresses the candidate directly.</li>
+<li>Exclude non-motor hardware such as BMS/custom adapters, then verify the selected vehicle integration with its telemetry request. Custom configuration metadata and a successful package reply identify installed package support.</li>
+<li>Use the <strong>first</strong> compatible controller with a custom package/configuration. There is no multiple-controller choice prompt. Explicit generic VESC mode may fall back to a plain motor controller for read-only standard telemetry when no package controller is found.</li>
+</ol>
+<p>Firmware identity parsing is bounded and handles the hardware name, UUID, version, hardware type and custom-configuration count. Queries are serialized, with quiet/settling periods because serial CAN-forwarded replies do not carry a request/source identifier. Native CAN replies retain their source ID. Bounded discovery retries handle missing devices; reconnects discard the previous discovery result. <strong>Settings → Vehicle → Find main controller again</strong> restarts discovery. The Settings vehicle section reports the selected controller and firmware.</p>
+<h2 id="transparent-phone-ble-proxy">Transparent phone BLE proxy</h2>
+<p>The optional proxy is a separate VESC client path. It does not use the display's main-controller route or vehicle integration to rewrite the phone's commands. Read-only display polling continues through <code>transport::poll</code> while the phone is connected. Phone traffic has priority at complete-packet boundaries, with at most one broker-owned display poll in flight. Broker-owned replies update display telemetry and are not forwarded to the phone. Phone command-47 replies may also supply a passive read-only view when their controller ID matches the selected bike; native CAN additionally requires the matching source controller. Other phone replies are excluded. This keeps the phone's independently selected CAN controller separate from the display's route. Initial controller discovery still waits for the phone to disconnect if it was incomplete at connection time. Configuration writes and display OTA remain paused. On normal phone departure, admitted valid frames finish, a never-forwarded partial tail is discarded, and backend drain plus quiet receive allow normal display operation to resume without resetting the bike BLE session or main-controller route. Source loss or corrupt traffic can still require recovery.</p>
+<p>The relay uses three 16 KiB PSRAM byte rings and validates each complete phone frame before forwarding any of its bytes. The 16 KiB limit includes framing; ordinary VESC payloads are 512 bytes. Up to 512-byte batches coalesce valid frames while preserving boundaries and reply-key/firmware conflict guards. Invalid or oversized input ends the phone session before that frame reaches the bike. Phone notification backpressure is serviced nonblockingly. Idle, pairing or unsubscribed phones do not suppress local read-only polls; unauthenticated phones receive no data.</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Vehicle connection</th>
+<th>Phone proxy behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BLE</td>
+<td>Raw ordered byte stream to the connected BLE UART peer</td>
+</tr>
+<tr>
+<td>UART</td>
+<td>Raw ordered byte stream to the configured serial port</td>
+</tr>
+<tr>
+<td>CAN</td>
+<td>Generic adapter endpoint: firmware identity, CAN discovery and explicit CAN forwarding</td>
+</tr>
+</tbody>
+</table></div>
+<p>On CAN, a direct firmware query identifies a custom adapter, not a motor controller. <code>COMM_PING_CAN</code> lists responding nodes. <code>COMM_FORWARD_CAN</code> sends the phone's payload to its explicitly requested CAN ID and returns the unmodified VESC reply inside serial framing. A direct motor command without a CAN destination is not implicitly routed to the display's selected bike; the adapter tells the app to select a CAN controller. Native CAN packet size limits and CRC framing apply. The phone app performs its own controller discovery/selection, as with a CAN-capable VESC adapter.</p>
+<p>The adapter handlers bind only while CAN is selected. BLE and UART forward all
+of these requests to the upstream device without substituting display metadata.</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>Local CAN adapter command</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>COMM_FW_VERSION</code> (0)</td>
+<td>Reports the configured hardware target, stable device UUID and <strong>Wheelie Fun Display v&lt;release&gt;</strong>. Hardware type is Custom Module; motor, custom-configuration, QML and NRF capabilities are not advertised.</td>
+</tr>
+<tr>
+<td><code>COMM_FW_INFO</code> (157)</td>
+<td>Reports the source Git revision, or an empty revision if unavailable. Protocol version bytes match the firmware-version reply.</td>
+</tr>
+<tr>
+<td><code>COMM_PING_CAN</code> (62)</td>
+<td>Returns discovered CAN IDs.</td>
+</tr>
+<tr>
+<td><code>COMM_FORWARD_CAN</code> (34)</td>
+<td>Forwards the enclosed VESC command to the explicitly supplied node. Its firmware/configuration replies belong to that controller.</td>
+</tr>
+<tr>
+<td><code>COMM_CAN_FWD_FRAME</code> (85)</td>
+<td>Transmits one Classic CAN data frame: big-endian 32-bit ID, one-byte extended flag, then 0–8 payload bytes. Standard IDs are limited to 11 bits and extended IDs to 29 bits. No acknowledgment or automatic raw receive/sniffer stream is generated.</td>
+</tr>
+<tr>
+<td><code>COMM_ALIVE</code> (30)</td>
+<td>Quietly accepted; the adapter has no motor watchdog to refresh.</td>
+</tr>
+</tbody>
+</table></div>
+<p>The adapter's <code>7.0</code> version bytes denote VESC protocol compatibility. The display's
+own release is taken from ESP-IDF application metadata and included in its firmware
+name. It does not claim to run the motor-controller firmware or VESC Express.
+Malformed raw-frame requests never reach the CAN driver. The existing BLE lease,
+generation checks, framing and queue limits apply to adapter requests as well.
+VESC Tool can update the display using <code>COMM_ERASE_NEW_APP</code> (2),
+<code>COMM_WRITE_NEW_APP_DATA</code> (3) and <code>COMM_JUMP_TO_BOOTLOADER</code> (1). These commands
+address the display itself; commands explicitly forwarded to another controller
+continue to address that controller. See <a href="../maintenance/#vesc-tool-updates">Firmware updates</a>.</p>
+<p>Only the active WFB integration forces the advertised/GAP name to <strong>WFB</strong> and hides its editor. Wheel-e and generic VESC use the editable saved name (default <strong>WB Disp</strong>). Leaving WFB restores that preference without mutating NVS. The name never mirrors an upstream BLE module. The bike lock PIN or pattern controls the proxy's pairing requirement; the upstream BLE PIN is independent. See <a href="../bluetooth/">Bluetooth</a> and <a href="../pins/">PINs and locking</a>.</p>
+<h2 id="references-and-verification">References and verification</h2>
+<p>Adapter identity, firmware-info and raw-frame command layouts follow
+<a href="https://github.com/vedderb/vesc_express/blob/main/main/commands.c">VESC Express commands</a>
+and the <a href="https://github.com/vedderb/vesc_tool/blob/master/commands.cpp">VESC Tool encoder/parser</a>.</p>
+<p>Native packet formats and firmware discovery were checked against <a href="https://github.com/vedderb/bldc/tree/21e66bb9efb41322c84f34c1db03a71ffeb7d8a1">VESC firmware 21e66bb</a>, particularly <a href="https://github.com/vedderb/bldc/blob/21e66bb9efb41322c84f34c1db03a71ffeb7d8a1/comm/comm_can.c">CAN transport</a> and <a href="https://github.com/vedderb/bldc/blob/21e66bb9efb41322c84f34c1db03a71ffeb7d8a1/comm/commands.c">command responses</a>. Hardware uses the <a href="https://docs.espressif.com/projects/esp-idf/en/v6.1/esp32s3/api-reference/peripherals/twai.html">ESP-IDF TWAI driver</a>.</p>
+<p>Host tests exercise CAN boundaries and CRCs, missing/reordered/expired fragments, wrong destinations/senders, first-package discovery, BMS exclusion, native bridge commands and PIN-policy changes. Driver ownership tests cover pending transmit storage, completion reuse, receive overflow, stalled transfers, startup failures and cancellation under sanitizers. Software-renderer UI tests cover interface selection/availability and all four rotations. Real CAN/UART wiring, bus load, phone-app interoperability and encrypted pairing remain hardware acceptance tests; build success does not establish those results.</p>
+`,headings:[{id:`configuring-a-target`,title:`Configuring a target`,level:2},{id:`framing-and-ownership`,title:`Framing and ownership`,level:2},{id:`finding-the-main-controller`,title:`Finding the main controller`,level:2},{id:`transparent-phone-ble-proxy`,title:`Transparent phone BLE proxy`,level:2},{id:`references-and-verification`,title:`References and verification`,level:2}],search:`Vehicle integrations exchange complete VESC application payloads through transport::Interface. BLE, CAN and UART implementations own their wire framing, input buffering and connection generations. Vehicle protocol selection is independent of the physical interface. The shared implementation lives under firmware/components/bike/; hardware drivers and transport ownership live under firmware/main/. BLE is the default. Settings → Vehicle connection cycles through interfaces available in the target profile. The selection is saved in NVS. An unavailable or invalid saved interface falls back to BLE. A switch invalidates telemetry, controller discovery and queued writes; it does not replay a pending setting change. OTA pauses the selected interface. A phone proxy lease blocks changes to its active upstream. Configuring a target Add definitions to that target's build_flags in platformio.ini. Both pins in a pair are required. Pins are deliberately absent from the supplied Waveshare 2.06 profile until the wiring is chosen; they are not inferred from the display size or assigned to arbitrary GPIOs. Flag Meaning Default CAN_TX, CAN_RX ESP32 TWAI signal pins Not configured; CAN unavailable CAN_BITRATE CAN bit rate 500000; also supports 125000, 250000 and 1000000 CAN_LOCAL_ID This display/adapter's CAN address 254; choose an unused ID from 0–254 UART_TX, UART_RX Vehicle serial pins Not configured; UART unavailable BIKE_UART_PORT ESP32 UART peripheral 1; supports 1 or 2, reserving UART0 for the console UART_BAUD Serial baud rate 115200; allowed range 9600–1000000 Use GPIO numbers appropriate for the actual board and free of its display/touch/storage connections. CAN requires an external compatible transceiver, common reference and correctly terminated bus; ESP32 TWAI pins are not CAN-H/CAN-L. UART uses compatible logic-level TX/RX, crossed between endpoints, a common reference and matching VESC serial configuration. It is 8N1 without hardware flow control. Framing and ownership BLE and UART use ordinary VESC length/CRC serial framing. Native CAN uses extended frames with FILL_RX_BUFFER (5), FILL_RX_BUFFER_LONG (6), PROCESS_RX_BUFFER (7) and PROCESS_SHORT_BUFFER (8). Application UART frames are not sent as CAN payloads. The native receive path checks destination, sender, reply mode, contiguous offsets, bounds, assembly timeout and payload CRC before delivering a packet. The wired driver runs in a separate task with bounded queues and cancellable writes. CAN uses ESP-IDF 6.1's handle-based esp_twai node API. Eight persistent transmit slots retain each frame and its bytes until the completion callback returns ownership; a 64-frame internal queue copies received frames out of the ISR. Callbacks do not run vehicle protocols, allocate memory or block. This internal storage is allocated only while CAN is open. Transmit queue waits are bounded to 20 ms; a frame still pending after 250 ms triggers a session retry. Receive overflow, transmit failure and bus-off also restart the session rather than continuing with an incomplete packet stream. Packet storage and assembly buffers use the configured external-memory allocation policy; queue controls and task stacks remain internal. Driver failures, CAN bus-off, transport changes and reconnects invalidate the session. Late packets and writes from previous sessions are discarded. UART framing, native CAN framing and the phone's raw stream have separate parser state. Finding the main controller The display performs read-only discovery before normal polling or configuration writes: On BLE/UART, request COMM_PING_CAN (62), including the directly attached controller as a candidate. Native CAN sweeps controller IDs with CAN ping (17) and collects pong (18) responses addressed to this display. Query COMM_FW_VERSION (0) for candidates. Serial forwarding uses COMM_FORWARD_CAN (34); native CAN addresses the candidate directly. Exclude non-motor hardware such as BMS/custom adapters, then verify the selected vehicle integration with its telemetry request. Custom configuration metadata and a successful package reply identify installed package support. Use the first compatible controller with a custom package/configuration. There is no multiple-controller choice prompt. Explicit generic VESC mode may fall back to a plain motor controller for read-only standard telemetry when no package controller is found. Firmware identity parsing is bounded and handles the hardware name, UUID, version, hardware type and custom-configuration count. Queries are serialized, with quiet/settling periods because serial CAN-forwarded replies do not carry a request/source identifier. Native CAN replies retain their source ID. Bounded discovery retries handle missing devices; reconnects discard the previous discovery result. Settings → Vehicle → Find main controller again restarts discovery. The Settings vehicle section reports the selected controller and firmware. Transparent phone BLE proxy The optional proxy is a separate VESC client path. It does not use the display's main-controller route or vehicle integration to rewrite the phone's commands. Read-only display polling continues through transport::poll while the phone is connected. Phone traffic has priority at complete-packet boundaries, with at most one broker-owned display poll in flight. Broker-owned replies update display telemetry and are not forwarded to the phone. Phone command-47 replies may also supply a passive read-only view when their controller ID matches the selected bike; native CAN additionally requires the matching source controller. Other phone replies are excluded. This keeps the phone's independently selected CAN controller separate from the display's route. Initial controller discovery still waits for the phone to disconnect if it was incomplete at connection time. Configuration writes and display OTA remain paused. On normal phone departure, admitted valid frames finish, a never-forwarded partial tail is discarded, and backend drain plus quiet receive allow normal display operation to resume without resetting the bike BLE session or main-controller route. Source loss or corrupt traffic can still require recovery. The relay uses three 16 KiB PSRAM byte rings and validates each complete phone frame before forwarding any of its bytes. The 16 KiB limit includes framing; ordinary VESC payloads are 512 bytes. Up to 512-byte batches coalesce valid frames while preserving boundaries and reply-key/firmware conflict guards. Invalid or oversized input ends the phone session before that frame reaches the bike. Phone notification backpressure is serviced nonblockingly. Idle, pairing or unsubscribed phones do not suppress local read-only polls; unauthenticated phones receive no data. Vehicle connection Phone proxy behavior BLE Raw ordered byte stream to the connected BLE UART peer UART Raw ordered byte stream to the configured serial port CAN Generic adapter endpoint: firmware identity, CAN discovery and explicit CAN forwa`};export{e as default};

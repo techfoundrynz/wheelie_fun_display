@@ -1,0 +1,69 @@
+var e={source:`docs/pins-and-locking.md`,route:`pins`,title:`PINs, patterns & pairing`,group:`For riders`,description:`Local PINs, patterns, upstream pairing and phone proxy bonds.`,body:`<p>Use the bike’s Bluetooth PIN to pair the display with the bike. Use your own screen-lock PIN or pattern to unlock the display and pair a phone with it. These are separate credentials.</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>PIN</th>
+<th>Where it comes from</th>
+<th>What it controls</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Upstream BLE pairing PIN</td>
+<td>The VESC Express or other secured bike BLE device</td>
+<td>This display's encrypted connection to that device.</td>
+</tr>
+<tr>
+<td>Local screen lock</td>
+<td>Six-digit code entered as a PIN or six-dot pattern</td>
+<td>Local lock screen, supported bike lock requests and the display's phone BLE proxy.</td>
+</tr>
+</tbody>
+</table></div>
+<p>The upstream pairing PIN never becomes the proxy PIN.</p>
+<h2 id="set-or-change-the-screen-lock">Set or change the screen lock</h2>
+<ol>
+<li>Open <strong>Settings &gt; Screen lock &gt; Set screen lock</strong>.</li>
+<li>Choose <strong>Use PIN</strong> or <strong>Use pattern</strong> on the entry screen.</li>
+<li>Enter your new six-digit PIN or six-dot pattern twice.</li>
+</ol>
+<p>To change or remove it, choose <strong>Change screen lock</strong> or <strong>Remove screen lock</strong> and enter the current credential first. There is no default code or recovery-code screen.</p>
+<h3 id="enter-a-pin-or-pattern">Enter a PIN or pattern</h3>
+<p>Both entry modes use the same six-digit credential. A pattern can be entered numerically using its dot numbers. Codes containing zeroes or repeated digits require PIN entry. Switching entry mode clears only the partial entry; it does not change the credential, reset the retry counter or revoke phone bonds.</p>
+<p>A PIN always has six digits and submits automatically on the sixth digit. The backspace icon removes one digit; X clears the current entry. The entered digits are visible in large type.</p>
+<p>A pattern always uses six different dots on a 3 × 3 grid. Draw in one continuous gesture, then lift your finger to submit. Crossing directly over an unvisited middle dot includes it automatically, as on Android. Dots cannot be reused; short gestures clear without counting as an incorrect credential. Wrong six-dot patterns and wrong PINs clear for another attempt, with a 30-second cooldown after five failures.</p>
+<p><img src="../assets/images/pattern-entry.png" alt="Six-dot pattern entry with numbered dots"></p>
+<p>The dots are numbered left to right, top to bottom:</p>
+<pre><code class="language-text">1 2 3
+4 5 6
+7 8 9
+</code></pre>
+<p>For example, drawing 1 → 3 → 9 → 8 includes 2 and 6 automatically, producing the six-dot sequence <strong>123698</strong>. This is also the phone proxy's numeric BLE pairing code.</p>
+<p>The display remembers your lock and entry mode across restarts. After restarting a locked display, unlock it locally before connecting a phone. Plaintext credentials are not stored or logged; see <a href="../locking/">locking internals</a> for storage details.</p>
+<h2 id="lock-only-the-screen">Lock only the screen</h2>
+<p><strong>Lock screen</strong> protects the local controls without sending a bike lock command. The locked-screen timeout can be 15, 30, 60 or 120 seconds, with 30 seconds as the default.</p>
+<p>When it times out, the panel becomes black. Tap once to restore your brightness setting, lift your finger, and enter the PIN or draw the pattern. That first tap cannot activate a hidden control. Partial PIN or pattern input is cleared across sleep and wake.</p>
+<h2 id="lock-the-bike-and-screen">Lock the bike and screen</h2>
+<p>When supported, <strong>Lock bike and screen</strong> asks the bike to lock, then locks the display. Stop the bike, disconnect the phone proxy and wait for fresh readings with no controller fault before using it. The screen stays locked while the display waits for the bike to confirm its state.</p>
+<p>A command being queued is not proof that propulsion is disabled. If the controller does not confirm the state, the interface reports it as unconfirmed. Validate lock behavior on the exact bike firmware before relying on it. The supplied WFB protocol notes do not establish vendor firmware compatibility by themselves.</p>
+<h2 id="pair-the-phone-to-the-display">Pair the phone to the display</h2>
+<ol>
+<li>Unlock the display and enable <strong>Settings &gt; Phone connection &gt; BLE proxy</strong>.</li>
+<li>Find the display in the phone app: <strong>WFB</strong> for an active WFB integration, or your saved <strong>BLE name</strong> for wheel-e/VESC (initially <strong>WB Disp</strong>).</li>
+<li>Open <strong>Settings &gt; Phone BLE code</strong> and enter the shown code in the phone’s numeric pairing prompt.</li>
+</ol>
+<p>For a PIN, this is the same six digits. For a pattern, it is the six dot numbers in order, including automatically inserted middle dots.</p>
+<p>To rename the display for wheel-e/VESC, use <strong>Settings &gt; Phone connection &gt; BLE name</strong>. WFB hides that editor; leaving WFB restores your saved name.</p>
+<p><img src="../assets/images/proxy-pairing-code.png" alt="Phone BLE pairing code shown in Settings"></p>
+<p>The proxy stays paused while the display is locked. This policy applies whether the display connects to the bike over BLE, CAN or UART. With no screen-lock credential, the enabled proxy has no PIN requirement.</p>
+<h3 id="after-changing-your-lock">After changing your lock</h3>
+<p>Changing or removing the credential disconnects phones and clears their remembered pairings on the display. Forget the old pairing in the phone’s Bluetooth settings, then pair again. Switching only the PIN/pattern entry mode preserves pairings for the same credential.</p>
+<p>Restarting preserves valid pairings, but you must still unlock locally before a secured phone connection becomes available.</p>
+<h2 id="pair-the-display-to-vesc-express">Pair the display to VESC Express</h2>
+<p>The VESC Express pairing screen always uses numeric entry and hides the mode switch, regardless of the remembered local entry mode. Enter the passkey configured on that device, then press <strong>Submit</strong>. Entry accepts 1–6 digits representing the BLE passkey range 000000–999999; leading zeroes can be entered or omitted. It never submits automatically on the sixth digit.</p>
+<p><img src="../assets/images/ble-pairing.png" alt="Upstream BLE passkey screen with explicit submission"></p>
+<p>This upstream passkey never replaces the display's own proxy code. The bike pairing is remembered independently; the entered passkey is cleared after submission. Changing your local PIN or pattern does not change the PIN configured on VESC Express or remove its independent upstream bond.</p>
+<h2 id="keep-the-security-boundaries-clear">Keep the security boundaries clear</h2>
+<p>The local code protects this display's controls and its proxy. It does not prevent another client from talking directly to the bike's separate interface, and it is not a hardware immobilizer. Physical flash access is outside this local access-control mechanism.</p>
+<p>See <a href="../locking/">locking internals</a> for implementation details and <a href="../todo/">open work</a> for remaining hardware acceptance checks.</p>
+`,headings:[{id:`set-or-change-the-screen-lock`,title:`Set or change the screen lock`,level:2},{id:`enter-a-pin-or-pattern`,title:`Enter a PIN or pattern`,level:3},{id:`lock-only-the-screen`,title:`Lock only the screen`,level:2},{id:`lock-the-bike-and-screen`,title:`Lock the bike and screen`,level:2},{id:`pair-the-phone-to-the-display`,title:`Pair the phone to the display`,level:2},{id:`after-changing-your-lock`,title:`After changing your lock`,level:3},{id:`pair-the-display-to-vesc-express`,title:`Pair the display to VESC Express`,level:2},{id:`keep-the-security-boundaries-clear`,title:`Keep the security boundaries clear`,level:2}],search:`Use the bike’s Bluetooth PIN to pair the display with the bike. Use your own screen-lock PIN or pattern to unlock the display and pair a phone with it. These are separate credentials. PIN Where it comes from What it controls Upstream BLE pairing PIN The VESC Express or other secured bike BLE device This display's encrypted connection to that device. Local screen lock Six-digit code entered as a PIN or six-dot pattern Local lock screen, supported bike lock requests and the display's phone BLE proxy. The upstream pairing PIN never becomes the proxy PIN. Set or change the screen lock Open Settings > Screen lock > Set screen lock. Choose Use PIN or Use pattern on the entry screen. Enter your new six-digit PIN or six-dot pattern twice. To change or remove it, choose Change screen lock or Remove screen lock and enter the current credential first. There is no default code or recovery-code screen. Enter a PIN or pattern Both entry modes use the same six-digit credential. A pattern can be entered numerically using its dot numbers. Codes containing zeroes or repeated digits require PIN entry. Switching entry mode clears only the partial entry; it does not change the credential, reset the retry counter or revoke phone bonds. A PIN always has six digits and submits automatically on the sixth digit. The backspace icon removes one digit; X clears the current entry. The entered digits are visible in large type. A pattern always uses six different dots on a 3 × 3 grid. Draw in one continuous gesture, then lift your finger to submit. Crossing directly over an unvisited middle dot includes it automatically, as on Android. Dots cannot be reused; short gestures clear without counting as an incorrect credential. Wrong six-dot patterns and wrong PINs clear for another attempt, with a 30-second cooldown after five failures. The dots are numbered left to right, top to bottom: 1 2 3 4 5 6 7 8 9 For example, drawing 1 → 3 → 9 → 8 includes 2 and 6 automatically, producing the six-dot sequence 123698. This is also the phone proxy's numeric BLE pairing code. The display remembers your lock and entry mode across restarts. After restarting a locked display, unlock it locally before connecting a phone. Plaintext credentials are not stored or logged; see locking internals for storage details. Lock only the screen Lock screen protects the local controls without sending a bike lock command. The locked-screen timeout can be 15, 30, 60 or 120 seconds, with 30 seconds as the default. When it times out, the panel becomes black. Tap once to restore your brightness setting, lift your finger, and enter the PIN or draw the pattern. That first tap cannot activate a hidden control. Partial PIN or pattern input is cleared across sleep and wake. Lock the bike and screen When supported, Lock bike and screen asks the bike to lock, then locks the display. Stop the bike, disconnect the phone proxy and wait for fresh readings with no controller fault before using it. The screen stays locked while the display waits for the bike to confirm its state. A command being queued is not proof that propulsion is disabled. If the controller does not confirm the state, the interface reports it as unconfirmed. Validate lock behavior on the exact bike firmware before relying on it. The supplied WFB protocol notes do not establish vendor firmware compatibility by themselves. Pair the phone to the display Unlock the display and enable Settings > Phone connection > BLE proxy. Find the display in the phone app: WFB for an active WFB integration, or your saved BLE name for wheel-e/VESC (initially WB Disp). Open Settings > Phone BLE code and enter the shown code in the phone’s numeric pairing prompt. For a PIN, this is the same six digits. For a pattern, it is the six dot numbers in order, including automatically inserted middle dots. To rename the display for wheel-e/VESC, use Settings > Phone connection > BLE name. WFB hides that editor; leaving WFB restores your saved name. The proxy stays paused while the display is locked. This policy applies whether the display connects to the bike over BLE, CAN or UART. With no screen-lock credential, the enabled proxy has no PIN requirement. After changing your lock Changing or removing the credential disconnects phones and clears their remembered pairings on the display. Forget the old pairing in the phone’s Bluetooth settings, then pair again. Switching only the PIN/pattern entry mode preserves pairings for the same credential. Restarting preserves valid pairings, but you must still unlock locally before a secured phone connection becomes available. Pair the display to VESC Express The VESC Express pairing screen always uses numeric entry and hides the mode switch, regardless of the remembered local entry mode. Enter the passkey configured on that device, then press Submit. Entry accepts 1–6 digits representing the BLE passkey range 000000–999999; leading zeroes can be entered or omitted. It never submits automatically on the sixth digit. This upstream passkey never replaces the display's own proxy code. The bike pairing is remembered independently; the entered passkey is cleared after submission. Changing your local PIN or pattern does not change the PIN configured on VESC Express or remove its independent upstream bond. Keep the security boundaries clear The local code protects this display's controls and its proxy. It does not prevent another client from talking directly to the bike's separate interface, and it is not a hardware immobilizer. Physical flash access is outside this local access-control mechanism. See locking internals for implementation details and open work for remaining hardware acceptance checks.`};export{e as default};
