@@ -4,6 +4,8 @@ ESP-IDF + PlatformIO + Slint firmware for a VESC bike touch display, with Wheeli
 
 Start with [Getting started](GETTING-STARTED.MD), [the rider guide](docs/user-guide.md), or [building and installing](docs/building.md). The GitHub Pages artifact combines the styled documentation, [browser simulator](https://techfoundrynz.github.io/wheelie_fun_display/simulator/) and [USB firmware installer](https://techfoundrynz.github.io/wheelie_fun_display/install/).
 
+For assisted setup or changes, see [AI assistants](docs/agents.md) for task prompts and [AGENTS.md](AGENTS.md) for repository instructions.
+
 ![Dashboard](https://techfoundrynz.github.io/wheelie_fun_display/assets/images/ride-landscape.png)
 
 ## Supported targets

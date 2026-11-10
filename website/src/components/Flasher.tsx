@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { SectionHeading } from "./SectionHeading";
 import { isCatalog, localFirmware, type Catalog } from "../tools/flasher";
 export function Flasher() {
   const [catalog, setCatalog] = useState<Catalog | null>(null);
@@ -78,7 +79,7 @@ export function Flasher() {
                 : "Awaiting first release"}
             </span>
           </div>
-          <h2 id="install-title">Choose your display</h2>
+          <SectionHeading id="install-title">Choose your display</SectionHeading>
           <label htmlFor="board-select">Display model</label>
           <select
             id="board-select"
@@ -158,7 +159,7 @@ export function Flasher() {
         </section>
         <section className="install-guide" aria-labelledby="before-title">
           <p className="eyebrow">BEFORE YOU CONNECT</p>
-          <h2 id="before-title">Installation steps</h2>
+          <SectionHeading id="before-title">Installation steps</SectionHeading>
           <ol className="install-steps">
             <li>
               <span>1</span>

@@ -75,10 +75,13 @@ Preview the generated site through a local HTTP server. Both the downloadable si
 
 ## Test discovery
 
+TypeScript tests for the help site use Vitest. Add `*.test.ts` or `*.test.tsx` files under `website/src` or `website/plugins`. Run `corepack pnpm test:docs` once, or `corepack pnpm test:docs:watch` while editing. The Pages workflow runs the same Vitest suite before building the site. Browser acceptance checks continue to use Playwright against the built app.
+
 CI runs the same framework entry points used locally:
 
 ```sh
 python -m unittest discover -s tests -p '*_tests.py' -v
+corepack pnpm test:docs
 node --test tests/*_tests.cjs
 cargo test --locked --manifest-path simulator/Cargo.toml
 ctest --test-dir .cache/host-tests --output-on-failure

@@ -1,12 +1,11 @@
 import { DocLink as Link } from "./DocLink";
+import { SectionHeading } from "./SectionHeading";
 export function Home() {
   return (
     <>
       <section className="hero">
         <div className="hero-copy">
-          <div className="eyebrow">
-            <span className="status-dot"></span> Documentation
-          </div>
+          <div className="eyebrow">Documentation / Overview</div>
           <h1>
             Wheelie Fun
             <br />
@@ -31,9 +30,6 @@ export function Home() {
           </div>
         </div>
         <figure className="hero-preview">
-          <div className="preview-backplate" aria-hidden="true">
-            <span>WFD / DISPLAY SYSTEM</span>
-          </div>
           <picture>
             <source
               media="(prefers-reduced-motion: reduce)"
@@ -51,9 +47,13 @@ export function Home() {
         </figure>
       </section>
       <section className="intro-cards" aria-label="Choose a guide">
+        <div className="guide-index-heading">
+          <SectionHeading id="guides">Guides</SectionHeading>
+          <span>Setup, controls and connections</span>
+        </div>
         <Link className="intro-card" to="/getting-started/">
-          <span className="card-number">01 / SET UP</span>
-          <h2>Set up your display</h2>
+          <span className="card-number">01</span>
+          <h3>Set up your display</h3>
           <p>
             Follow the first-installation steps, choose your bike type and make your first
             connection.
@@ -61,14 +61,14 @@ export function Home() {
           <span className="card-link">Get started →</span>
         </Link>
         <Link className="intro-card" to="/guide/">
-          <span className="card-number">02 / RIDE</span>
-          <h2>Use the display</h2>
+          <span className="card-number">02</span>
+          <h3>Use the display</h3>
           <p>Learn Ride, Stats and Tune, change display settings and use the touchscreen.</p>
           <span className="card-link">Read the user guide →</span>
         </Link>
         <Link className="intro-card" to="/connections/">
-          <span className="card-number">03 / CONNECT</span>
-          <h2>Choose your connection</h2>
+          <span className="card-number">03</span>
+          <h3>Choose your connection</h3>
           <p>
             Connect over Bluetooth, set up a wired connection or use a phone app through the
             display.
@@ -79,7 +79,7 @@ export function Home() {
       <section className="landscape-section">
         <div>
           <div className="eyebrow">Screen orientation</div>
-          <h2>Portrait and landscape</h2>
+          <SectionHeading id="portrait-and-landscape">Portrait and landscape</SectionHeading>
           <p>
             Choose portrait or landscape in Settings to match your mount. The screen and touch
             controls rotate together.
@@ -100,7 +100,7 @@ export function Home() {
       </section>
       <section className="supported-section">
         <div className="eyebrow">Hardware</div>
-        <h2>Supported displays</h2>
+        <SectionHeading id="supported-displays">Supported displays</SectionHeading>
         <p>
           Waveshare ESP32-S3 AMOLED 2.06 pairs a 410 × 502 CO5300 panel with FT3168 touch. GUITION
           JC4880P443C uses a 480 × 800 ST7701S panel, GT911 touch and ESP32-P4 with a C6 radio

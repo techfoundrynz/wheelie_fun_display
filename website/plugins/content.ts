@@ -5,6 +5,7 @@ import MarkdownIt from "markdown-it";
 import { load } from "cheerio";
 import { z } from "zod";
 import type { Plugin } from "vite";
+import { headingAnchorIcon } from "../src/heading-anchor.ts";
 
 export const root = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
 import { repository, relative, siteRoot } from "../src/paths.ts";
@@ -86,6 +87,15 @@ export function compilePage(page: PageMeta, catalog: PageMeta[]) {
     heading.attr("id", id);
     if (["h2", "h3"].includes(element.tagName))
       headings.push({ id, title: heading.text(), level: Number(element.tagName[1]) });
+    if (element.tagName === "h2") {
+      heading.append(
+        $('<a class="heading-anchor"></a>')
+          .attr("href", "#" + id)
+          .attr("aria-label", "Link to " + heading.text())
+          .attr("title", "Link to " + heading.text())
+          .append(headingAnchorIcon),
+      );
+    }
   });
   $("[href], [src]").each((_, element) => {
     for (const attribute of ["href", "src"]) {
@@ -169,9 +179,10 @@ export function docsContent(): Plugin {
       ]);
     },
     handleHotUpdate({ file, server }) {
+      const changedFile = path.resolve(file);
       if (
-        file === path.join(root, "website/content.json") ||
-        catalog.some((page) => path.resolve(root, page.source) === file)
+        changedFile === path.join(root, "website/content.json") ||
+        catalog.some((page) => path.resolve(root, page.source) === changedFile)
       ) {
         catalog = readCatalog();
         server.moduleGraph.invalidateAll();

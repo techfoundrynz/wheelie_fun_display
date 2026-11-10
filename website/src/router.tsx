@@ -35,8 +35,9 @@ export function getRouter() {
           typeof window !== "undefined" &&
           window.matchMedia("(prefers-reduced-motion: reduce)").matches
         )
-          return [];
-        if (fromLocation?.pathname === toLocation.pathname) return [];
+          return false;
+        // An empty type list still creates snapshots and the browser's default fade.
+        if (fromLocation?.pathname === toLocation.pathname) return false;
         const from = fromLocation?.pathname.split("/").filter(Boolean).length || 0;
         const to = toLocation.pathname.split("/").filter(Boolean).length;
         return [to < from ? "backward" : "forward"];

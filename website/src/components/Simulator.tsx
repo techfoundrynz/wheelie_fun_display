@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { SectionHeading } from "./SectionHeading";
 import { mountSimulator, type Simulator, type SimulatorLayout } from "../tools/simulator";
 const units = { speed: " km/h", battery: "%", temperature: "°C", pitch: "°" };
 export function Simulator({ active }: { active: boolean }) {
@@ -160,7 +161,7 @@ export function Simulator({ active }: { active: boolean }) {
           </section>
           <aside inert={!ready} className="controls" aria-labelledby="controls-title">
             <p className="eyebrow">SIMULATED HARDWARE</p>
-            <h2 id="controls-title">Simulator controls</h2>
+            <SectionHeading id="controls-title">Simulator controls</SectionHeading>
             <label className="switch">
               <span>Bike connected</span>
               <input

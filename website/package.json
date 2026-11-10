@@ -6,8 +6,9 @@
     "dev": "vite --host 127.0.0.1 --port 5173",
     "build": "node scripts/build.ts",
     "check": "tsc --noEmit",
-    "test": "node --test plugins/*.test.ts",
-    "lint": "oxlint src plugins scripts vite.config.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "oxlint src plugins scripts vite.config.ts vitest.config.ts",
     "format": "oxfmt --write --ignore-path .oxfmtignore .",
     "format:check": "oxfmt --check --ignore-path .oxfmtignore ."
   },
@@ -31,6 +32,7 @@
     "tailwindcss": "4.3.5",
     "typescript": "7.0.2",
     "vite": "8.3.6",
+    "vitest": "5.1.0",
     "zod": "4.6.7"
   },
   "engines": {

@@ -45,30 +45,21 @@
     --cyan: #63d9e5;
     --gold: #f3ce45;
     --header: 70px;
-    /* A small, static texture tile; no overlay above content or animations. */
-    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cpath fill='%23fff' opacity='.09' filter='url(%23n)' d='M0 0h180v180H0z'/%3E%3C/svg%3E");
   }
 }
 
 @layer components {
-  body,
-  .site-header,
-  .sidebar,
-  .tool-navigation,
-  .intro-card,
-  .supported-section,
-  .controls,
-  .install-card {
-    background-image: var(--grain);
-  }
-
   .eyebrow,
   .card-number,
-  .hero-tags,
-  .nav-group > span,
-  .page-toc > span,
-  .install-card-heading,
-  figcaption {
+  .hero-tags {
     font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  }
+
+  .site-header .app-primary-nav a {
+    padding-block: 23px;
+    border-bottom: 2px solid transparent;
+  }
+  .site-header .app-primary-nav a[aria-current="page"] {
+    border-bottom-color: var(--cyan);
   }
 }

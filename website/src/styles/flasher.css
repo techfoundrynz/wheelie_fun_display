@@ -2,7 +2,7 @@
   .flasher-page {
     --esp-tools-button-color: var(--cyan);
     --esp-tools-button-text-color: #080b0e;
-    --esp-tools-button-border-radius: 3px;
+    --esp-tools-button-border-radius: 6px;
     --md-sys-color-primary: var(--cyan);
     --md-sys-color-on-primary: #080b0e;
     --md-sys-color-surface: var(--surface);
@@ -44,9 +44,8 @@
   .install-card {
     padding: 32px;
     border: 1px solid var(--line);
-    border-radius: 3px;
+    border-radius: 10px;
     background-color: var(--surface);
-    box-shadow: 0 20px 70px #0003;
   }
   .install-card-heading {
     display: flex;

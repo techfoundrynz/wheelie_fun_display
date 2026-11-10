@@ -13,6 +13,7 @@
     "lint": "corepack pnpm --dir website lint",
     "format": "corepack pnpm --dir website format",
     "format:check": "corepack pnpm --dir website format:check",
-    "test:docs": "corepack pnpm --dir website test"
+    "test:docs": "corepack pnpm --dir website test",
+    "test:docs:watch": "corepack pnpm --dir website test:watch"
   }
 }

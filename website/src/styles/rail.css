@@ -1,0 +1,85 @@
+@layer components {
+  :root :is(.hero-copy, .article-header, .flasher-intro, .simulator-main > .intro) {
+    border-left: 3px solid var(--cyan);
+    padding-left: 22px;
+  }
+  :root .intro-card {
+    border-left: 3px solid var(--line);
+    border-top: 0;
+    margin-block: 12px;
+    background: var(--surface);
+    padding-inline: 18px;
+  }
+  :root .intro-card:hover {
+    border-left-color: var(--cyan);
+  }
+  :root .card-number {
+    color: var(--gold);
+  }
+  :root :is(.controls, .install-card) {
+    border-radius: 0;
+    border-left: 3px solid var(--cyan);
+  }
+
+  /* Short heading markers echo the main rail without framing every section. */
+  :root main h2 {
+    position: relative;
+    padding-inline-start: 17px;
+    font-size: clamp(22px, 2.1vw, 27px);
+    font-weight: 650;
+    line-height: 1.3;
+    letter-spacing: -0.5px;
+    text-wrap: balance;
+  }
+  :root main h2::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0.15em;
+    width: 3px;
+    height: 1em;
+    background: var(--cyan);
+  }
+  :root .md-content h2 {
+    margin-block: 48px 20px;
+    border-top: 1px solid var(--line);
+    padding-block-start: 24px;
+  }
+  :root .md-content h2::before {
+    top: calc(24px + 0.15em);
+  }
+  :root .guide-index-heading h2 {
+    font-size: 22px;
+  }
+
+  main h2 .heading-anchor {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin-inline-start: 8px;
+    border-radius: 4px;
+    color: var(--muted);
+    vertical-align: middle;
+    opacity: 0;
+    text-decoration: none;
+    transition: opacity 120ms;
+  }
+  .heading-anchor svg {
+    display: block;
+    flex-shrink: 0;
+  }
+  main h2:is(:hover, :focus-within) .heading-anchor {
+    opacity: 1;
+  }
+  main h2 .heading-anchor:hover {
+    color: var(--cyan);
+    background: var(--raised);
+  }
+  @media (hover: none) {
+    main h2 .heading-anchor {
+      opacity: 0.7;
+    }
+  }
+}

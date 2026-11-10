@@ -7,6 +7,13 @@
     "description": "Power up, choose an integration and connect your first bike."
   },
   {
+    "source": "docs/agents.md",
+    "route": "agents",
+    "title": "AI assistants",
+    "group": "Start here",
+    "description": "Ask an assistant to download firmware, help with USB installation or make a change."
+  },
+  {
     "source": "docs/user-guide.md",
     "route": "guide",
     "title": "Using the display",

@@ -116,9 +116,8 @@
   .controls {
     padding: 25px;
     border: 1px solid var(--line);
-    border-radius: 3px;
+    border-radius: 10px;
     background-color: var(--surface);
-    box-shadow: inset 0 2px #ffffff08;
   }
   .simulator-main button,
   .simulator-main select {
@@ -126,7 +125,7 @@
   }
   .simulator-main button {
     border: 1px solid #37646d;
-    border-radius: 3px;
+    border-radius: 6px;
     background: var(--cyan);
     color: var(--bg);
     padding: 10px 13px;

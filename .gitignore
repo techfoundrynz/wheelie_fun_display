@@ -22,3 +22,4 @@ website/.output/
 website/src/routeTree.gen.ts
 node_modules/
 website/.github/skills/
+website/.vitest/

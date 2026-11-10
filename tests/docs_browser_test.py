@@ -199,6 +199,31 @@ def browser_checks(site: Path, executable: str | None, output: Path, base_path: 
             )
             # The tools are React routes and the single WASM platform survives SPA navigation.
             page.set_viewport_size({"width": 1440, "height": 1050})
+            page.goto(url + "getting-started/", wait_until="networkidle")
+            page.evaluate(
+                """() => {
+                    window.anchorTransitions = 0;
+                    const original = document.startViewTransition.bind(document);
+                    document.startViewTransition = (...args) => {
+                        window.anchorTransitions++;
+                        return original(...args);
+                    };
+                }"""
+            )
+            heading = page.locator(".md-content h2").first
+            anchor = heading.locator(".heading-anchor")
+            heading.hover()
+            anchor.click()
+            page.wait_for_function("location.hash === '#what-you-need'")
+            page.wait_for_timeout(250)
+            assert page.evaluate("window.anchorTransitions") == 0, (
+                "Section links must scroll without a page-transition snapshot"
+            )
+            anchor.focus()
+            page.wait_for_function(
+                "getComputedStyle(document.activeElement).opacity === '1'"
+            )
+            assert anchor.evaluate("el => getComputedStyle(el).opacity") == "1"
             page.goto(url, wait_until="networkidle")
             page.evaluate(
                 "window.docsNavigationToken = {}; window.docsHeader = document.querySelector('.site-header'); window.docsFooter = document.querySelector('.app-footer')"
@@ -219,7 +244,9 @@ def browser_checks(site: Path, executable: str | None, output: Path, base_path: 
             page.locator(".site-header").get_by_role(
                 "link", name="Documentation", exact=True
             ).click()
-            page.get_by_role("heading", name="Wheelie Fun Display", exact=True).wait_for()
+            page.get_by_role(
+                "heading", name="Wheelie Fun Display", exact=True
+            ).wait_for()
             page.locator(".site-header").get_by_role(
                 "link", name="Simulator", exact=True
             ).click()

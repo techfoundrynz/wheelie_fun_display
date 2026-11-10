@@ -35,9 +35,12 @@ pnpm check
 pnpm lint
 pnpm format:check
 pnpm test
+pnpm test:watch
 ```
 
 The build requires the generated screenshot manifest and preserves the simulator engine, installer catalog/firmware and CI gallery. It generates the route tree before TypeScript checking. `pnpm format` applies Oxfmt; `pnpm lint` runs Oxlint. The CI workflow uses these same checks.
+
+TypeScript tests use Vitest with a separate `vitest.config.ts`; app build plugins are not loaded for unit tests. `pnpm test` runs once and `pnpm test:watch` watches for changes. Add tests under `src` or `plugins`. Browser acceptance checks continue to use the existing Playwright scripts.
 
 The generated artifact works at both `/` and `/wheelie_fun_display/`. Keep route metadata and relative asset handling intact when adding pages. Browser acceptance checks cover both paths, static HTML links, responsive navigation, device-tool behavior and the isolated PR preview.
 
