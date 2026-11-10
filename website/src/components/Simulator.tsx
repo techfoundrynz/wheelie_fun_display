@@ -84,11 +84,11 @@ export function Simulator({ active }: { active: boolean }) {
         tabIndex={-1}
       >
         <section className="intro">
-          <p className="eyebrow">TRY THE DISPLAY</p>
-          <h1>Your ride, on screen.</h1>
+          <p className="eyebrow">BROWSER SIMULATOR</p>
+          <h1>Display simulator</h1>
           <p>
             The same Slint interface and software renderer as the device, running in your browser.
-            Touch, drag and swipe to explore.
+            Use the touchscreen controls below to test the interface.
           </p>
           <div className="notice">
             <span className="dot"></span>
@@ -160,7 +160,7 @@ export function Simulator({ active }: { active: boolean }) {
           </section>
           <aside inert={!ready} className="controls" aria-labelledby="controls-title">
             <p className="eyebrow">SIMULATED HARDWARE</p>
-            <h2 id="controls-title">Set the scene</h2>
+            <h2 id="controls-title">Simulator controls</h2>
             <label className="switch">
               <span>Bike connected</span>
               <input

@@ -36,7 +36,7 @@
     color: var(--muted);
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 10px;
+    border-radius: 3px;
     padding: 13px 16px;
   }
   .dot {
@@ -116,8 +116,9 @@
   .controls {
     padding: 25px;
     border: 1px solid var(--line);
-    border-radius: 18px;
-    background: linear-gradient(145deg, var(--surface), #0c141b);
+    border-radius: 3px;
+    background-color: var(--surface);
+    box-shadow: inset 0 2px #ffffff08;
   }
   .simulator-main button,
   .simulator-main select {
@@ -125,7 +126,7 @@
   }
   .simulator-main button {
     border: 1px solid #37646d;
-    border-radius: 8px;
+    border-radius: 3px;
     background: var(--cyan);
     color: var(--bg);
     padding: 10px 13px;

@@ -61,8 +61,8 @@ export function Flasher() {
       tabIndex={-1}
     >
       <section className="flasher-intro">
-        <p className="eyebrow">INSTALL FIRMWARE</p>
-        <h1>Ready for your next ride.</h1>
+        <p className="eyebrow">USB INSTALLATION</p>
+        <h1>Install firmware</h1>
         <p>
           Connect your display with a USB data cable, choose its model, and install Wheelie Fun
           Display from your browser.
@@ -158,7 +158,7 @@ export function Flasher() {
         </section>
         <section className="install-guide" aria-labelledby="before-title">
           <p className="eyebrow">BEFORE YOU CONNECT</p>
-          <h2 id="before-title">A few simple steps.</h2>
+          <h2 id="before-title">Installation steps</h2>
           <ol className="install-steps">
             <li>
               <span>1</span>

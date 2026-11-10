@@ -5,16 +5,16 @@ export function Home() {
       <section className="hero">
         <div className="hero-copy">
           <div className="eyebrow">
-            <span className="status-dot"></span> Touch display · VESC integrations
+            <span className="status-dot"></span> Documentation
           </div>
           <h1>
-            Your ride.
+            Wheelie Fun
             <br />
-            <span>A clearer view.</span>
+            <span>Display</span>
           </h1>
           <p>
-            A responsive bike display for Wheelie Fun Bike, wheel-e and VESC. Set up your display,
-            connect your bike and learn the everyday controls.
+            Setup and operating instructions for the Wheelie Fun Display, with connection guides for
+            Wheelie Fun Bike, wheel-e and VESC.
           </p>
           <div className="hero-actions">
             <Link className="button primary" to="/install/">
@@ -31,7 +31,9 @@ export function Home() {
           </div>
         </div>
         <figure className="hero-preview">
-          <div className="preview-glow"></div>
+          <div className="preview-backplate" aria-hidden="true">
+            <span>WFD / DISPLAY SYSTEM</span>
+          </div>
           <picture>
             <source
               media="(prefers-reduced-motion: reduce)"
@@ -45,7 +47,7 @@ export function Home() {
               alt="Portrait ride dashboard with animated simulated speed and telemetry"
             />
           </picture>
-          <figcaption>Shared UI preview · simulated values</figcaption>
+          <figcaption>Display preview · simulated values</figcaption>
         </figure>
       </section>
       <section className="intro-cards" aria-label="Choose a guide">
@@ -60,9 +62,9 @@ export function Home() {
         </Link>
         <Link className="intro-card" to="/guide/">
           <span className="card-number">02 / RIDE</span>
-          <h2>Know your display</h2>
+          <h2>Use the display</h2>
           <p>Learn Ride, Stats and Tune, change display settings and use the touchscreen.</p>
-          <span className="card-link">Explore the interface →</span>
+          <span className="card-link">Read the user guide →</span>
         </Link>
         <Link className="intro-card" to="/connections/">
           <span className="card-number">03 / CONNECT</span>
@@ -76,18 +78,14 @@ export function Home() {
       </section>
       <section className="landscape-section">
         <div>
-          <div className="eyebrow">Made for the screen you have</div>
-          <h2>
-            Portrait or landscape.
-            <br />
-            One familiar interface.
-          </h2>
+          <div className="eyebrow">Screen orientation</div>
+          <h2>Portrait and landscape</h2>
           <p>
             Choose portrait or landscape in Settings to match your mount. The screen and touch
             controls rotate together.
           </p>
           <Link className="text-link" to="/guide/">
-            See everyday controls →
+            Read the display controls →
           </Link>
         </div>
         <figure>
@@ -101,8 +99,8 @@ export function Home() {
         </figure>
       </section>
       <section className="supported-section">
-        <div className="eyebrow">Start with supported hardware</div>
-        <h2>Two displays. One shared interface.</h2>
+        <div className="eyebrow">Hardware</div>
+        <h2>Supported displays</h2>
         <p>
           Waveshare ESP32-S3 AMOLED 2.06 pairs a 410 × 502 CO5300 panel with FT3168 touch. GUITION
           JC4880P443C uses a 480 × 800 ST7701S panel, GT911 touch and ESP32-P4 with a C6 radio

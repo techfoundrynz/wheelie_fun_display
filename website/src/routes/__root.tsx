@@ -18,7 +18,7 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width,initial-scale=1" },
       { name: "theme-color", content: "#080b0e" },
-      { title: "Wheelie Fun Display — Ride, connect, make it yours" },
+      { title: "Wheelie Fun Display · Documentation" },
       {
         name: "description",
         content: "Guides, simulator and development notes for the VESC bike display.",
@@ -51,7 +51,7 @@ function RootDocument() {
       <head>
         <style>
           {
-            "html{background:#080b0e;color-scheme:dark}body{margin:0;background:#080b0e;color:#edf3f5}"
+            "html{background:#080b0e;color-scheme:dark}body{margin:0;background-color:#080b0e;color:#edf3f5}"
           }
         </style>
         <meta name="docs-root" content={root} />

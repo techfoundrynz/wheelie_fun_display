@@ -219,7 +219,7 @@ def browser_checks(site: Path, executable: str | None, output: Path, base_path: 
             page.locator(".site-header").get_by_role(
                 "link", name="Documentation", exact=True
             ).click()
-            page.get_by_role("heading", name="Your ride. A clearer view.").wait_for()
+            page.get_by_role("heading", name="Wheelie Fun Display", exact=True).wait_for()
             page.locator(".site-header").get_by_role(
                 "link", name="Simulator", exact=True
             ).click()
