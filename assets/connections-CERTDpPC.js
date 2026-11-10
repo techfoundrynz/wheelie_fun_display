@@ -1,5 +1,5 @@
 var e={source:`docs/connections.md`,route:`connections`,title:`Connections & proxy`,group:`For riders`,description:`BLE, CAN, UART and your phone's transparent VESC connection.`,body:`<p>The display needs one connection to the bike. You can also connect a phone app through the display by enabling its <strong>BLE proxy</strong>: the display acts as a bridge between your phone and the bike.</p>
-<h2 id="choose-a-connection">Choose a connection</h2>
+<h2 id="choose-a-connection">Choose a connection<a class="heading-anchor" href="#choose-a-connection" aria-label="Link to Choose a connection" title="Link to Choose a connection"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <div class="table-scroll" tabindex="0"><table>
 <thead>
 <tr>
@@ -23,7 +23,7 @@ var e={source:`docs/connections.md`,route:`connections`,title:`Connections & pro
 </tbody>
 </table></div>
 <p>Choose the interface under <strong>Settings &gt; Vehicle</strong>. The vehicle integration (Auto, WFB, wheel-e or VESC) is a separate choice in that section. Leave integration at <strong>Auto</strong> for automatic detection.</p>
-<h2 id="bluetooth-to-the-bike">Bluetooth to the bike</h2>
+<h2 id="bluetooth-to-the-bike">Bluetooth to the bike<a class="heading-anchor" href="#bluetooth-to-the-bike" aria-label="Link to Bluetooth to the bike" title="Link to Bluetooth to the bike"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <ol>
 <li>Power the bike and make its Bluetooth interface available.</li>
 <li>Open <strong>Settings &gt; Vehicle</strong> and select the device. Recognizable bike names appear first; other compatible VESC Bluetooth devices are still listed.</li>
@@ -32,17 +32,17 @@ var e={source:`docs/connections.md`,route:`connections`,title:`Connections & pro
 </ol>
 <p><img src="../assets/images/ble-pairing.png" alt="Bike Bluetooth pairing prompt"></p>
 <p>The display remembers the verified bike and integration. If the bike's Bluetooth PIN changes, pair again using its new PIN. Your display's screen-lock code is separate.</p>
-<h2 id="finding-the-main-controller">Finding the main controller</h2>
+<h2 id="finding-the-main-controller">Finding the main controller<a class="heading-anchor" href="#finding-the-main-controller" aria-label="Link to Finding the main controller" title="Link to Finding the main controller"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>The display searches the directly connected controller and controllers reachable over CAN. It selects the first compatible motor controller; a BMS is not selected as the motor controller.</p>
 <p>With <strong>Auto</strong>, it checks for WFB and wheel-e packages before falling back to standard VESC readings. Selecting WFB or wheel-e explicitly requires that package to respond. A device name does not enable package-specific features.</p>
 <p>Check discovery status under <strong>Settings &gt; Vehicle</strong>. Use <strong>Find main controller again</strong> to repeat discovery when the link is available. If a phone connected before discovery finished, disconnect the phone first.</p>
-<h2 id="native-can">Native CAN</h2>
+<h2 id="native-can">Native CAN<a class="heading-anchor" href="#native-can" aria-label="Link to Native CAN" title="Link to Native CAN"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>CAN appears only when the firmware has both CAN pins configured. The default bus speed is <strong>500 kbit/s</strong> and the display's default node ID is <strong>254</strong>. The bus speed must match the bike, and the display ID must be unique on that bus.</p>
 <p>Use a CAN transceiver and the wiring for your exact board. The motor-controller ID is discovered automatically. For the GUITION breakout, see <a href="../hardware/guition-43/can-breakout/">connector pinouts and setup</a>. For custom wiring, see <a href="../building/#configure-an-optional-wired-interface">wired-interface build configuration</a>.</p>
-<h2 id="uart">UART</h2>
+<h2 id="uart">UART<a class="heading-anchor" href="#uart" aria-label="Link to UART" title="Link to UART"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>UART appears only when both UART pins are configured in the firmware. The default baud rate is <strong>115200</strong> and must match the bike.</p>
 <p>Use compatible logic levels, connect TX to RX and RX to TX as required, and share a signal ground. Do not guess GPIOs from the screen model. Vehicle UART normally uses port 1; port 0 is reserved for the console. See <a href="../building/#configure-an-optional-wired-interface">wired-interface build configuration</a>.</p>
-<h2 id="connect-a-phone-through-the-display">Connect a phone through the display</h2>
+<h2 id="connect-a-phone-through-the-display">Connect a phone through the display<a class="heading-anchor" href="#connect-a-phone-through-the-display" aria-label="Link to Connect a phone through the display" title="Link to Connect a phone through the display"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <ol>
 <li>Unlock the display and enable <strong>Settings &gt; Phone connection &gt; BLE proxy</strong>. It is off by default.</li>
 <li>In your phone app, find the display using the name below.</li>
@@ -69,11 +69,11 @@ var e={source:`docs/connections.md`,route:`connections`,title:`Connections & pro
 </tbody>
 </table></div>
 <p>Leaving WFB restores your saved name. The display's name does not copy the bike's Bluetooth name.</p>
-<h2 id="while-the-phone-is-connected">While the phone is connected</h2>
+<h2 id="while-the-phone-is-connected">While the phone is connected<a class="heading-anchor" href="#while-the-phone-is-connected" aria-label="Link to While the phone is connected" title="Link to While the phone is connected"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>The green phone icon beside the cog indicates an authorized phone connection. Read-only ride data normally continues. Busy phone traffic or a phone firmware transfer can temporarily pause display readings. Tuning and display firmware updates wait until the phone disconnects.</p>
 <p>The phone selects its own CAN controller; it does not automatically use the display's selected controller. Readings from another controller do not replace the display's bike readings. The bridge works with BLE, UART or CAN on the bike side.</p>
 <p>The proxy pauses while the screen is locked. With a configured lock, unlock locally after each display restart before connecting the phone. Without a screen lock, the enabled proxy has no PIN requirement.</p>
-<h2 id="pairing-and-changed-pins">Pairing and changed PINs</h2>
+<h2 id="pairing-and-changed-pins">Pairing and changed PINs<a class="heading-anchor" href="#pairing-and-changed-pins" aria-label="Link to Pairing and changed PINs" title="Link to Pairing and changed PINs"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>Changing or removing the screen-lock credential disconnects phone sessions and clears remembered phone pairings on the display. If the phone still remembers the old pairing, forget the display in the phone's Bluetooth settings and pair again.</p>
 <p>Changing only the entry mode between PIN and pattern preserves pairings for the same credential. The bike's own Bluetooth pairing remains separate.</p>
 <p>Phone pairing and wired operation still need validation with your exact hardware and app. <a href="../troubleshooting/">Troubleshooting</a> covers common connection problems; <a href="../bluetooth/">Bluetooth internals</a> and <a href="../transports/">transport internals</a> explain implementation details.</p>

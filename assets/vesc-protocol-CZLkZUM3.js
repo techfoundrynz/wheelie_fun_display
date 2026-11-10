@@ -21,7 +21,7 @@ var e={source:`docs/wheelie-vesc-comms-api.md`,route:`reference/vesc-protocol`,t
 require device verification before enabling writes. Later app or controller
 versions may change the protocol behavior documented here.</p>
 <hr>
-<h2 id="1-package-compatibility">1. Package compatibility</h2>
+<h2 id="1-package-compatibility">1. Package compatibility<a class="heading-anchor" href="#1-package-compatibility" aria-label="Link to 1. Package compatibility" title="Link to 1. Package compatibility"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>The app expects a compatible custom package to be installed on the controller;
 it does not provide a <code>.vescpkg</code> or controller firmware installation path.</p>
 <p>The app carries the custom-config schema described in §6. It can read and write
@@ -30,7 +30,7 @@ signatures with <code>"Package Version Unsupported or failed to get config"</cod
 <p>There is no supported Lisp source upload path. <code>COMM_LISP_PRINT</code> replies are
 explicitly discarded.</p>
 <hr>
-<h2 id="2-transport-ble">2. Transport — BLE</h2>
+<h2 id="2-transport-ble">2. Transport — BLE<a class="heading-anchor" href="#2-transport-ble" aria-label="Link to 2. Transport — BLE" title="Link to 2. Transport — BLE"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>The GATT profile is the standard VESC one:</p>
 <div class="table-scroll" tabindex="0"><table>
 <thead>
@@ -85,7 +85,7 @@ iOS declares the <code>bluetooth-central</code> background mode. There is a
 <code>VescBackgroundService</code> that keeps the connection alive under a foreground
 service.</p>
 <hr>
-<h2 id="3-framing-generatepacketpayload-canid">3. Framing — <code>generatePacket(payload, canId?)</code></h2>
+<h2 id="3-framing-generatepacketpayload-canid">3. Framing — <code>generatePacket(payload, canId?)</code><a class="heading-anchor" href="#3-framing-generatepacketpayload-canid" aria-label="Link to 3. Framing — generatePacket(payload, canId?)" title="Link to 3. Framing — generatePacket(payload, canId?)"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>Standard VESC serial framing:</p>
 <pre><code>short (len &lt;= 256):   0x02  len:u8       payload  crc16:u16be  0x03
 long  (len &gt;  256):   0x03  len:u16be    payload  crc16:u16be  0x03
@@ -120,7 +120,7 @@ Writers mirror these, plus <code>writeDouble32_Old</code> retained for compatibi
 (read a signed int, divide by scale). <code>readDouble32Auto</code> is the
 float32-packed-in-uint32 form.</p>
 <hr>
-<h2 id="4-packet-id-enum">4. Packet ID enum</h2>
+<h2 id="4-packet-id-enum">4. Packet ID enum<a class="heading-anchor" href="#4-packet-id-enum" aria-label="Link to 4. Packet ID enum" title="Link to 4. Packet ID enum"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>127 <code>COMM_*</code> IDs are defined. <strong>IDs 0–90 and 92–101 match upstream
 <code>bldc/datatypes.h</code> exactly.</strong> Beyond that this app targets a fork and the
 numbering diverges. Full table:</p>
@@ -675,7 +675,7 @@ keep-alive list).</li>
 <code>HW_TYPE_CUSTOM_MODULE = 2</code>, and the full upstream <code>FAULT_CODE_*</code> set
 (including <code>FAULT_CODE_FLASH_CORRUPTION</code>, <code>..._APP_CFG</code>, <code>..._MC_CFG</code>).</p>
 <hr>
-<h2 id="5-inbound-dispatch-processvescmessagepacketid-buffer">5. Inbound dispatch — <code>processVESCMessage(packetId, buffer)</code></h2>
+<h2 id="5-inbound-dispatch-processvescmessagepacketid-buffer">5. Inbound dispatch — <code>processVESCMessage(packetId, buffer)</code><a class="heading-anchor" href="#5-inbound-dispatch-processvescmessagepacketid-buffer" aria-label="Link to 5. Inbound dispatch — processVESCMessage(packetId, buffer)" title="Link to 5. Inbound dispatch — processVESCMessage(packetId, buffer)"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>Only these IDs are decoded; anything else logs <code>Unhandled packet type "N"</code>.</p>
 <div class="table-scroll" tabindex="0"><table>
 <thead>
@@ -951,7 +951,7 @@ u8[] uuid (remaining bytes)
 <h3 id="comm_ping_can-62-response"><code>COMM_PING_CAN</code> (62) response</h3>
 <p><code>u8[]</code> — one byte per CAN device ID found, length = buffer size.</p>
 <hr>
-<h2 id="6-custom-app-data-the-wfb-package-layer">6. Custom app data — the WFB package layer</h2>
+<h2 id="6-custom-app-data-the-wfb-package-layer">6. Custom app data — the WFB package layer<a class="heading-anchor" href="#6-custom-app-data-the-wfb-package-layer" aria-label="Link to 6. Custom app data — the WFB package layer" title="Link to 6. Custom app data — the WFB package layer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>This is the app-specific layer, carried inside <code>COMM_CUSTOM_APP_DATA</code> (36).</p>
 <pre><code>COMM_CUSTOM_APP_DATA  appId:u8  subCommand:u8  [payload…]
 </code></pre>
@@ -1266,7 +1266,7 @@ anything else → <code>OFF</code>.</p>
 <p><strong>LED type</strong>: <code>0 NONE</code>, <code>1 RGB</code>, <code>2 RGBW</code>, <code>3 EXTERNAL</code>.</p>
 <p><strong>Ride mode</strong>: <code>0 DutyCycle</code>, <code>1 Standard</code>.</p>
 <hr>
-<h2 id="7-custom-config-comm_get_custom_config-comm_set_custom_config">7. Custom config — <code>COMM_GET_CUSTOM_CONFIG</code> / <code>COMM_SET_CUSTOM_CONFIG</code></h2>
+<h2 id="7-custom-config-comm_get_custom_config-comm_set_custom_config">7. Custom config — <code>COMM_GET_CUSTOM_CONFIG</code> / <code>COMM_SET_CUSTOM_CONFIG</code><a class="heading-anchor" href="#7-custom-config-comm_get_custom_config-comm_set_custom_config" aria-label="Link to 7. Custom config — COMM_GET_CUSTOM_CONFIG / COMM_SET_CUSTOM_CONFIG" title="Link to 7. Custom config — COMM_GET_CUSTOM_CONFIG / COMM_SET_CUSTOM_CONFIG"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>The custom-config interface uses the local parameter schema.</p>
 <p><code>getFloatConf(buffer)</code> reads:</p>
 <pre><code>u8   (discarded)
@@ -1552,12 +1552,12 @@ and the remainder <code>number</code> except the five booleans
 <p><code>hw_name</code> carries the description "This is the VESC Logging and Communication
 Module."</p>
 <hr>
-<h2 id="8-client-command-scheduling">8. Client command scheduling</h2>
+<h2 id="8-client-command-scheduling">8. Client command scheduling<a class="heading-anchor" href="#8-client-command-scheduling" aria-label="Link to 8. Client command scheduling" title="Link to 8. Client command scheduling"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>Outbound commands are matched to responses through command callbacks. While
 callbacks are outstanding in serial command mode, the sender backs off in
 10 ms increments before writing the next command.</p>
 <hr>
-<h2 id="9-summary-of-defects-found">9. Summary of defects found</h2>
+<h2 id="9-summary-of-defects-found">9. Summary of defects found<a class="heading-anchor" href="#9-summary-of-defects-found" aria-label="Link to 9. Summary of defects found" title="Link to 9. Summary of defects found"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <div class="table-scroll" tabindex="0"><table>
 <thead>
 <tr>

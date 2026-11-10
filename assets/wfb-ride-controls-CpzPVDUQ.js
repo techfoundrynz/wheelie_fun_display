@@ -1,7 +1,7 @@
 var e={source:`docs/wheelie-ride-controls.md`,route:`reference/wfb-ride-controls`,title:`WFB ride controls`,group:`Reference`,description:`Control types, rider-facing ranges, presets and configuration limits.`,body:`<p>Reference for every user-facing control that changes how the bike rides: where
 it lives, what kind of control it is, and its exact label, range, step and
 default.</p>
-<h2 id="use-in-wheelie-fun-display">Use in Wheelie Fun Display</h2>
+<h2 id="use-in-wheelie-fun-display">Use in Wheelie Fun Display<a class="heading-anchor" href="#use-in-wheelie-fun-display" aria-label="Link to Use in Wheelie Fun Display" title="Link to Use in Wheelie Fun Display"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>This supplied reference informs the WFB tuning interface. The display uses
 Response, Button, Throttle and Horn groups, with discrete sliders for
 rider adjustments, a button-action picker and toggles. The Advanced section,
@@ -21,7 +21,7 @@ transmitted change for them.</p>
 replace a bike's reported configuration on connection. See the
 <a href="../../guide/#tune">display user guide</a> for current interaction behaviour.</p>
 <hr>
-<h2 id="1-where-the-controls-live">1. Where the controls live</h2>
+<h2 id="1-where-the-controls-live">1. Where the controls live<a class="heading-anchor" href="#1-where-the-controls-live" aria-label="Link to 1. Where the controls live" title="Link to 1. Where the controls live"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>Five editors, each a separate modal with its own save behaviour.</p>
 <div class="table-scroll" tabindex="0"><table>
 <thead>
@@ -68,7 +68,7 @@ replace a bike's reported configuration on connection. See the
 <p>All five are translucent full-screen modals with a tap-to-dismiss scrim, a
 close button, and hardware-back wired to the same close guard.</p>
 <hr>
-<h2 id="2-ride-mode">2. Ride Mode</h2>
+<h2 id="2-ride-mode">2. Ride Mode<a class="heading-anchor" href="#2-ride-mode" aria-label="Link to 2. Ride Mode" title="Link to 2. Ride Mode"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p><strong>Title:</strong> "Select a Ride Mode"</p>
 <p>Four tiles. Selecting one applies immediately — no save step. The modal shows
 a loading state while the write is in flight.</p>
@@ -168,7 +168,7 @@ displays a fifth, non-selectable state:</p>
 <p>This is how the dashboard shows the current mode without the firmware
 reporting a mode ID.</p>
 <hr>
-<h2 id="3-custom-tuning">3. Custom Tuning</h2>
+<h2 id="3-custom-tuning">3. Custom Tuning<a class="heading-anchor" href="#3-custom-tuning" aria-label="Link to 3. Custom Tuning" title="Link to 3. Custom Tuning"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p><strong>Title:</strong> "Custom Tuning"</p>
 <p>A preset shortcut row, then four discrete sliders in two titled groups.</p>
 <h3 id="preset-shortcuts">Preset shortcuts</h3>
@@ -278,7 +278,7 @@ UI; failure shows an alert: "Failed to save custom tuning settings."</p>
 Cancel · <strong>Discard Changes</strong> · Save</p>
 </blockquote>
 <hr>
-<h2 id="4-features">4. Features</h2>
+<h2 id="4-features">4. Features<a class="heading-anchor" href="#4-features" aria-label="Link to 4. Features" title="Link to 4. Features"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>The largest editor: a modal with three tabs. Each tab has its own
 <strong>"Reset to Defaults"</strong> button affecting only that tab's fields. A single save
 commits everything regardless of which tab is open.</p>
@@ -476,7 +476,7 @@ discard them?
 Cancel · <strong>Discard Changes</strong></p>
 </blockquote>
 <hr>
-<h2 id="5-speed-limit">5. Speed Limit</h2>
+<h2 id="5-speed-limit">5. Speed Limit<a class="heading-anchor" href="#5-speed-limit" aria-label="Link to 5. Speed Limit" title="Link to 5. Speed Limit"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>A single slider with a stop past the top end.</p>
 <div class="table-scroll" tabindex="0"><table>
 <thead>
@@ -518,7 +518,7 @@ confirmation for 2 seconds. Failure shows <strong>"Save Failed" — "Failed to s
 speed limit settings."</strong> with an <code>Ok</code> button. Closing with unsaved edits raises
 the same two-option discard prompt as the Features editor.</p>
 <hr>
-<h2 id="6-wheelie-mode">6. Wheelie Mode</h2>
+<h2 id="6-wheelie-mode">6. Wheelie Mode<a class="heading-anchor" href="#6-wheelie-mode" aria-label="Link to 6. Wheelie Mode" title="Link to 6. Wheelie Mode"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p><strong>Title:</strong> "Select a Wheelie Mode"</p>
 <div class="table-scroll" tabindex="0"><table>
 <thead>
@@ -564,7 +564,7 @@ mode does not currently change any tuning on the bike.</p>
 P, brake rate P and lift-resistance rate P — are part of the bike's stored
 configuration but have no control surface in the app.</p>
 <hr>
-<h2 id="7-stored-configuration-parameters">7. Stored configuration parameters</h2>
+<h2 id="7-stored-configuration-parameters">7. Stored configuration parameters<a class="heading-anchor" href="#7-stored-configuration-parameters" aria-label="Link to 7. Stored configuration parameters" title="Link to 7. Stored configuration parameters"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>The parameters below live in the bike's persisted configuration. Where a
 control exists, it is named; the rest are configuration-only in this version.</p>
 <h3 id="wheelie-pid">Wheelie PID</h3>
@@ -772,7 +772,7 @@ function (Wheelie) differ from the stored configuration defaults listed here
 (19 mph, Horn); the stored values take effect on a bike that has never been
 configured from the app.</p>
 <hr>
-<h2 id="8-interaction-summary">8. Interaction summary</h2>
+<h2 id="8-interaction-summary">8. Interaction summary<a class="heading-anchor" href="#8-interaction-summary" aria-label="Link to 8. Interaction summary" title="Link to 8. Interaction summary"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p><strong>Three save models:</strong></p>
 <ol>
 <li><strong>Immediate</strong> — Ride Mode presets apply on tap.</li>

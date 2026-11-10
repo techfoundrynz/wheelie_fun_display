@@ -1,4 +1,4 @@
-var e={source:`TODO.md`,route:`todo`,title:`Planned work`,group:`For developers`,description:`Implementation and hardware acceptance tasks for contributors.`,body:`<h2 id="controller-and-phone-acceptance">Controller and phone acceptance</h2>
+var e={source:`TODO.md`,route:`todo`,title:`Planned work`,group:`For developers`,description:`Implementation and hardware acceptance tasks for contributors.`,body:`<h2 id="controller-and-phone-acceptance">Controller and phone acceptance<a class="heading-anchor" href="#controller-and-phone-acceptance" aria-label="Link to Controller and phone acceptance" title="Link to Controller and phone acceptance"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <ul>
 <li>[ ] Test WFB and wheel-e discovery and telemetry against the intended controller firmware; compare speed, voltage and angle with the phone app.</li>
 <li>[ ] Confirm the inferred WFB telemetry tail and live command encodings, including LOCK (12), against hardware. Check lock/unlock acknowledgement and persistence across power cycles.</li>
@@ -7,7 +7,7 @@ var e={source:`TODO.md`,route:`todo`,title:`Planned work`,group:`For developers`
 <li>[ ] Confirm proxy bond revocation after bike PIN changes/removal, PIN persistence, boot unlock and locked-screen timeout/wake behavior.</li>
 <li>[ ] Commission CAN/UART wiring with the required transceiver, controller discovery and multiple-controller routing.</li>
 </ul>
-<h2 id="device-and-release-acceptance">Device and release acceptance</h2>
+<h2 id="device-and-release-acceptance">Device and release acceptance<a class="heading-anchor" href="#device-and-release-acceptance" aria-label="Link to Device and release acceptance" title="Link to Device and release acceptance"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <ul>
 <li>[ ] Soak touch, scrolling and all four orientations with concurrent radio traffic; investigate intermittent idle touch I2C NACKs.</li>
 <li>[ ] On the GUITION P4 board, verify DSI scanout, PPA rotation, PSRAM cache synchronization and framebuffer handoff under sustained load; check all four GT911 touch mappings and inspect logs for underruns or tearing.</li>
@@ -18,7 +18,7 @@ var e={source:`TODO.md`,route:`todo`,title:`Planned work`,group:`For developers`
 <li>[ ] Install each supported target through the browser USB installer on its actual board; check chip/revision selection, complete factory layout, boot, touch and documented settings-reset behavior. Keep the P4 C6 provisioning check separate from the P4 application install.</li>
 <li>[ ] Confirm the GitHub Pages deployment and generated screenshots on the default branch.</li>
 </ul>
-<h2 id="protocol-coverage">Protocol coverage</h2>
+<h2 id="protocol-coverage">Protocol coverage<a class="heading-anchor" href="#protocol-coverage" aria-label="Link to Protocol coverage" title="Link to Protocol coverage"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <ul>
 <li>[ ] Resolve signature, argument order and scaling uncertainties in the supplied protocol notes before enabling persisted tuning or additional feature/horn commands.</li>
 </ul>

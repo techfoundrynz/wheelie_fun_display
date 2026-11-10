@@ -1,7 +1,7 @@
 var e={source:`docs/wheelie-wfb-bike-layer.md`,route:`reference/wfb-bike-layer`,title:`WFB bike layer`,group:`Reference`,description:`WFB command layouts and configuration details.`,body:`<p>Companion to <code>wheelie-vesc-comms-api.md</code>. Everything here is the vendor-specific
 layer that sits on top of <code>COMM_CUSTOM_APP_DATA</code>.</p>
 <hr>
-<h2 id="1-frame-shape">1. Frame shape</h2>
+<h2 id="1-frame-shape">1. Frame shape<a class="heading-anchor" href="#1-frame-shape" aria-label="Link to 1. Frame shape" title="Link to 1. Frame shape"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>Every bike command is one VESC packet:</p>
 <pre><code>0x02  len  36  102  &lt;sub&gt;  &lt;payload…&gt;  crc16  0x03
        │    │   │     │
@@ -22,7 +22,7 @@ board even though it understands the config format.</p>
 <p>Both prepend <code>[COMM_FORWARD_CAN, canId]</code> automatically when
 <code>_primaryCANDeviceId</code> is set.</p>
 <hr>
-<h2 id="2-sub-command-100-bike_ride_configure">2. Sub-command 100 — <code>BIKE_RIDE_CONFIGURE</code></h2>
+<h2 id="2-sub-command-100-bike_ride_configure">2. Sub-command 100 — <code>BIKE_RIDE_CONFIGURE</code><a class="heading-anchor" href="#2-sub-command-100-bike_ride_configure" aria-label="Link to 2. Sub-command 100 — BIKE_RIDE_CONFIGURE" title="Link to 2. Sub-command 100 — BIKE_RIDE_CONFIGURE"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>Sets the four motor-response parameters as a <strong>3-byte packed payload</strong>. Full
 frame is 6 bytes of payload:</p>
 <pre><code>36  102  100  b0  b1  b2
@@ -182,7 +182,7 @@ the firmware reporting a mode ID.</p>
 resolved values and <code>commandBytes</code>, then <code>"Successfully sent ride mode configuration for &lt;name&gt;"</code>. <code>"Cannot select unknown mode"</code> throws if the
 <code>unknown</code> pseudo-mode is somehow selected.</p>
 <hr>
-<h2 id="3-sub-command-101-bike_wheelie_configure">3. Sub-command 101 — <code>BIKE_WHEELIE_CONFIGURE</code></h2>
+<h2 id="3-sub-command-101-bike_wheelie_configure">3. Sub-command 101 — <code>BIKE_WHEELIE_CONFIGURE</code><a class="heading-anchor" href="#3-sub-command-101-bike_wheelie_configure" aria-label="Link to 3. Sub-command 101 — BIKE_WHEELIE_CONFIGURE" title="Link to 3. Sub-command 101 — BIKE_WHEELIE_CONFIGURE"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p><strong>Defined but not transmitted by app version 1.0.0.</strong> A supported payload
 encoding for this sub-command is not established here.</p>
 <p>The associated UI exists but is largely disabled. <code>WHEELIE_MODES</code>:</p>
@@ -232,7 +232,7 @@ planned; that remains unconfirmed.</p>
 <code>COMM_SET_CUSTOM_CONFIG</code> path instead (the <code>WHEELIE_KP*</code> / <code>MAHONY_KP</code> params in
 §5), not through sub-command 101.</p>
 <hr>
-<h2 id="4-sub-command-102-bike_feature_configure">4. Sub-command 102 — <code>BIKE_FEATURE_CONFIGURE</code></h2>
+<h2 id="4-sub-command-102-bike_feature_configure">4. Sub-command 102 — <code>BIKE_FEATURE_CONFIGURE</code><a class="heading-anchor" href="#4-sub-command-102-bike_feature_configure" aria-label="Link to 4. Sub-command 102 — BIKE_FEATURE_CONFIGURE" title="Link to 4. Sub-command 102 — BIKE_FEATURE_CONFIGURE"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>The big one: <strong>13 payload bytes</strong>, all scalar, no length prefix. Full frame
 payload is 16 bytes.</p>
 <pre><code>36  102  102  b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12
@@ -439,7 +439,7 @@ it's carried by a different path or the feature is incomplete. Its default,
 internal value into a 0–10 display scale; <code>snapWheelLiftResistance</code> quantises
 user input to the 0.3 step.</p>
 <hr>
-<h2 id="5-sub-command-103-bike_speed_limit_configure">5. Sub-command 103 — <code>BIKE_SPEED_LIMIT_CONFIGURE</code></h2>
+<h2 id="5-sub-command-103-bike_speed_limit_configure">5. Sub-command 103 — <code>BIKE_SPEED_LIMIT_CONFIGURE</code><a class="heading-anchor" href="#5-sub-command-103-bike_speed_limit_configure" aria-label="Link to 5. Sub-command 103 — BIKE_SPEED_LIMIT_CONFIGURE" title="Link to 5. Sub-command 103 — BIKE_SPEED_LIMIT_CONFIGURE"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>Single-byte payload:</p>
 <pre><code>36  102  103  &lt;mph&gt;
 </code></pre>
@@ -462,7 +462,7 @@ logs <code>"Failed to execute BIKE_SPEED_LIMIT_CONFIGURE command:"</code> and sh
 <code>DEFAULT_SPEED_LIMIT</code> is <strong>20</strong> — the firmware default and the app's UI default
 disagree by 1.</p>
 <hr>
-<h2 id="6-bike_config-the-full-custom-config-profile">6. <code>bike_config</code> — the full custom-config profile</h2>
+<h2 id="6-bike_config-the-full-custom-config-profile">6. <code>bike_config</code> — the full custom-config profile<a class="heading-anchor" href="#6-bike_config-the-full-custom-config-profile" aria-label="Link to 6. bike_config — the full custom-config profile" title="Link to 6. bike_config — the full custom-config profile"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>Read with <code>COMM_GET_CUSTOM_CONFIG</code> (93), written with <code>COMM_SET_CUSTOM_CONFIG</code>
 (95). This is a separate channel from the 100–103 sub-commands: the sub-commands
 are live/volatile pushes, the custom config is the persisted profile.</p>
@@ -814,7 +814,7 @@ button's configured angle instead of <code>anti_loop_angle</code>.</p>
 <p><code>horn_frequency</code>'s 200–1000 Hz range brackets the note table's 208–988 Hz
 exactly.</p>
 <hr>
-<h2 id="7-telemetry-for-the-bike-screen">7. Telemetry for the bike screen</h2>
+<h2 id="7-telemetry-for-the-bike-screen">7. Telemetry for the bike screen<a class="heading-anchor" href="#7-telemetry-for-the-bike-screen" aria-label="Link to 7. Telemetry for the bike screen" title="Link to 7. Telemetry for the bike screen"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <p>Two loops, both driven off <code>loopTime</code> reported by <code>COMM_GET_VALUES_SETUP</code>:</p>
 <pre><code>bikeRTDataInterval   = loopTime
 bikeSlowDataInterval = max(loopTime, 1000)
@@ -833,7 +833,7 @@ derives <code>batteryPercent</code> (rounded to 2 dp), <code>batteryVolts</code>
 <code>wattHoursRemaining</code> for the dashboard.</p>
 <p>Field layout of the <code>GET_ALL_DATA</code> response is in the main document, §6.</p>
 <hr>
-<h2 id="8-bike-layer-issues">8. Bike-layer issues</h2>
+<h2 id="8-bike-layer-issues">8. Bike-layer issues<a class="heading-anchor" href="#8-bike-layer-issues" aria-label="Link to 8. Bike-layer issues" title="Link to 8. Bike-layer issues"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg></a></h2>
 <div class="table-scroll" tabindex="0"><table>
 <thead>
 <tr>

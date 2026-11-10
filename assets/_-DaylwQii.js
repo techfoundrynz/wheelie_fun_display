@@ -1,0 +1,1 @@
+import{n as e,t}from"./index-BYA9PRfQ.js";import{t as n}from"./jsx-runtime-DyZJNswf.js";var r=n();function i(){let n=t.useLoaderData();return n?(0,r.jsx)(`article`,{className:`md-content`,dangerouslySetInnerHTML:{__html:n.body}}):(0,r.jsx)(e,{})}export{i as component};
