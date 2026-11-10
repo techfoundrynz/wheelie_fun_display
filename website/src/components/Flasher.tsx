@@ -202,8 +202,8 @@ export function Flasher() {
           <p className="setup-help">
             Port missing? Check your USB data cable and follow your board’s download-mode
             instructions. For Waveshare, hold <b>BOOT</b>, tap <b>RESET</b>, then release{" "}
-            <b>BOOT</b>. See
-            <a href="../getting-started/#1-install-and-power-up">USB installation instructions</a>
+            <b>BOOT</b>. See{" "}
+            <a href="../getting-started/#1-install-and-power-up">USB installation instructions</a>{" "}
             for board setup and first connection.
           </p>
         </section>
