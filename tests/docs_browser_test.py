@@ -313,7 +313,7 @@ def browser_checks(site: Path, executable: str | None, output: Path, base_path: 
                     page.goto(url + route, wait_until="networkidle")
                     theme = page.evaluate(
                         """() => {
-                            const svg = document.querySelector('.brand > svg');
+                            const svg = document.querySelector('.brand svg');
                             const matrix = svg.querySelector('#bike-artwork').transform.baseVal.consolidate().matrix;
                             return {font: getComputedStyle(document.body).fontFamily,
                                 background: getComputedStyle(document.body).backgroundColor,
@@ -350,6 +350,77 @@ def browser_checks(site: Path, executable: str | None, output: Path, base_path: 
                         ),
                         full_page=True,
                     )
+            # The bike moves inside a fixed box; neither text nor content reflows.
+            page.set_viewport_size({"width": 1440, "height": 1050})
+            page.mouse.move(0, 0)
+            page.goto(url, wait_until="networkidle")
+            poses = page.evaluate(
+                """async () => {
+                    const frame = () => new Promise(requestAnimationFrame);
+                    window.bikePose = () => {
+                        const artwork = document.querySelector('#bike-artwork');
+                        const matrix = artwork.getCTM();
+                        const front = new DOMPoint(25, 24).matrixTransform(matrix);
+                        const rear = new DOMPoint(7, 24).matrixTransform(matrix);
+                        return {
+                            front: front.y, rear: rear.y,
+                            title: document.querySelector('.brand').lastElementChild.getBoundingClientRect().toJSON(),
+                            content: document.querySelector('main').getBoundingClientRect().toJSON()
+                        };
+                    };
+                    window.bikeLift = document.querySelector('.bike-lift').getAnimations()[0];
+                    window.bikeLift.pause();
+                    window.bikeLift.currentTime = 0;
+                    await frame(); await frame();
+                    const level = window.bikePose();
+                    window.bikeLift.currentTime = 1600;
+                    await frame(); await frame();
+                    return {level, raised: window.bikePose()};
+                }"""
+            )
+            level, raised = poses["level"], poses["raised"]
+            assert abs(level["front"] - level["rear"]) < 0.01
+            assert raised["front"] < raised["rear"] - 5
+            assert abs(level["rear"] - raised["rear"]) < 0.01
+            assert level["title"] == raised["title"]
+            assert level["content"] == raised["content"]
+            page.locator(".brand").hover()
+            balance = page.evaluate(
+                """async () => {
+                    const animation = document.querySelector('.bike-balance').getAnimations()[0];
+                    animation.pause();
+                    animation.currentTime = 400;
+                    await new Promise(requestAnimationFrame);
+                    const first = window.bikePose();
+                    animation.currentTime = 1200;
+                    await new Promise(requestAnimationFrame);
+                    return {first, second: window.bikePose()};
+                }"""
+            )
+            assert abs(balance["first"]["front"] - balance["second"]["front"]) > 1
+            assert abs(balance["first"]["rear"] - balance["second"]["rear"]) < 0.01
+            page.locator(".site-header").get_by_role(
+                "link", name="Install firmware", exact=True
+            ).click()
+            page.wait_for_url("**/install/")
+            assert page.evaluate(
+                "window.bikeLift.effect.target === document.querySelector('.bike-lift')"
+            ), "Navigation must not recreate the logo or replay its lift"
+            page.emulate_media(reduced_motion="reduce")
+            page.locator(".brand").hover()
+            assert (
+                page.locator(".bike-balance").evaluate(
+                    "el => getComputedStyle(el).animationName"
+                )
+                == "none"
+            )
+            assert (
+                page.locator(".bike-lift").evaluate(
+                    "el => getComputedStyle(el).animationName"
+                )
+                == "none"
+            )
+            page.emulate_media(reduced_motion="no-preference")
             bounds = page.evaluate(
                 """async url => {
                     const source = await (await fetch(url)).text();

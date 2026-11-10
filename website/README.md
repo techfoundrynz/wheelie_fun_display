@@ -15,6 +15,8 @@ pnpm dev
 
 The React app imports one Tailwind stylesheet from `src/app.css`; shell, documentation and tool styles live under `src/styles`. Route navigation does not replace stylesheets. The old `docs/site/style.css` remains for standalone bootstrap artifacts.
 
+The app preloads `ui/fonts/Roboto.woff2` and retains `font-display: swap` so a late download still replaces the fallback. A local Arial/Liberation Sans fallback matches Roboto's x-height, ascent and descent to reduce movement during that swap. The WOFF2 is a compressed copy of `Roboto.ttf` with the same glyphs and variable axes, covered by `ui/fonts/Roboto-OFL.txt`. After updating the TTF, regenerate the webfont with FontTools' WOFF2 support: `python -m fontTools.ttLib.woff2 compress ui/fonts/Roboto.ttf -o ui/fonts/Roboto.woff2` from the repository root. Recalculate the fallback metrics in `src/styles/theme.css` if the font metrics change.
+
 Vite serves the app at `http://127.0.0.1:5173/` and reloads Markdown, layout and stylesheet changes. Content stays in the existing repository Markdown files. `content.json` defines their validated titles, routes, groups and order; `plugins/content.ts` compiles their links, anchors and search text. Page content is split into separate lazy-loaded chunks.
 
 The simulator needs generated WASM files under `.cache/pages/site/simulator/pkg`. The installer needs its generated catalog, firmware and ESP Web Tools under `.cache/pages/site/install`. Generate those with the existing repository build scripts before exercising the tools. Documentation editing does not rebuild firmware, WASM or screenshots.
@@ -45,6 +47,8 @@ TypeScript tests use Vitest with a separate `vitest.config.ts`; app build plugin
 The generated artifact works at both `/` and `/wheelie_fun_display/`. Keep route metadata and relative asset handling intact when adding pages. Browser acceptance checks cover both paths, static HTML links, responsive navigation, device-tool behavior and the isolated PR preview.
 
 ## Interactive pages
+
+ESP Web Tools appends dialog hosts to the body and declares its own theme defaults. `styles/flasher.css` overrides those hosts directly. `tools/esp-dialog-theme.ts` adds the console colors inside its open shadow root because the pinned console has no theme variables. Keep this adapter limited to styling; the browser tests exercise real dialogs with in-memory streams and no USB requests.
 
 `src/components/Flasher.tsx` owns catalog loading and board selection in React. `src/tools/flasher.ts` validates firmware URLs; ESP Web Tools handles the explicit USB installation action.
 

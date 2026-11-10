@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { SectionHeading } from "./SectionHeading";
+import { observeEspConsoleTheme } from "../tools/esp-dialog-theme";
 import { isCatalog, localFirmware, type Catalog } from "../tools/flasher";
 export function Flasher() {
+  useEffect(observeEspConsoleTheme, []);
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [selected, setSelected] = useState("");
   const [base, setBase] = useState<URL | null>(null);

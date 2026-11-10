@@ -3,13 +3,45 @@
     --esp-tools-button-color: var(--cyan);
     --esp-tools-button-text-color: #080b0e;
     --esp-tools-button-border-radius: 6px;
+  }
+  /* These hosts set their own light-theme defaults inside Shadow DOM, so
+     inherited body tokens alone cannot theme them. */
+  ewt-install-dialog,
+  ewt-no-port-picked-dialog {
+    color-scheme: dark;
+    color: var(--text);
+    font-family: var(--font-sans);
+    --roboto-font: var(--font-sans);
+    --text-color: var(--muted);
+    --danger-color: #ff8f8f;
     --md-sys-color-primary: var(--cyan);
     --md-sys-color-on-primary: #080b0e;
+    --md-sys-color-primary-container: var(--raised);
+    --md-sys-color-on-primary-container: var(--text);
     --md-sys-color-surface: var(--surface);
     --md-sys-color-on-surface: var(--text);
+    --md-sys-color-on-surface-variant: var(--muted);
+    --md-sys-color-surface-container: var(--surface);
     --md-sys-color-surface-container-high: var(--raised);
+    --md-sys-color-surface-container-highest: var(--raised);
+    --md-sys-color-secondary: var(--muted);
+    --md-sys-color-secondary-container: var(--raised);
+    --md-sys-color-on-secondary-container: var(--text);
+    --md-sys-color-tertiary: var(--gold);
+    --md-sys-color-error: #ff8f8f;
     --md-sys-color-outline: var(--line);
-    --md-sys-typescale-body-medium-font: Roboto;
+    --md-sys-color-outline-variant: var(--line);
+    --md-ref-typeface-brand: var(--font-sans);
+    --md-ref-typeface-plain: var(--font-sans);
+    --md-sys-typescale-body-medium-font: var(--font-sans);
+    --md-dialog-container-shape: 8px;
+    --md-dialog-container-color: var(--surface);
+    --md-dialog-headline-weight: 650;
+    --md-dialog-headline-size: 24px;
+    --md-dialog-supporting-text-color: var(--muted);
+    --md-focus-ring-color: var(--cyan);
+    --md-sys-shape-corner-full: 6px;
+    --md-sys-shape-corner-extra-small: 4px;
   }
   .flasher-page [hidden] {
     display: none !important;

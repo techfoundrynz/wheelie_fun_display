@@ -1,5 +1,5 @@
 @theme {
-  --font-sans: Roboto, system-ui, sans-serif;
+  --font-sans: Roboto, "Roboto Fallback", system-ui, sans-serif;
   --color-page: #080b0e;
   --color-panel: #10161c;
   --color-outline: #25303a;
@@ -8,9 +8,28 @@
 }
 @font-face {
   font-family: Roboto;
-  src: url("../../../ui/fonts/Roboto.ttf") format("truetype");
+  src: url("../../../ui/fonts/Roboto.woff2") format("woff2");
   font-weight: 100 900;
   font-display: swap;
+}
+/* Match Roboto's x-height and vertical metrics while its webfont downloads. */
+@font-face {
+  font-family: "Roboto Fallback";
+  src: local("Arial"), local("Liberation Sans");
+  font-weight: 100 599;
+  size-adjust: 101.8832%;
+  ascent-override: 91.0586%;
+  descent-override: 23.9628%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Roboto Fallback";
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold");
+  font-weight: 600 900;
+  size-adjust: 101.8832%;
+  ascent-override: 91.0586%;
+  descent-override: 23.9628%;
+  line-gap-override: 0%;
 }
 
 @layer base {
@@ -61,5 +80,73 @@
   }
   .site-header .app-primary-nav a[aria-current="page"] {
     border-bottom-color: var(--cyan);
+  }
+
+  .brand-mark {
+    position: relative;
+    display: block;
+    width: 32px;
+    height: 32px;
+    flex: none;
+    contain: layout size;
+  }
+  .brand-mark svg {
+    position: absolute;
+    inset: 0;
+  }
+  @media (max-width: 620px) {
+    .brand-mark {
+      width: 27px;
+      height: 27px;
+    }
+  }
+
+  /* Separate groups let the one-time lift and hover balance compose. Both pivot
+     at the rear wheel; the SVG box and adjacent title never move. */
+  .brand :is(.bike-lift, .bike-balance) {
+    transform-box: view-box;
+    transform-origin: 19.794px 27.428px;
+  }
+  .brand .bike-lift {
+    animation: bike-lift 850ms cubic-bezier(0.22, 1, 0.36, 1) 550ms both;
+  }
+  @keyframes bike-lift {
+    0% {
+      transform: rotate(-30deg);
+    }
+    72% {
+      transform: rotate(3deg);
+    }
+    100% {
+      transform: rotate(0deg);
+    }
+  }
+  @media (hover: hover) {
+    .brand:hover .bike-balance {
+      animation: bike-balance 1600ms ease-in-out infinite;
+    }
+  }
+  .brand:focus-visible .bike-balance {
+    animation: bike-balance 1600ms ease-in-out infinite;
+  }
+  @keyframes bike-balance {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    25% {
+      transform: rotate(-3deg);
+    }
+    75% {
+      transform: rotate(3deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .brand .bike-lift,
+    .brand .bike-balance,
+    .brand:is(:hover, :focus-visible) .bike-balance {
+      animation: none;
+      transform: none;
+    }
   }
 }

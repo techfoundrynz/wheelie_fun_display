@@ -16,7 +16,9 @@ export function AppHeader({
       <DocLink
         className="brand flex items-center gap-3 whitespace-nowrap text-lg font-bold text-ink"
         to="/"
-        dangerouslySetInnerHTML={{ __html: bike + "<span>Wheelie Fun Display</span>" }}
+        dangerouslySetInnerHTML={{
+          __html: '<span class="brand-mark">' + bike + "</span><span>Wheelie Fun Display</span>",
+        }}
       />
       <div className="header-actions">
         <nav

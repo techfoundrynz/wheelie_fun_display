@@ -11,6 +11,7 @@ import { Search } from "../components/Search";
 import { TableOfContents } from "../components/TableOfContents";
 import { NotFound } from "../components/NotFound";
 import { repository, siteRoot } from "../paths";
+import robotoFont from "../../../ui/fonts/Roboto.woff2?url";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -42,6 +43,10 @@ function RootDocument() {
   const page = (match?.loaderData || null) as DocPage | null;
   const route = page?.route || (isSimulator ? "simulator" : isInstaller ? "install" : "");
   const root = siteRoot(route);
+  // Vite emits a relative URL in SSR and an absolute URL in the browser.
+  // Keep the preload identical during hydration and portable on nested routes.
+  const fontFile = robotoFont.match(/(?:^|\/)assets\/([^/?#]+\.woff2)$/)?.[1];
+  const fontHref = fontFile ? root + "assets/" + fontFile : robotoFont;
   const navigateContent = useContentNavigation(route);
   const [navOpen, setNavOpen] = useState(false);
   const closeNavigation = useCallback(() => setNavOpen(false), []);
@@ -55,6 +60,7 @@ function RootDocument() {
           }
         </style>
         <meta name="docs-root" content={root} />
+        <link rel="preload" href={fontHref} as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="icon" href={root + "assets/favicon.svg"} type="image/svg+xml" />
         <HeadContent />
       </head>

@@ -49,6 +49,9 @@ def check_staged_assets(site):
 
 def browser_checks(site, executable, output):
     output.mkdir(parents=True, exist_ok=True)
+    vendor = site / "install/vendor/esp-web-tools"
+    dialog_bundle = next(vendor.glob("install-dialog-*.js")).name
+    no_port_bundle = next(vendor.glob("index-*.js")).name
     server = ThreadingHTTPServer(
         ("127.0.0.1", 0), partial(Handler, directory=str(site))
     )
@@ -137,6 +140,100 @@ def browser_checks(site, executable, output):
                     page.locator("#installer")
                     .get_attribute("manifest")
                     .endswith("/firmware/board_p4.json")
+                )
+                assert page.evaluate("window.usbRequests") == 0
+                # Render the real vendor dialog with an in-memory port. Never
+                # call requestPort(), flash(), reset(), or write to hardware.
+                page.evaluate(
+                    """async ({base, bundle}) => {
+                        await import(new URL('vendor/esp-web-tools/' + bundle, base).href);
+                        const dialog = document.createElement('ewt-install-dialog');
+                        dialog._initialize = () => {};
+                        dialog._client = null;
+                        dialog._manifest = {name: 'Wheelie Fun Display', version: '1.2.3', new_install_prompt_erase: true};
+                        dialog.port = {
+                            readable: new ReadableStream({start(controller) {
+                                controller.enqueue(new TextEncoder().encode('Display initialized\\n'));
+                            }}),
+                            writable: new WritableStream({write() { throw new Error('Serial writes disabled in QA'); }})
+                        };
+                        window.testInstallDialog = dialog;
+                        document.body.append(dialog);
+                        await dialog.updateComplete;
+                    }""",
+                    {"base": base, "bundle": dialog_bundle},
+                )
+                page.locator("ew-dialog").wait_for(state="visible")
+                page.wait_for_timeout(300)
+                assert (
+                    page.locator("ew-dialog").evaluate(
+                        "el => getComputedStyle(el.shadowRoot.querySelector('.container'), '::before').backgroundColor"
+                    )
+                    == "rgb(16, 22, 28)"
+                )
+                assert (
+                    page.locator("ewt-install-dialog").evaluate(
+                        "el => getComputedStyle(el).getPropertyValue('--md-sys-color-primary').trim()"
+                    )
+                    == "#63d9e5"
+                )
+                page.screenshot(path=str(output / f"{width}-install-dialog.png"))
+                page.get_by_text("Logs & Console", exact=True).click()
+                page.wait_for_function(
+                    "document.querySelector('ewt-install-dialog').shadowRoot.querySelector('ewt-console')?.shadowRoot.querySelector('[data-wfd-console-theme]')"
+                )
+                terminal = page.locator("ewt-console")
+                assert (
+                    terminal.evaluate(
+                        "el => getComputedStyle(el.shadowRoot.querySelector('.log')).backgroundColor"
+                    )
+                    == "rgb(8, 11, 14)"
+                )
+                assert (
+                    terminal.evaluate(
+                        "el => getComputedStyle(el.shadowRoot.querySelector('input')).backgroundColor"
+                    )
+                    == "rgb(8, 11, 14)"
+                )
+                assert (
+                    terminal.evaluate(
+                        "el => el.shadowRoot.querySelectorAll('[data-wfd-console-theme]').length"
+                    )
+                    == 1
+                )
+                assert (
+                    page.evaluate(
+                        "getComputedStyle(document.querySelector('.flasher-main')).viewTransitionName"
+                    )
+                    == "none"
+                )
+                page.wait_for_timeout(300)
+                page.screenshot(path=str(output / f"{width}-logs-dialog.png"))
+                page.evaluate(
+                    """async () => {
+                        await window.testInstallDialog.shadowRoot.querySelector('ewt-console').disconnect();
+                        window.testInstallDialog.remove();
+                        document.body.style.overflow = '';
+                    }"""
+                )
+                page.evaluate(
+                    """async ({base, bundle}) => {
+                        const {openNoPortPickedDialog} = await import(new URL('vendor/esp-web-tools/' + bundle, base).href);
+                        await openNoPortPickedDialog();
+                    }""",
+                    {"base": base, "bundle": no_port_bundle},
+                )
+                page.locator("ewt-no-port-picked-dialog ew-dialog").wait_for(
+                    state="visible"
+                )
+                assert (
+                    page.locator("ewt-no-port-picked-dialog ew-dialog").evaluate(
+                        "el => getComputedStyle(el.shadowRoot.querySelector('.container'), '::before').backgroundColor"
+                    )
+                    == "rgb(16, 22, 28)"
+                )
+                page.evaluate(
+                    "document.querySelector('ewt-no-port-picked-dialog').remove()"
                 )
                 assert page.evaluate("window.usbRequests") == 0
                 assert not errors, errors

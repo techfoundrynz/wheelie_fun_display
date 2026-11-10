@@ -11,7 +11,7 @@
     margin: 0;
     background-color: var(--bg);
     color: var(--text);
-    font-family: Roboto, system-ui, sans-serif;
+    font-family: var(--font-sans);
     font-size: 16px;
     line-height: 1.65;
   }
@@ -1053,8 +1053,8 @@
     }
   }
 
-  /* The shared SVG owns its flip, wheelie angle and safe view box. */
-  .brand > svg {
+  /* The shared artwork keeps its static wheelie for favicons and other uses. */
+  .brand svg {
     overflow: visible;
   }
 
@@ -1080,7 +1080,7 @@
     view-transition-name: page-content;
   }
 
-  body:has(dialog[open]) .page-content-vt {
+  body:has(dialog[open], ewt-install-dialog, ewt-no-port-picked-dialog) .page-content-vt {
     view-transition-name: none;
   }
 
