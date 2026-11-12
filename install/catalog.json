@@ -1,7 +1,7 @@
 {
   "channel": "release",
-  "version": "0.1.4",
-  "release_url": "https://github.com/techfoundrynz/wheelie_fun_display/releases/tag/v0.1.4",
+  "version": "0.1.5",
+  "release_url": "https://github.com/techfoundrynz/wheelie_fun_display/releases/tag/v0.1.5",
   "boards": [
     {
       "environment": "waveshare_esp32s3_206",
@@ -9,25 +9,25 @@
       "available": true,
       "compatibility": "",
       "chip_family": "ESP32-S3",
-      "version": "0.1.4",
+      "version": "0.1.5",
       "file": "waveshare_esp32s3_206-factory.bin",
-      "size": 4844416,
-      "sha256": "2e6ebdb1ad70dd62f5aca602eeccaeccebc7a5f3e45be59203b1566d968251f5",
-      "manifest": "firmware/waveshare_esp32s3_206-2e6ebdb1ad70dd62f5aca602eeccaeccebc7a5f3e45be59203b1566d968251f5/waveshare_esp32s3_206.json",
-      "download": "firmware/waveshare_esp32s3_206-2e6ebdb1ad70dd62f5aca602eeccaeccebc7a5f3e45be59203b1566d968251f5/waveshare_esp32s3_206-factory.bin"
+      "size": 4890544,
+      "sha256": "b17e9ca28598fb9b326a45f72dc7233e1315bdc3ee5a039e84b6fffec7cd33b1",
+      "manifest": "firmware/waveshare_esp32s3_206-b17e9ca28598fb9b326a45f72dc7233e1315bdc3ee5a039e84b6fffec7cd33b1/waveshare_esp32s3_206.json",
+      "download": "firmware/waveshare_esp32s3_206-b17e9ca28598fb9b326a45f72dc7233e1315bdc3ee5a039e84b6fffec7cd33b1/waveshare_esp32s3_206-factory.bin"
     },
     {
       "environment": "guition_jc4880p443c",
       "label": "GUITION JC4880P443C 4.3",
       "available": true,
-      "compatibility": "For ESP32-P4 revisions below 3.0. Check your board revision before installing.",
+      "compatibility": "For ESP32-P4 revision 3.1 or newer. Incompatible with pre-v3 boards.",
       "chip_family": "ESP32-P4",
-      "version": "0.1.4",
+      "version": "0.1.5",
       "file": "guition_jc4880p443c-factory.bin",
-      "size": 4808080,
-      "sha256": "0277cabeac890bd4d9d864640aeb9f1bdde467badd576b88d2a136dfd5c53238",
-      "manifest": "firmware/guition_jc4880p443c-0277cabeac890bd4d9d864640aeb9f1bdde467badd576b88d2a136dfd5c53238/guition_jc4880p443c.json",
-      "download": "firmware/guition_jc4880p443c-0277cabeac890bd4d9d864640aeb9f1bdde467badd576b88d2a136dfd5c53238/guition_jc4880p443c-factory.bin"
+      "size": 4971312,
+      "sha256": "e966c7f6576720e6f9a222d5eebc074fab1128c3cf185d1f1f422712a82ab896",
+      "manifest": "firmware/guition_jc4880p443c-e966c7f6576720e6f9a222d5eebc074fab1128c3cf185d1f1f422712a82ab896/guition_jc4880p443c.json",
+      "download": "firmware/guition_jc4880p443c-e966c7f6576720e6f9a222d5eebc074fab1128c3cf185d1f1f422712a82ab896/guition_jc4880p443c-factory.bin"
     }
   ]
 }

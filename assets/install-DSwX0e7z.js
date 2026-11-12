@@ -1,4 +1,4 @@
-import{i as e,n as t,t as n}from"./jsx-runtime-DyZJNswf.js";import{r}from"./index-HRbA6gRB.js";var i=e(t(),1),a=`
+import{i as e,n as t,t as n}from"./jsx-runtime-DyZJNswf.js";import{r}from"./index-DIqZLAZY.js";var i=e(t(),1),a=`
   :host, input, .log {
     background-color: var(--bg);
     color: var(--text);

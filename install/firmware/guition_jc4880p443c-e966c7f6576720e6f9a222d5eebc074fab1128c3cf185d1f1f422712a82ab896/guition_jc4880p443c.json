@@ -1,14 +1,14 @@
 {
   "name": "Wheelie Fun Display",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "new_install_prompt_erase": true,
   "new_install_improv_wait_time": 0,
   "builds": [
     {
-      "chipFamily": "ESP32-S3",
+      "chipFamily": "ESP32-P4",
       "parts": [
         {
-          "path": "waveshare_esp32s3_206-factory.bin",
+          "path": "guition_jc4880p443c-factory.bin",
           "offset": 0
         }
       ]
