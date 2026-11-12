@@ -17,7 +17,7 @@ The hardware profile inherits `common` in [platformio.ini](platformio.ini). `def
 | `waveshare_esp32s3_206` | 410 × 502 | Waveshare AMOLED 2.06, CO5300 / FT3168 |
 | `guition_jc4880p443c` | 480 × 800 | GUITION JC4880P443C, ST7701S / GT911, P4 + C6 |
 
-See the [Waveshare board guide](docs/hardware-waveshare-206.md) for wiring, orientation and USB recovery. The GUITION profile requires an ESP32-P4 below revision 3.0 and compatible C6 radio firmware. Check [board setup](docs/hardware-guition-43.md) before installation.
+See the [Waveshare board guide](docs/hardware-waveshare-206.md) for wiring, orientation and USB recovery. The GUITION profile requires production ESP32-P4 revision 3.1 or newer and compatible C6 radio firmware. Check [board setup](docs/hardware-guition-43.md) before installation.
 
 Speed units and temperature units are independent saved settings. Angles use the degree symbol.
 
@@ -31,7 +31,7 @@ Resolution, horizontal/vertical corner-safe insets, flash size, pins, driver sel
 - Vehicle integrations for Wheelie Fun Bike, wheel-e and generic VESC. Settings > Vehicle > Vehicle integration selects Auto, WFB, wheel-e or VESC before connecting; the verified peer and integration are saved together in NVS. Matching names sort first without hiding other UART devices. Branding and available commands follow the integration.
 - Settings menu PIN/pattern setup, change and removal, bike/screen locking and a locked-screen timeout (15/30/60/120 seconds). Six-digit PINs and six-dot patterns are salted hashes in NVS. Tap wakes to configured brightness and consumes that contact; the configured credential is still required. See [locking](docs/locking.md) and [integrations](docs/integrations.md).
 - Optional VESC BLE proxy, off by default: the active WFB integration advertises as `WFB` and hides the BLE-name editor. Wheel-e and generic VESC use the editable saved name (default `WB Disp`), restored when WFB is no longer active without changing NVS. BLE/UART preserve the VESC stream; CAN exposes a generic adapter for the phone's own CAN discovery and forwarding. Read-only display polling continues alongside phone traffic with packet-boundary phone priority. Broker-owned replies update display telemetry without being sent to the phone. Phone setup replies can also update it when their controller identity matches the selected bike; other phone replies are excluded. Configuration writes and display OTA remain paused while the phone is connected.
-- 250 ms opaque page slides with ease-out motion. Header and bottom navigation stay fixed; taps are blocked during the slide, and only the incoming/outgoing pages are retained. The unselected Settings cog uses subdued grey.
+- 250 ms opaque page slides with ease-out motion. Header and bottom navigation stay fixed; taps are blocked during the slide. The unselected Settings cog uses subdued grey.
 - Swipe horizontally between Ride, Stats and Tune. Pages follow the finger and snap on release; short or reversed drags return to the current tab. Vertical drags scroll the Stats, Tune and Settings content.
 - A vertically scrolling Settings page with reusable pages, rows, steppers and diagnostic cards.
 - Read-only Stats includes standard controller telemetry and optional BMS pack/cell data; BMS has an initial read-only probe on Ready and polls at 1 Hz while Stats is open; during a phone session, BMS polling requires an earlier command-96 reply in the current vehicle session. BMS replies are VESC-cached values with no source timestamp, and real BMS hardware remains unvalidated.

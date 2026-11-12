@@ -52,6 +52,12 @@ fn main() -> Result<(), slint::PlatformError> {
                 .max(320.0),
         );
     }
+    if ui.get_initial_width().min(ui.get_initial_height()) == 480.
+        && ui.get_initial_width().max(ui.get_initial_height()) == 800.
+    {
+        ui.set_display_safe_inset_x(0.);
+        ui.set_display_safe_inset_y(0.);
+    }
     ui.window().set_size(slint::LogicalSize::new(
         ui.get_initial_width(),
         ui.get_initial_height(),

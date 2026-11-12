@@ -4,13 +4,13 @@ Agent/maintainer instructions only. This file and the module-specific `REGENERAT
 
 ## Source and scope
 
-Inspect the connected Fusion document before every regeneration. The current saved source is **Wheelie Fun Display - Waveshare 2.06**, version **17**, exported on **8 November 2026** with no unsaved changes. Despite the historical name, it contains three grouped assemblies:
+Inspect the connected Fusion document before every regeneration. The current saved source is **Wheelie Fun Display - Waveshare 2.06**, version **19**, exported on **12 November 2026** with no unsaved changes. Despite the historical name, it contains three grouped assemblies:
 
 - `01_Waveshare_Landscape`: Waveshare landscape case and clamp.
 - `02_Waveshare_Portrait`: Waveshare portrait case and clamp.
 - `03_Guition_Landscape_PROTOTYPE`: GUITION landscape case and clamp.
 
-The verified archive has **63 occurrences, 20 components, 147 user parameters and 46 timeline items**. These are provenance records, not constants to impose on newer designs. Read the actual source version, modification state, groups, transforms, body geometry, parameters and materials each time. The shared saddle, cap, liner and fasteners occur in all three assemblies; changing them requires regenerating both module guides.
+The verified archive has **63 occurrences, 21 components, 163 user parameters and 52 timeline items**. These are provenance records, not constants to impose on newer designs. Read the actual source version, modification state, groups, transforms, body geometry, parameters and materials each time. The shared saddle, cap, liner and fasteners occur in all three assemblies; changing them requires regenerating both module guides.
 
 The source contains only local components. Export one complete **F3D** to `cad/wheelie-fun-display-mounts.f3d`, retaining all assemblies, references, parameters and timeline. Do not export duplicate whole-design archives under the individual modules. Use a genuine F3Z export only if the design gains external linked components; never rename an F3D to F3Z. Do not save or rename the user's cloud design without instruction.
 
@@ -32,13 +32,13 @@ The exporter discovers assembly groups by their prefixes and parts by exact comp
 
 ## Transform and visibility rules
 
-Use **root-context proxies from `rootComponent.allOccurrences`**, including for nested parts. The old root-only/X<5 recipe does not work with the grouped version-17 design. Proxy `transform2` matrices are world transforms; apply parent offsets before child offsets and always start from saved original matrices.
+Use **root-context proxies from `rootComponent.allOccurrences`**, including for nested parts. The old root-only/X<5 recipe does not work with the grouped design. Proxy `transform2` matrices are world transforms; apply parent offsets before child offsets and always start from saved original matrices.
 
 - Upper saddle stays fixed. Housing and inserts explode +1.8 cm in world Z.
 - Grommet explodes +4.2 cm total in world Z, keeping its larger flange inside the final housing. This already includes the housing's motion; do not add that motion twice.
 - Lower cap explodes -2 cm; liner moves +2.8 cm in world X; M4 screws move -3.2 cm in world Z.
 - Waveshare M2 display screws approach **upward from below**, using -2.6 cm world-Z offsets.
-- GUITION has four extra M3 display screws translated to source world Z=11 mm; these also explode **downward** by 2.6 cm. The four M3 saddle screws use -1.2 cm. Keep original screw orientation.
+- GUITION uses four provisional M2.5 display screws (`HW_M2p5_SHCS_Guition_LENGTH_PROVISIONAL`), exploded **downward** by 2.6 cm. The four M3 saddle screws use -1.2 cm. Keep original screw orientation.
 
 The fully assembled pose must exactly match the source. The animation is a fit overview, not a prescribed fastening or machining sequence. Hide whole reference display occurrences, not just their cover-glass bodies, so no floating dummy screen plate remains.
 
@@ -46,11 +46,11 @@ The fully assembled pose must exactly match the source. The animation is a fit o
 
 See [Waveshare notes](waveshare-206/REGENERATING.md) and [GUITION notes](guition-43/REGENERATING.md). Preserve the split liner's 0.5 mm slit through its full 0.5 mm wall and 14.3 mm width. The cable grommets are **unsplit** and have a nominal 6 mm cable jacket / 5.8 mm bore, 7.8 mm case hole / 7.9 mm barrel, 3.8 mm grip and 9.4 / 8.6 mm inner / outer flanges. Verify current parameters and final BRep before repeating those dimensions in the guide.
 
-The GUITION reference display's 5 mm depth and 0.5 mm glass thickness remain explicitly unverified, as do its reference display screws. Preserve that fit limitation in the CAD guide without mislabelling the supported firmware target experimental. Treat Fusion's generic Rubber material separately from the parts' TPU75A designation and nominal hardness parameter.
+The GUITION reference display's 5 mm depth, 0.5 mm glass thickness and 5 mm rear mounting-boss projection remain unverified, as do its provisional M2.5 display screws. Preserve that fit limitation in the CAD guide without mislabelling the supported firmware target experimental. Treat Fusion's generic Rubber material separately from the parts' TPU75A designation and nominal hardness parameter.
 
 ## Encode and validate
 
-Run `python scripts/encode_cad.py` using Python with Pillow installed. It creates each module's static exploded PNG and 57-frame GIF from real Fusion captures, with a shared 192-color palette and dark compositing to avoid flicker and GIF transparency artifacts. It checks all frames decode, normalizes STEP text to LF without trailing whitespace and requires one `MANIFOLD_SOLID_BREP(` plus ISO-10303-21 markers in every STEP. Fusion currently exports explicitly declared centimetre (`.CENTI.`) length units even though the source display units and guide dimensions are millimetres. Honour the STEP unit declaration; never relabel `.CENTI.` to `.MILLI.` without scaling the geometry. Reimport the casing STEP files in temporary Fusion documents and verify physical extents: Waveshare 42 × 51 × 13.5 mm, GUITION 95 × 63 × 11.2 mm. Export axes may follow the posed assembly orientation, so compare dimensions independent of X/Y order.
+Run `python scripts/encode_cad.py` using Python with Pillow installed. It creates each module's static exploded PNG and 57-frame GIF from real Fusion captures, with a shared 192-color palette and dark compositing to avoid flicker and GIF transparency artifacts. It checks all frames decode, normalizes STEP text to LF without trailing whitespace and requires one `MANIFOLD_SOLID_BREP(` plus ISO-10303-21 markers in every STEP. Fusion currently exports explicitly declared centimetre (`.CENTI.`) length units even though the source display units and guide dimensions are millimetres. Honour the STEP unit declaration; never relabel `.CENTI.` to `.MILLI.` without scaling the geometry. Reimport the casing STEP files in temporary Fusion documents and verify physical extents: Waveshare 42 × 51 × 13.5 mm, GUITION 125.3 × 75.3 × 13.2 mm. Export axes may follow the posed assembly orientation, so compare dimensions independent of X/Y order.
 
 Inspect all stills, exploded and assembled poses and intermediate animation frames. Verify glass/reference cable are absent, screws approach from below, grommets seat inside and the cases are not clipped. Cropping the context handlebar in mounted views is intentional. Final PNGs/GIFs belong in `docs/images/`; intermediate frames and assembled QA captures belong under `.cache/`.
 

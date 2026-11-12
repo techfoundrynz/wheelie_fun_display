@@ -1,6 +1,7 @@
 """Prepare generated fonts before compilation and reject writable linked metadata."""
 
 from pathlib import Path
+import json
 import re
 import subprocess
 from elftools.elf.elffile import ELFFile
@@ -44,15 +45,25 @@ def check_fonts(target, source, env):
     )
     if not names:
         raise RuntimeError("No prepared Slint font resources found")
+    sdk = json.loads((build / "config/sdkconfig.json").read_text(encoding="utf-8"))
+    boundaries = (
+        {"_instruction_reserved_end", "_rodata_reserved_end"}
+        if sdk.get("IDF_TARGET") == "esp32p4" and sdk.get("SPIRAM_XIP_FROM_PSRAM")
+        else set()
+    )
     with Path(str(target[0])).open("rb") as stream:
         elf = ELFFile(stream)
         symbols = {
             symbol.name: symbol
             for symbol in elf.get_section_by_name(".symtab").iter_symbols()
-            if symbol.name in names
+            if symbol.name in names or symbol.name in boundaries
         }
-        if symbols.keys() != names:
+        if not names | boundaries <= symbols.keys():
             raise RuntimeError("Linked Slint font metadata is missing")
+        # Reject stale XiP layouts that leave executable bytes in the writable gap.
+        for name in boundaries:
+            if symbols.pop(name)["st_value"] % sdk["SOC_CPU_PMP_REGION_GRANULARITY"]:
+                raise RuntimeError(f"XiP PMP boundary is unaligned: {name}")
         for name, symbol in symbols.items():
             section = elf.get_section(symbol["st_shndx"])
             start = section["sh_addr"]

@@ -6,8 +6,8 @@ Follow the [shared CAD regeneration instructions](../REGENERATING.md). The execu
 
 The current source group begins `03_Guition_Landscape`. Its own parts are `G01_Rear_housing_PRINT_PROTO` and `G03_Snap_grommet_TPU75A`; saddle, cap and liner are shared with Waveshare. Keep the source material/appearance. Hide `G02_REF_OEM_display_DEPTH_UNVERIFIED`, its glass, `G04_REF_6mm_cable_jacket` and the handlebar in the exploded view and animation.
 
-The eight M3 screws are two sets: four saddle screws at source world Z=0 and four display screws translated to Z=11 mm. Both sets approach from below, with negative world-Z explosion offsets. Do not accidentally move the display screws upward or export them into the casing STEP.
+The assembly has four M3 saddle screws and four provisional M2.5 display screws (`HW_M2p5_SHCS_Guition_LENGTH_PROVISIONAL`). Both sets approach from below: explode the M3 screws by -1.2 cm and the M2.5 screws by -2.6 cm in world Z, preserving their orientation. Keep all fasteners out of the casing STEP.
 
-Keep the guide's dimensions and hardware count synchronized with the actual source. In particular, the OEM display's 5 mm depth and reference display screws are unverified CAD assumptions. Do not imply that the solid model is a vendor-qualified electronics envelope or label the supported firmware target experimental.
+Keep the guide's dimensions and hardware count synchronized with the actual source. In particular, the OEM display's 5 mm depth, 0.5 mm glass, 5 mm mounting-boss projection and M2.5 display screws are unverified CAD assumptions. Do not imply that the solid model is a vendor-qualified electronics envelope or label the supported firmware target experimental.
 
 Output five one-solid STEP files under this folder, six final PNGs and one 57-frame GIF with the `guition-43-` prefix under `docs/images/`. The complete native design is the shared `cad/wheelie-fun-display-mounts.f3d`, not another duplicate archive in this folder.

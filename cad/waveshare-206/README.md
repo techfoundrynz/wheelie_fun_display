@@ -114,6 +114,8 @@ The F3D archive keeps the editable components, parameters and feature timeline t
 
 ## Source and updates
 
+These Waveshare parts and images remain from version 17. The shared Fusion archive includes the version-19 GUITION updates; Waveshare and shared mounting geometry are unchanged.
+
 Exported from **Wheelie Fun Display - Waveshare 2.06**, Fusion document version **17** (saved source, with no unsaved changes), on **8 November 2026**. These STEP files are solid exports; they do not retain the Fusion parameter timeline. Re-export affected parts when the source design changes and update the views and dimensions here.
 
 These project CAD exports use the repository's [GPL-3.0 license](../../LICENSE).

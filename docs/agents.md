@@ -44,7 +44,7 @@ verify the dashboard, touch and orientation. Report anything you could
 not verify on the hardware.
 ```
 
-The [USB installer](https://techfoundrynz.github.io/wheelie_fun_display/install/) handles complete release images. The [Waveshare guide](hardware-waveshare-206.md) and [GUITION guide](hardware-guition-43.md) cover board-specific requirements and recovery. GUITION requires a P4 below revision 3.0 and compatible C6 radio firmware; installing the display application does not provision the C6 companion.
+The [USB installer](https://techfoundrynz.github.io/wheelie_fun_display/install/) handles complete release images. The [Waveshare guide](hardware-waveshare-206.md) and [GUITION guide](hardware-guition-43.md) cover board-specific requirements and recovery. GUITION requires production P4 revision 3.1 or newer and compatible C6 radio firmware; installing the display application does not provision the C6 companion.
 
 ## Make a change and test it
 

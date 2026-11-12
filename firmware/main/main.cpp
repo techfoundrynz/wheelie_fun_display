@@ -4,6 +4,7 @@
 #include "bike/lock_policy.hpp"
 #include "bike/polling.hpp"
 #include "bike/protocol.hpp"
+#include "bike/stable_rows.hpp"
 #include "bike/telemetry.hpp"
 #include "bike/units.hpp"
 #include "ble_proxy.hpp"
@@ -26,8 +27,10 @@
 #include "nvs.h"
 #include "nvs_flash.h"
 #include "ota_image.hpp"
+#include "render_profile.hpp"
 #include "security.hpp"
 #include "slint_backend.hpp"
+#include "slint_rendering.hpp"
 #include "transport.hpp"
 #include "tuning.hpp"
 #include "vesc_update.hpp"
@@ -56,28 +59,16 @@ slint::SharedString value(double v, const char *suffix, int precision = 0) {
 }
 
 // Keep stable rows and only notify Slint when displayed content changes.
-class StatRows {
-  slint::VectorModel<StatItem> &model;
-  size_t count = 0;
+template <class Item> class StatRows {
+  bike::StableRows<slint::VectorModel<Item>> rows;
 
 public:
 
-  explicit StatRows(slint::VectorModel<StatItem> &target) : model(target) {
+  explicit StatRows(slint::VectorModel<Item> &target) : rows(target) {
   }
 
   void add(const char *label, slint::SharedString text) {
-    const StatItem item{label, text};
-    const auto previous = model.row_data(count);
-    if (!previous)
-      model.push_back(item);
-    else if (previous->label != item.label || previous->value != item.value)
-      model.set_row_data(count, item);
-    ++count;
-  }
-
-  ~StatRows() {
-    while (model.row_count() > count)
-      model.erase(model.row_count() - 1);
+    rows.add(Item{label, text});
   }
 };
 
@@ -146,6 +137,26 @@ extern "C" void app_main() {
   ui->set_initial_width(bike::display_width(orientation));
   ui->set_initial_height(bike::display_height(orientation));
   set_slint_orientation(orientation);
+  if (ui->get_native_page_snapshots()) {
+    slint_rendering::configure_page_slides(
+        [ui] {
+          slint_rendering::PageSlideState state;
+          state.active = ui->get_native_slide_active();
+          state.incoming = ui->get_displayed_page();
+          state.content_active = ui->get_native_page_content_active();
+          state.available = ui->get_native_slides_allowed();
+          state.viewport = {int(ui->get_native_page_x() + .5f), int(ui->get_native_page_y() + .5f),
+                            int(ui->get_native_page_width() + .5f), int(ui->get_native_page_height() + .5f)};
+          if (state.active) {
+            state.incoming = ui->get_native_slide_incoming();
+            state.outgoing = ui->get_native_slide_outgoing();
+            state.direction = ui->get_native_slide_direction();
+            state.progress = ui->get_native_slide_progress();
+          }
+          return state;
+        },
+        [ui](int page) { ui->set_native_capture_page(page); });
+  }
   bool rotate_pending = false;
   board::brightness(ui->get_brightness());
   vesc_update::start();
@@ -404,8 +415,9 @@ extern "C" void app_main() {
   const auto ui_started = now_ms();
   security::init(*ui, telemetry);
   configASSERT(heap_caps_check_integrity_all(true));
-  ESP_LOGI("display", "UI initialized: stack_free=%u, internal_free=%u", unsigned(uxTaskGetStackHighWaterMark(nullptr)),
-           unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)));
+  ESP_LOGI("display", "UI initialized: stack_free=%u, internal_free=%u, reset_reason=%u",
+           unsigned(uxTaskGetStackHighWaterMark(nullptr)), unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
+           unsigned(esp_reset_reason()));
   ui->show();
   configASSERT(heap_caps_check_integrity_all(true));
   ESP_LOGI("display", "UI shown: stack_free=%u", unsigned(uxTaskGetStackHighWaterMark(nullptr)));
@@ -427,6 +439,10 @@ extern "C" void app_main() {
       }
     }
     const auto now = now_ms();
+#if WFD_RENDER_PROFILE
+    render_profile::step(ui, orientation, now, ui_started);
+    render_profile::current_page = ui->get_page();
+#endif
     const auto link = transport::snapshot();
     vehicle = &bike::integration(link.integration);
     const bool ready = link.status == transport::Status::Ready;
@@ -591,10 +607,8 @@ extern "C" void app_main() {
         char hash[17]{};
         for (int i = 0; i < 8; ++i)
           std::snprintf(hash + 2 * i, 3, "%02x", app->app_elf_sha256[i]);
-        about_items->clear();
-        auto stat = [&](const char *label, slint::SharedString text) {
-          about_items->push_back(AboutItem{label, text});
-        };
+        StatRows about(*about_items);
+        auto stat = [&](const char *label, slint::SharedString text) { about.add(label, text); };
         stat("Version", app->version);
         stat("Hardware", HW_TYPE);
         stat("Build", slint::SharedString(app->date) + " " + app->time);

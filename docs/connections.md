@@ -29,6 +29,8 @@ The display searches the directly connected controller and controllers reachable
 
 With **Auto**, it checks for WFB and wheel-e packages before falling back to standard VESC readings. Selecting WFB or wheel-e explicitly requires that package to respond. A device name does not enable package-specific features.
 
+After a successful connection, the display remembers the controller route, UUID and verified package for that transport and Bluetooth peer. Reconnecting checks that controller and package first, so a known wheel-e bike does not wait for a WFB probe or another CAN scan. The controller UUID and live package response must still match before the connection becomes ready. A missing or changed controller or package falls back to the full search. Generic VESC in Auto still uses the full package search so another controller's WFB or wheel-e package is not hidden.
+
 Check discovery status under **Settings > Vehicle**. Use **Find main controller again** to repeat discovery when the link is available. If a phone connected before discovery finished, disconnect the phone first.
 
 ## Native CAN

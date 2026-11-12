@@ -289,8 +289,9 @@ Snapshot snapshot_locked() {
     if (!route->ready) {
       result.status = Status::Discovering;
       std::snprintf(result.controller_info, sizeof(result.controller_info), "%s",
-                    route->discovery.running() ? "Finding main VESC | CAN ping and package discovery"
-                                               : "No matching package controller found | retrying");
+                    route->discovery.using_hint() ? "Verifying remembered main VESC"
+                    : route->discovery.running()  ? "Finding main VESC | CAN ping and package discovery"
+                                                  : "No matching package controller found | retrying");
     }
     else {
       const auto &controller = route->discovery.controller(route->discovery.chosen());
@@ -349,7 +350,7 @@ void pump_discovery() {
     if (now >= route->settle_until) {
       const auto &controller = route->discovery.controller(route->discovery.chosen());
       route->destination = controller.route;
-      save_hint({route->context, {controller.route, controller.uuid}});
+      save_hint({route->context, {controller.route, controller.uuid, controller.integration}});
       route->ready = true;
       route->ready_at = now;
       ++epoch;
@@ -645,6 +646,7 @@ bool rediscover() {
   const bool allowed = !paused && !ble_proxy::phone_owns_link();
   if (allowed) {
     reset_route();
+    route->hint_tried = true; // An explicit rediscovery must search beyond the remembered controller.
     ++epoch;
   }
   xSemaphoreGive(mutex);

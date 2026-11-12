@@ -83,6 +83,7 @@ inputs += [
     root / "platformio.ini",
     root / "partitions.csv",
     root / "scripts/prepare_slint_fonts.py",
+    root / "scripts/prepare_slint_headers.py",
     root / "scripts/pio_toolchain.py",
 ]
 inputs += sdk_fragments
@@ -90,13 +91,28 @@ inputs += sorted((root / "firmware/components/slint_runtime").glob("*.cmake"))
 inputs += [root / "firmware/components/slint_runtime/CMakeLists.txt"]
 digest = hashlib.sha256()
 digest.update(version.encode())
+for diagnostic_setting in (
+    "WFD_RENDER_PROFILE",
+    "WFD_RENDER_PROFILE_SECONDS",
+    "WFD_RENDER_PROFILE_START_STAGE",
+):
+    digest.update(
+        (diagnostic_setting + "=" + os.environ.get(diagnostic_setting, "")).encode()
+    )
 for path in inputs:
     digest.update(str(path.relative_to(root)).encode())
     digest.update(path.read_bytes())
 stamp = build / "wfd-inputs.sha256"
 fingerprint = digest.hexdigest()
 build.mkdir(parents=True, exist_ok=True)
-if not stamp.exists() or stamp.read_text() != fingerprint:
+managed_target = root / ".pio/generated/managed-components.target"
+# Reconfigure after a target switch: IDF prunes the other target's components.
+if (
+    not stamp.exists()
+    or stamp.read_text() != fingerprint
+    or not managed_target.exists()
+    or managed_target.read_text() != hardware_id
+):
     (build / "CMakeCache.txt").unlink(missing_ok=True)
 env["WFD_INPUT_STAMP"] = str(stamp)
 env["WFD_INPUT_FINGERPRINT"] = fingerprint
@@ -108,9 +124,38 @@ if not config_stamp.exists() or config_stamp.read_text() != defaults:
     (root / ("sdkconfig." + env["PIOENV"])).unlink(missing_ok=True)
     (build / "CMakeCache.txt").unlink(missing_ok=True)
     (build / "bootloader/CMakeCache.txt").unlink(missing_ok=True)
+    # The pinned builder misses SDK dependencies for preprocessed linker scripts.
+    for linker_script in (
+        "memory.ld",
+        "sections.ld",
+        "sections.ld.fingerprint",
+        "sections.ld.lfcache",
+        "esp-idf/esp_system/ld/sections.ld.in",
+        "bootloader/ld/bootloader.memory.ld",
+        "bootloader/ld/bootloader.sections.ld",
+    ):
+        (build / linker_script).unlink(missing_ok=True)
+    # Invalidate bootloader API replies too; PlatformIO checks only the main cache.
+    for reply in (build / "bootloader/.cmake/api/v1/reply").glob("*.json"):
+        reply.unlink()
 env["WFD_SDK_STAMP"] = str(config_stamp)
 env["WFD_SDK_FINGERPRINT"] = defaults
 link = f"-Wl,--whole-archive {archive.as_posix()} -Wl,--no-whole-archive"
 env.Append(
     LINKFLAGS=["${" + repr(link) + " if 'bootloader' not in str(TARGETS[0]) else ''}"]
 )
+
+# Supply missing elf2image revision limits after CMake generates SDK values.
+# The bootloader inherits this callback.
+if env.BoardConfig().get("build.mcu") == "esp32p4":
+
+    def image_revision_flags(target, source, env, for_signature):
+        sdk = json.loads((build / "config/sdkconfig.json").read_text(encoding="utf-8"))
+        return [
+            "--min-rev-full",
+            str(sdk["ESP_REV_MIN_FULL"]),
+            "--max-rev-full",
+            str(sdk["ESP_REV_MAX_FULL"]),
+        ]
+
+    env["WFD_IMAGE_REVISION_FLAGS"] = image_revision_flags

@@ -49,12 +49,15 @@ if target == "esp32s3":
     expected.update(
         {
             "CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ": "240",
+            "CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL": "0",
             "CONFIG_SPIRAM_MODE_OCT": "y",
             "CONFIG_SPIRAM_SPEED_80M": "y",
             "CONFIG_SPIRAM_FETCH_INSTRUCTIONS": "y",
+            "CONFIG_SPIRAM_XIP_FROM_PSRAM": "y",
+            "CONFIG_SPIRAM_RODATA": "y",
             "CONFIG_ESP32S3_INSTRUCTION_CACHE_SIZE": "0x8000",
             "CONFIG_ESP32S3_INSTRUCTION_CACHE_LINE_SIZE": "32",
-            "CONFIG_ESP32S3_DATA_CACHE_SIZE": "0x8000",
+            "CONFIG_ESP32S3_DATA_CACHE_SIZE": "0x10000",
             "CONFIG_ESP32S3_DATA_CACHE_LINE_SIZE": "64",
             "CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP": "y",
             "CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM": "4",
@@ -66,17 +69,27 @@ if target == "esp32s3":
 elif target == "esp32p4":
     expected.update(
         {
-            "CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ": "360",
-            "CONFIG_SPIRAM_SPEED_200M": "y",
+            "CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ": "400",
+            "CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL": "0",
+            "CONFIG_ESP32P4_REV_MIN_FULL": "301",
+            "CONFIG_BOOTLOADER_LOG_LEVEL": "2",
+            "CONFIG_SPIRAM_SPEED_250M": "y",
+            "CONFIG_SPIRAM_SPEED": "250",
             "CONFIG_CACHE_L2_CACHE_256KB": "y",
+            "CONFIG_CACHE_L2_CACHE_LINE_SIZE": "128",
+            "CONFIG_SPIRAM_XIP_FROM_PSRAM": "y",
+            "CONFIG_SPIRAM_FETCH_INSTRUCTIONS": "y",
+            "CONFIG_SPIRAM_RODATA": "y",
+            "CONFIG_SPIRAM_PRE_CONFIGURE_MEMORY_PROTECTION": "y",
             "CONFIG_BT_CONTROLLER_DISABLED": "y",
-            "CONFIG_ESP32P4_SELECTS_REV_LESS_V3": "y",
             "CONFIG_ESP_WIFI_REMOTE_ENABLED": "y",
             "CONFIG_ESP_WIFI_REMOTE_LIBRARY_HOSTED": "y",
             "CONFIG_SLAVE_IDF_TARGET_ESP32C6": "y",
             "CONFIG_ESP_HOSTED_HOST_TRANSPORT_BUS_SDIO": "y",
             "CONFIG_ESP_HOSTED_SDIO_SLOT_1": "y",
             "CONFIG_ESP_HOSTED_HOST_SDIO_BUS_WIDTH_4": "y",
+            "CONFIG_ESP_HOSTED_HOST_SDIO_RX_STREAMING_MODE": "y",
+            "CONFIG_ESP_HOSTED_HOST_SDIO_USE_MEMPOOL": "y",
             "CONFIG_ESP_HOSTED_HOST_SDIO_CLK_KHZ": "25000",
             "CONFIG_ESP_HOSTED_HOST_SDIO_PIN_CLK": "18",
             "CONFIG_ESP_HOSTED_HOST_SDIO_PIN_CMD": "19",
@@ -91,10 +104,12 @@ elif target == "esp32p4":
             "CONFIG_ESP_HOSTED_HOST_FEAT_RPC_EXT_V2_READY": "y",
         }
     )
+    if values.get("CONFIG_ESP32P4_SELECTS_REV_LESS_V3") == "y":
+        raise SystemExit("P4 profile must not select pre-v3 silicon")
 else:
     raise SystemExit("Unsupported SDK target: " + target)
 
-from project_config import option
+from project_config import ROOT, option
 
 environment = path.name.removeprefix("sdkconfig.")
 flash_size = option(environment, "board_upload.flash_size")
@@ -104,9 +119,17 @@ errors = [
     for name, value in expected.items()
     if values.get(name) != value
 ]
-for name in ("CONFIG_SPIRAM_RODATA", "CONFIG_SPIRAM_XIP_FROM_PSRAM"):
-    if values.get(name) == "y":
-        errors.append(name + " must remain disabled")
+if target == "esp32p4":
+    import json
+
+    bootloader = json.loads(
+        (
+            ROOT / ".pio/build" / environment / "bootloader/config/sdkconfig.json"
+        ).read_text(encoding="utf-8")
+    )
+    for name in ("ESP_REV_MIN_FULL", "ESP_REV_MAX_FULL", "BOOTLOADER_LOG_LEVEL"):
+        if str(bootloader.get(name)) != values.get("CONFIG_" + name):
+            errors.append("Bootloader SDK configuration is stale: " + name)
 if errors:
     raise SystemExit("\n".join(errors))
-print(f"SDK audit passed: {len(expected)} settings, RODATA and full XiP disabled")
+print(f"SDK audit passed: {len(expected)} settings, code/RODATA in PSRAM")

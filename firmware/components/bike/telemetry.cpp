@@ -198,8 +198,9 @@ bool decode_telemetry(std::span<const uint8_t> bytes, uint64_t now, Telemetry &o
         std::abs(t.duty_cycle) > 1)
       return false;
     // VESC battery estimates depend on battery configuration and are not clamped
-    // upstream. An unusable estimate must not discard valid motor/fault telemetry.
-    t.battery_valid = t.battery_percent >= 0 && t.battery_percent <= 100;
+    // upstream. Preserve nonnegative reported percentages, including values over
+    // 100%; rendering caps the battery fill without changing the numeric reading.
+    t.battery_valid = t.battery_percent >= 0;
     // Older replies end before the optional controller/energy/odometer/uptime
     // fields. Accept complete older prefixes, but never partial scalar fields.
     const auto tail = bytes.size() - r.p;

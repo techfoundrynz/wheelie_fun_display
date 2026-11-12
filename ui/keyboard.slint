@@ -165,6 +165,9 @@ export component Keyboard inherits Rectangle {
     ];
     private property <[string]> keys: self.symbols ? self.punctuation : self.shifted ? self.upper : self.lower;
     background: Theme.bg;
+    // Keep taps in key gaps and safe margins inside this modal. Otherwise a
+    // network row underneath can reopen the editor and clear its value.
+    TouchArea { }
     SafeArea {
         safe-inset-x: root.safe-inset-x;
         safe-inset-y: root.safe-inset-y;

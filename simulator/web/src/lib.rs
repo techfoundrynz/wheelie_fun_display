@@ -894,9 +894,9 @@ impl WebSimulator {
         self.ui
             .set_initial_height(if landscape { short } else { long });
         self.ui
-            .set_display_safe_inset_x(if large { 24. } else { 32. });
+            .set_display_safe_inset_x(if large { 0. } else { 32. });
         self.ui
-            .set_display_safe_inset_y(if large { 24. } else { 16. });
+            .set_display_safe_inset_y(if large { 0. } else { 16. });
         self.ui.set_device_label(
             if large {
                 "GUITION P4 4.3-inch"

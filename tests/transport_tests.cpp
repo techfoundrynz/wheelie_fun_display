@@ -409,9 +409,10 @@ void auto_discovery_tests() {
   CHECK(discovery.complete() && discovery.chosen() < 0); // Explicit selections never switch packages or fall back.
 }
 
-bike::ControllerHint hint_for(int route, uint8_t uuid) {
+bike::ControllerHint hint_for(int route, uint8_t uuid, bike::IntegrationId verified = bike::IntegrationId::Auto) {
   bike::ControllerHint hint;
   hint.route = route;
+  hint.integration = verified;
   for (size_t i = 0; i < hint.uuid.size(); ++i)
     hint.uuid[i] = uint8_t(uuid + i);
   return hint;
@@ -427,7 +428,7 @@ void hint_codec_tests() {
   Bytes extra(bytes.begin(), bytes.end());
   extra.push_back(0);
   CHECK(!bike::decode_hint(extra));
-  for (auto [position, value] : {std::pair<size_t, uint8_t>{0, 2}, {1, 3}, {2, 3}, {3, 4}}) {
+  for (auto [position, value] : {std::pair<size_t, uint8_t>{0, 3}, {1, 3}, {2, 3}, {3, 4}, {23, 3}}) {
     auto corrupt = bytes;
     corrupt[position] = value;
     CHECK(!bike::decode_hint(corrupt));
@@ -469,6 +470,97 @@ void hint_codec_tests() {
   uart.context.transport = 2;
   uart.controller.route = -1;
   CHECK(bike::decode_hint(bike::encode_hint(uart)));
+
+  // Version 1 persisted only route and UUID. Keep those hints usable without
+  // treating a missing package field as a verified generic VESC integration.
+  Bytes legacy(bytes.begin(), bytes.begin() + 23);
+  legacy[0] = 1;
+  decoded = bike::decode_hint(legacy);
+  CHECK(decoded && decoded->controller == record.controller);
+  legacy.push_back(0);
+  CHECK(!bike::decode_hint(legacy));
+
+  record.controller.integration = bike::IntegrationId::WheelE;
+  decoded = bike::decode_hint(bike::encode_hint(record));
+  CHECK(decoded && decoded->controller == record.controller);
+  record.context.selection = bike::IntegrationId::Wfb;
+  CHECK(!bike::valid_hint(record)); // An explicit selection cannot inherit another package.
+}
+
+void remembered_package_discovery_tests() {
+  using Id = bike::IntegrationId;
+  bike::ControllerDiscovery discovery;
+  bike::DiscoveryRequest request;
+  for (bool native : {false, true}) {
+    const int route = native ? 7 : -1;
+    for (Id verified : {Id::Wfb, Id::WheelE}) {
+      discovery.start(native, Id::Auto, 0, hint_for(route, 7, verified));
+      CHECK(discovery.using_hint() && !discovery.complete());
+      CHECK(discovery.next(150, request) && !request.scan && request.route == route && request.bytes[0] == 0);
+      discovery.feed(firmware(7), route, 151);
+      CHECK(!discovery.complete()); // A matching cached UUID is not live package verification.
+      CHECK(discovery.next(301, request) && !request.scan);
+      if (verified == Id::WheelE) {
+        CHECK(request.bytes[1] == 101 && request.bytes[2] == 0); // No WFB timeout on a known wheel-e bike.
+        discovery.feed(wheel_e_sample(), route, 302);
+        CHECK(!discovery.complete()); // Cached package names cannot replace INFO verification.
+        discovery.feed(wheel_e_info(), route, 303);
+        CHECK(discovery.next(453, request) && !request.scan && request.bytes[2] == 33);
+        discovery.feed(wheel_e_sample(), route, 454);
+      }
+      else {
+        CHECK(request.bytes[1] == 102);
+        discovery.feed(wfb_sample(), route, 302);
+      }
+      CHECK(discovery.complete() && discovery.chosen() == 0 && discovery.count() == 1);
+      CHECK(discovery.controller(0).integration == verified);
+      CHECK(!discovery.next(500, request)); // A valid remembered package never requests a CAN scan.
+    }
+  }
+
+  // Removing the cached package must fall back to normal discovery rather than
+  // silently accepting generic telemetry and concealing another package route.
+  discovery.start(true, Id::Auto, 0, hint_for(7, 7, Id::WheelE));
+  CHECK(discovery.next(150, request));
+  discovery.feed(firmware(7), 7, 151);
+  CHECK(discovery.next(301, request) && request.bytes[2] == 0);
+  discovery.feed(wheel_e_info("Refloat"), 7, 302);
+  CHECK(!discovery.next(952, request));
+  CHECK(!discovery.using_hint());
+  CHECK(discovery.next(953, request) && request.scan);
+
+  // Reusing the CAN address for another controller invalidates the remembered
+  // route even if that replacement advertises the same package.
+  discovery.start(true, Id::Auto, 0, hint_for(7, 7, Id::WheelE));
+  CHECK(discovery.next(150, request));
+  discovery.feed(firmware(8), 7, 151);
+  CHECK(!discovery.using_hint() && !discovery.complete());
+  CHECK(discovery.next(152, request) && request.scan);
+
+  // A generic cache cannot conceal a package on a different CAN controller.
+  discovery.start(true, Id::Auto, 0, hint_for(7, 7, Id::Vesc));
+  CHECK(discovery.next(150, request));
+  discovery.feed(firmware(7), 7, 151);
+  CHECK(discovery.next(301, request) && request.bytes[1] == 102);
+  discovery.feed(setup_sample(), 7, 302);
+  CHECK(!discovery.complete() && !discovery.next(952, request));
+  CHECK(discovery.next(953, request) && request.scan);
+
+  // A changed explicit selection takes precedence over any cached package.
+  discovery.start(true, Id::Wfb, 0, hint_for(7, 7, Id::WheelE));
+  CHECK(discovery.next(150, request));
+  discovery.feed(firmware(7), 7, 151);
+  CHECK(discovery.next(301, request) && request.bytes[1] == 102);
+  discovery.feed(wheel_e_info(), 7, 302);
+  discovery.feed(wheel_e_sample(), 7, 303);
+  CHECK(!discovery.complete());
+
+  // Each connection re-verifies the package; a prior completed session is not
+  // sufficient when the new session has not answered the firmware query.
+  discovery.start(true, Id::Auto, 0, hint_for(7, 7, Id::WheelE));
+  CHECK(discovery.next(150, request));
+  CHECK(!discovery.complete() && !discovery.next(801, request));
+  CHECK(discovery.next(802, request) && request.scan);
 }
 
 void cached_discovery_tests() {
@@ -661,6 +753,7 @@ int main() {
   discovery_tests();
   auto_discovery_tests();
   hint_codec_tests();
+  remembered_package_discovery_tests();
   cached_discovery_tests();
   wheel_e_identity_tests();
   std::cout << "CAN codec and controller discovery passed\n";

@@ -1,7 +1,6 @@
 import { Theme } from "theme.slint";
 
-// Keep at most the incoming and outgoing pages. Opaque
-// translation avoids allocating screen snapshots or blending two full pages.
+// Full-width page slides; hardware backends may retain trees and compose snapshots.
 export component PageDeck inherits Rectangle {
     in property <int> page;
     in property <bool> animations-enabled: true;
@@ -18,6 +17,11 @@ export component PageDeck inherits Rectangle {
     out property <length> swipe-offset: 0px;
     out property <bool> vertical-dragging: false;
     out property <length> vertical-offset: 0px;
+    out property <bool> vertical-cancelled: false;
+    out property <int> input-sequence: 0;
+    out property <duration> input-time: 0ms;
+    in property <length> horizontal-inset: 0px;
+    out property <length> slide-width: self.width + 2 * self.horizontal-inset;
     private property <int> gesture-axis: 0;
     private property <bool> swipe-committed: false;
     private property <duration> snap-duration: 250ms;
@@ -28,8 +32,10 @@ export component PageDeck inherits Rectangle {
     private property <bool> edge: false;
     private property <float> phase: 0;
     min-height: 0px;
+    min-width: 0px;
+    preferred-height: 0px;
+    preferred-width: 0px;
     vertical-stretch: 1;
-    clip: true;
     background: Theme.bg;
     animate phase {
         duration: root.animating && root.animations-enabled ? root.snap-duration : 0ms;
@@ -40,6 +46,7 @@ export component PageDeck inherits Rectangle {
         easing: ease-out;
     }
     public function snap() {
+        self.vertical-cancelled = true;
         self.resetting = true;
         gestures.cancel();
         self.resetting = false;
@@ -79,8 +86,8 @@ export component PageDeck inherits Rectangle {
         // Recognize edge gestures too, cancelling any pressed child button,
         // but never move outside the three primary tabs.
         self.swipe-offset = clamp(offset,
-            self.swipe-origin < 2 ? -self.width : 0px,
-            self.swipe-origin > 0 ? self.width : 0px);
+            self.swipe-origin < 2 ? -self.slide-width : 0px,
+            self.swipe-origin > 0 ? self.slide-width : 0px);
         if offset > self.direction-extreme + 8px {
             self.latest-direction = 1;
             self.direction-extreme = offset;
@@ -103,13 +110,13 @@ export component PageDeck inherits Rectangle {
             self.snap();
             return;
         }
-        let fraction = abs(self.swipe-offset / self.width);
+        let fraction = abs(self.swipe-offset / self.slide-width);
         self.swipe-committed = !cancel && abs(self.swipe-offset) >= 40px &&
             ((self.swipe-offset < 0px && self.latest-direction < 0) ||
             (self.swipe-offset > 0px && self.latest-direction > 0));
         self.snap-duration = max(1ms, (self.swipe-committed ? 1 - fraction : fraction) * 250ms);
         self.animating = true;
-        self.swipe-offset = self.swipe-committed ? -self.direction * self.width : 0px;
+        self.swipe-offset = self.swipe-committed ? -self.direction * self.slide-width : 0px;
         if self.swipe-committed {
             self.page-requested(self.swipe-origin + self.direction);
         }
@@ -121,14 +128,20 @@ export component PageDeck inherits Rectangle {
         if self.gesture-axis == 1 {
             self.drag(dx);
         } else {
+            self.vertical-cancelled = false;
             self.vertical-dragging = true;
             self.vertical-offset = dy;
         }
     }
     function finish-gesture(cancel: bool) {
+        self.vertical-cancelled = cancel;
         if self.gesture-axis == 1 { self.end-drag(cancel); }
         self.vertical-dragging = false;
         self.gesture-axis = 0;
+    }
+    function record-contact() {
+        self.input-time = animation-tick();
+        self.input-sequence += 1;
     }
     changed page => {
         if self.dragging { self.snap(); } else { self.advance(); }
@@ -150,36 +163,57 @@ export component PageDeck inherits Rectangle {
             }
             root.previous-page = -1;
             // Programmatic navigation during a slide coalesces to the latest
-            // requested page, without ever retaining a third page.
+            // requested page after the previous slide finishes.
             root.advance();
         }
     }
 
-    gestures := SwipeGestureHandler {
-        width: 100%;
-        height: 100%;
-        enabled: root.swipe-enabled && !root.animating;
-        handle-swipe-left: true;
-        handle-swipe-right: true;
-        handle-swipe-up: true;
-        handle-swipe-down: true;
-        moved => {
-            if self.swiping {
-                root.move-gesture(self.current-position.x - self.pressed-position.x,
-                    self.current-position.y - self.pressed-position.y);
+    viewport := Rectangle {
+        x: -root.horizontal-inset;
+        width: root.slide-width;
+        height: root.height;
+        clip: true;
+        background: Theme.bg;
+        input-observer := TouchArea {
+            width: root.slide-width;
+            height: root.height;
+            changed has-hover => { if self.has-hover { root.record-contact(); } }
+            gestures := SwipeGestureHandler {
+                width: root.slide-width;
+                height: root.height;
+                enabled: root.swipe-enabled && !root.animating;
+                handle-swipe-left: true;
+                handle-swipe-right: true;
+                handle-swipe-up: true;
+                handle-swipe-down: true;
+                changed pressed-position => { root.record-contact(); }
+                moved => {
+                    if self.swiping {
+                        root.move-gesture(self.current-position.x - self.pressed-position.x,
+                            self.current-position.y - self.pressed-position.y);
+                    }
+                }
+                swiped => {
+                    root.move-gesture(self.current-position.x - self.pressed-position.x,
+                        self.current-position.y - self.pressed-position.y);
+                    root.finish-gesture(false);
+                }
+                cancelled => { root.finish-gesture(true); }
+                Rectangle {
+                    x: root.horizontal-inset;
+                    width: root.width;
+                    height: root.height;
+                    @children
+                }
             }
         }
-        swiped => {
-            root.move-gesture(self.current-position.x - self.pressed-position.x,
-                self.current-position.y - self.pressed-position.y);
-            root.finish-gesture(false);
-        }
-        cancelled => { root.finish-gesture(true); }
-        @children
     }
 }
 
 export component TransitionPage inherits Rectangle {
+    in property <bool> selected-page: true;
+    in property <int> capture-page: -1;
+    in property <length> slide-width: self.width;
     in property <int> page-index;
     in property <int> active-page;
     in property <bool> animating;
@@ -190,9 +224,9 @@ export component TransitionPage inherits Rectangle {
     in property <length> swipe-offset;
     width: 100%;
     height: 100%;
-    x: self.swiping ? self.swipe-offset + (self.page-index == self.swipe-origin ? 0px : self.direction * self.width) :
-        !self.animating ? 0px : self.direction * self.width *
+    visible: self.capture-page == -1 ? self.selected-page : self.capture-page == self.page-index;
+    x: self.capture-page != -1 ? 0px : self.swiping ? self.swipe-offset + (self.page-index == self.swipe-origin ? 0px : self.direction * self.slide-width) :
+        !self.animating ? 0px : self.direction * self.slide-width *
         (self.page-index == self.active-page ? 1 - self.progress : -self.progress);
-    background: Theme.bg;
     @children
 }

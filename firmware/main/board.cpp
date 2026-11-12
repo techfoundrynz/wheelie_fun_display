@@ -97,6 +97,7 @@ Display init() {
   touch_io.lcd_cmd_bits = 8;
   touch_io.flags.disable_control_phase = true;
   touch_io.scl_speed_hz = 400'000;
+  touch_io.transaction_timeout_ms = 20;
   esp_lcd_panel_io_handle_t tp_io;
   ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(i2c, &touch_io, &tp_io));
   esp_lcd_touch_config_t touch{};
@@ -120,6 +121,10 @@ void brightness(int percent) {
 
 esp_err_t init_radio() {
   return ESP_OK;
+}
+
+bool radio_tx_ready() {
+  return true;
 }
 
 esp_err_t draw_region(Display &display, int x0, int y0, int x1, int y1, const void *pixels) {

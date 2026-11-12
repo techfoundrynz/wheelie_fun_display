@@ -4,6 +4,11 @@ use std::process::Command;
 
 const LAYOUTS: &[(u32, u32)] = &[(410, 502), (502, 410), (480, 800), (800, 480)];
 
+#[test]
+fn keyboard_preserves_password_and_blocks_background_taps() {
+    check_layouts(Some("--keyboard-fixtures"), LAYOUTS);
+}
+
 fn check_layouts(fixture: Option<&str>, layouts: &[(u32, u32)]) {
     for &(width, height) in layouts {
         let mut command = Command::new(env!("CARGO_BIN_EXE_transition-checks"));
@@ -25,6 +30,46 @@ fn check_layouts(fixture: Option<&str>, layouts: &[(u32, u32)]) {
 #[test]
 fn navigation_gestures_and_rotation() {
     check_layouts(None, LAYOUTS);
+}
+
+#[test]
+fn rotation_replaces_old_panel_pixels() {
+    check_layouts(Some("--rotation-repaint-fixtures"), LAYOUTS);
+}
+
+#[test]
+fn native_page_snapshot_capture() {
+    check_layouts(Some("--snapshot-fixtures"), LAYOUTS);
+}
+
+#[test]
+fn native_page_snapshot_live_handoff() {
+    check_layouts(Some("--live-snapshot-fixtures"), LAYOUTS);
+}
+
+#[test]
+fn native_page_snapshot_restores_both_buffers() {
+    check_layouts(Some("--double-buffer-snapshot-fixtures"), LAYOUTS);
+}
+
+#[test]
+fn native_page_preparation_preserves_visible_page() {
+    check_layouts(Some("--page-preparation-fixtures"), LAYOUTS);
+}
+
+#[test]
+fn stats_scroll_momentum() {
+    check_layouts(Some("--momentum-fixtures"), LAYOUTS);
+}
+
+#[test]
+fn native_gesture_snapshot_reversal_and_cancel() {
+    check_layouts(Some("--gesture-snapshot-fixtures"), LAYOUTS);
+}
+
+#[test]
+fn page_slides_include_side_margins() {
+    check_layouts(Some("--fullwidth-slide-fixtures"), LAYOUTS);
 }
 
 #[test]

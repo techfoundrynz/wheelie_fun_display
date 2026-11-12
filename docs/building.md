@@ -9,7 +9,7 @@ The firmware uses ESP-IDF through PlatformIO and a pinned Slint compiler/runtime
 | `waveshare_esp32s3_206` | 410 × 502 | Waveshare ESP32-S3 Touch AMOLED 2.06, CO5300 / FT3168, 32 MB flash |
 | `guition_jc4880p443c` | 480 × 800 | GUITION JC4880P443C, ST7701S / GT911, 16 MB flash, P4 + C6 |
 
-See the [Waveshare S3 2.06-inch setup guide](hardware-waveshare-206.md) for its board wiring and USB recovery. The [GUITION P4 4.3-inch target](hardware-guition-43.md) requires an ESP32-P4 below revision 3.0 and compatible C6 companion firmware. Both targets are included in `default_envs`.
+See the [Waveshare S3 2.06-inch setup guide](hardware-waveshare-206.md) for its board wiring and USB recovery. The [GUITION P4 4.3-inch target](hardware-guition-43.md) requires production ESP32-P4 revision 3.1 or newer and compatible C6 companion firmware. Both targets are included in `default_envs`.
 
 [PlatformIO configuration](../platformio.ini) is the source of truth. Do not flash a different Waveshare size or revision with this target merely because it also uses an ESP32-S3.
 
@@ -29,6 +29,8 @@ Slint generation uses a content fingerprint of the UI/resources, compiler, font-
 
 Each application image is `.pio/build/<environment>/firmware.bin`. The ESP project identity is derived as `wfd_<hardware-id>`; release filenames use the PlatformIO environment name.
 
+Build firmware environments sequentially: IDF shares managed components between targets. P4 builds apply `-mno-relax` to the generated Slint source to avoid slow linking; see [performance notes](performance.md#p4-link-time-on-windows).
+
 ## First USB installation
 
 For a published release, open the [browser installer](https://techfoundrynz.github.io/wheelie_fun_display/install/), choose the exact display and connect with a USB data cable. The installer checks the chip family and flashes a complete matching image. It can reset saved settings; use OTA for normal updates. The P4 installer does not provision the C6 companion.
@@ -42,6 +44,8 @@ pio device monitor --port YOUR_PORT
 ```
 
 Replace `YOUR_PORT` with the detected port, such as `COM9` on Windows or `/dev/ttyACM0` on Linux. If the board is not detected, use a known USB data cable and enter the board's download mode with BOOT/RESET as described by its manufacturer.
+
+Do not combine `-t nobuild` with `-t upload`. That PlatformIO path bypasses ESP-IDF's partition-derived upload settings and can write the application at the default address instead of this project's OTA slot. Use the normal target upload command above, even when an image was already built.
 
 The first installation must include the matching bootloader, partition table, OTA initialization data and application. PlatformIO upload uses the configured target layout. Do not upload only an application image to a factory partition layout. After installation, verify the dashboard, touch, all four orientations and the boot log before connecting a bike.
 

@@ -1,7 +1,8 @@
 idf_build_get_property(board_driver WFD_BOARD_DRIVER)
+set(page_snapshots true)
 if(board_driver STREQUAL "waveshare_qspi")
     set(board_source "board.cpp")
-    set(renderer_source "slint_renderer_scanline.cpp")
+    set(renderer_source "slint_renderer_s3.cpp")
     set(board_requires espressif__esp_lcd_sh8601 espressif__esp_lcd_touch_ft5x06)
 elseif(board_driver STREQUAL "guition_p4")
     set(board_source "board_guition_p4.cpp")
@@ -19,6 +20,26 @@ idf_component_register(SRCS "main.cpp" "tuning.cpp" ${board_source} "ble.cpp" "b
     ${board_requires})
 target_sources(${COMPONENT_LIB} PRIVATE ota_image.cpp vesc_update.cpp)
 target_compile_features(${COMPONENT_LIB} PUBLIC cxx_std_20)
+set(profile_enabled 0)
+set(profile_seconds 10)
+set(profile_start 0)
+if("$ENV{WFD_RENDER_PROFILE}" STREQUAL "1")
+    set(profile_enabled 1)
+    if(NOT "$ENV{WFD_RENDER_PROFILE_SECONDS}" STREQUAL "")
+        set(profile_seconds "$ENV{WFD_RENDER_PROFILE_SECONDS}")
+    endif()
+    if(NOT profile_seconds MATCHES "^[1-9][0-9]*$" OR profile_seconds GREATER 600)
+        message(FATAL_ERROR "WFD_RENDER_PROFILE_SECONDS must be between 1 and 600")
+    endif()
+    if(NOT "$ENV{WFD_RENDER_PROFILE_START_STAGE}" STREQUAL "")
+        set(profile_start "$ENV{WFD_RENDER_PROFILE_START_STAGE}")
+        if(NOT profile_start MATCHES "^(0|[1-9][0-9]*)$" OR profile_start GREATER 15)
+            message(FATAL_ERROR "WFD_RENDER_PROFILE_START_STAGE must be between 0 and 15")
+        endif()
+    endif()
+endif()
+file(CONFIGURE OUTPUT "${CMAKE_BINARY_DIR}/render_profile_config.hpp" CONTENT
+    "#pragma once\n#ifndef WFD_RENDER_PROFILE\n#define WFD_RENDER_PROFILE @profile_enabled@\n#endif\n#ifndef WFD_RENDER_PROFILE_SECONDS\n#define WFD_RENDER_PROFILE_SECONDS @profile_seconds@\n#endif\n#define WFD_RENDER_PROFILE_START @profile_start@\n" @ONLY)
 find_package(Git QUIET)
 set(wfd_source_revision "")
 if(GIT_FOUND)
@@ -67,12 +88,29 @@ file(GLOB_RECURSE ui_inputs CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/ui/*.slint" "
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${ui_inputs})
 set(gen "${CMAKE_CURRENT_BINARY_DIR}/generated")
 file(MAKE_DIRECTORY "${gen}")
+if(page_snapshots)
+    file(MAKE_DIRECTORY "${gen}/ui")
+    file(COPY_FILE "${ui}" "${gen}/ui/dashboard.slint" ONLY_IF_DIFFERENT)
+    file(CONFIGURE OUTPUT "${gen}/ui/hardware.slint" CONTENT
+        "export global HardwareCapabilities { out property <bool> page-snapshots: true; }\n")
+    set(ui "${gen}/ui/dashboard.slint")
+endif()
 if(CMAKE_HOST_WIN32)
     set(slint_compiler "${CMAKE_BINARY_DIR}/slint-prebuilt/slint-compiler.exe")
 else()
     set(slint_compiler "${CMAKE_BINARY_DIR}/slint-prebuilt/slint-compiler")
 endif()
 # The runtime component stages a matching compiler and headers during configuration.
+set(header_preparer "${CMAKE_SOURCE_DIR}/scripts/prepare_slint_headers.py")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${header_preparer}")
+set(slint_compat_headers "${CMAKE_CURRENT_BINARY_DIR}/slint-compat")
+execute_process(COMMAND "${PYTHON}" "${header_preparer}"
+    --source "${CMAKE_BINARY_DIR}/slint-prebuilt/current/include"
+    --output "${slint_compat_headers}" RESULT_VARIABLE header_result)
+if(NOT header_result EQUAL 0)
+    message(FATAL_ERROR "Slint header compatibility preparation failed")
+endif()
+target_include_directories(${COMPONENT_LIB} BEFORE PRIVATE "${slint_compat_headers}")
 # Font glyph ordering can vary between compiler runs, so unchanged UI inputs must
 # reuse the complete generated pair instead of recompiling it on every configure.
 set(font_preparer "${CMAKE_SOURCE_DIR}/scripts/prepare_slint_fonts.py")
@@ -81,7 +119,7 @@ set(slint_font_sizes "14,16,18,20,24,28,36,48,60,72,84,120")
 set(slint_font_plan "Roboto=14/16/18/20/24/28/36/48:0123456789.- /60:0123456789.- /72:0123456789.- /84:0123456789.- /120:0123456789.- ;Sonsie One=20:WHEELIE")
 file(SHA256 "${slint_compiler}" slint_compiler_hash)
 file(SHA256 "${font_preparer}" font_preparer_hash)
-set(slint_fingerprint "wfd-slint-generation-v2\n${slint_compiler_hash}\n${font_preparer_hash}\n${slint_font_sizes}\n${slint_font_plan}\n--embed-resources=embed-for-software-renderer\n-o=dashboard.h\n--cpp-file=dashboard-raw.cpp\n")
+set(slint_fingerprint "wfd-slint-generation-v2\n${slint_compiler_hash}\n${font_preparer_hash}\n${slint_font_sizes}\n${slint_font_plan}\npage-snapshots=${page_snapshots}\n--embed-resources=embed-for-software-renderer\n-o=dashboard.h\n--cpp-file=dashboard-raw.cpp\n")
 list(SORT ui_inputs)
 foreach(ui_input IN LISTS ui_inputs)
     file(RELATIVE_PATH ui_relative "${CMAKE_SOURCE_DIR}" "${ui_input}")
@@ -109,7 +147,7 @@ if(NOT slint_previous STREQUAL slint_expected OR
     execute_process(COMMAND "${CMAKE_COMMAND}" -E env
         "SLINT_FONT_SIZES=${slint_font_sizes}"
         "SLINT_FONT_PLAN=${slint_font_plan}"
-        "${slint_compiler}" "${ui}" --embed-resources embed-for-software-renderer
+        "${slint_compiler}" "${ui}" -I "${CMAKE_SOURCE_DIR}/ui" --embed-resources embed-for-software-renderer
         -o dashboard.h --cpp-file dashboard-raw.cpp
         WORKING_DIRECTORY "${slint_staging}" RESULT_VARIABLE slint_result)
     if(NOT slint_result EQUAL 0)
@@ -137,5 +175,10 @@ if(NOT slint_previous STREQUAL slint_expected OR
 endif()
 
 target_sources(${COMPONENT_LIB} PRIVATE "${gen}/dashboard.cpp")
+if(CONFIG_IDF_TARGET_ESP32P4)
+    # Avoid relaxation over millions of generated debug labels.
+    # Other objects retain normal linker optimizations.
+    set_property(SOURCE "${gen}/dashboard.cpp" APPEND PROPERTY COMPILE_OPTIONS -mno-relax)
+endif()
 target_include_directories(${COMPONENT_LIB} PRIVATE "${gen}")
 

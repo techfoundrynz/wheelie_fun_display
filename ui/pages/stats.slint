@@ -69,6 +69,9 @@ export component StatsPage inherits TransitionPage {
     in property <bool> metric;
     in property <length> drag-delta;
     in property <bool> scroll-active;
+    in property <bool> drag-cancelled;
+    in property <int> input-sequence;
+    in property <duration> input-time;
     in property <string> speed;
     in property <string> power;
     in property <string> battery;
@@ -82,10 +85,14 @@ export component StatsPage inherits TransitionPage {
     in property <string> trip;
     in property <string> odometer;
     SwipeScroll {
+        drag-cancelled: root.drag-cancelled;
+        input-sequence: root.input-sequence;
+        input-time: root.input-time;
+        motion-blocked: root.swiping || !root.selected-page || !root.visible;
         drag-delta: root.drag-delta;
         scroll-active: root.scroll-active;
         content-width: self.width;
-        VerticalLayout {
+        stats-content := VerticalLayout {
             spacing: 12px;
             Text {
                 text: "STATS";

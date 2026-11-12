@@ -1,23 +1,75 @@
 // The parent recognizer owns axis arbitration. Keep the normal clipped
 // Flickable viewport, but apply vertical drags without competing recognizers.
+// Release velocity drives a bounded deceleration animation after the drag.
 export component SwipeScroll inherits Flickable {
     in property <bool> scroll-active;
     in property <length> drag-delta;
+    in property <bool> drag-cancelled;
+    in property <int> input-sequence;
+    in property <duration> input-time;
+    in property <bool> motion-blocked;
     private property <bool> tracking: false;
     private property <length> start-y: 0px;
+    private property <length> previous-y: 0px;
+    private property <length> velocity: 0px;
+    private property <duration> sample-time: 0ms;
+    private property <duration> momentum-duration: 0ms;
+    private property <int> samples: 0;
     interactive: false;
+    animate content-y {
+        duration: root.tracking ? 0ms : root.momentum-duration;
+        easing: cubic-bezier(0.333333, 0.666667, 0.666667, 1);
+    }
+    function stop-motion() {
+        let current = self.content-y;
+        self.momentum-duration = 0ms;
+        self.content-y = current;
+        self.velocity = 0px;
+        self.samples = 0;
+    }
     function apply-drag() {
-        if !self.scroll-active { return; }
+        if !self.scroll-active || self.motion-blocked { return; }
+        let now = animation-tick();
         if !self.tracking {
+            self.stop-motion();
             self.start-y = self.content-y;
+            self.previous-y = self.content-y;
+            self.sample-time = max(self.input-time, now - 100ms);
             self.tracking = true;
         }
-        self.content-y = clamp(self.start-y + self.drag-delta,
+        let next = clamp(self.start-y + self.drag-delta,
             min(0px, self.height - self.content-height), 0px);
+        let elapsed = now - self.sample-time;
+        if next != self.previous-y && elapsed > 0ms {
+            let sample = clamp((next - self.previous-y) * 16ms / elapsed, -48px, 48px);
+            self.velocity = self.samples == 0 ? sample : (self.velocity + sample) * 0.5;
+            self.samples += 1;
+            self.sample-time = now;
+            self.previous-y = next;
+        }
+        self.content-y = next;
+    }
+    function end-drag() {
+        if !self.tracking { return; }
+        self.tracking = false;
+        if self.drag-cancelled || self.motion-blocked || animation-tick() - self.sample-time >= 100ms || abs(self.velocity) < 0.5px {
+            self.stop-motion();
+            return;
+        }
+        // Match Flickable's 2,000 logical px/s² deceleration; velocity is stored
+        // as displacement per 16 ms. Shorten the animation at the scroll bounds.
+        let duration = min(1500ms, abs(self.velocity) / 0.512px * 16ms);
+        let distance = self.velocity * duration / 32ms;
+        let target = clamp(self.content-y + distance, min(0px, self.height - self.content-height), 0px);
+        self.momentum-duration = duration * abs(target - self.content-y) / max(1px, abs(distance));
+        self.content-y = target;
     }
     changed scroll-active => {
-        if self.scroll-active { self.apply-drag(); } else { self.tracking = false; }
+        if self.scroll-active { self.apply-drag(); } else { self.end-drag(); }
     }
     changed drag-delta => { self.apply-drag(); }
+    changed input-sequence => { if !self.scroll-active { self.stop-motion(); } }
+    changed motion-blocked => { if self.motion-blocked { self.tracking = false; self.stop-motion(); } }
+    changed height => { self.tracking = false; self.stop-motion(); }
     @children
 }

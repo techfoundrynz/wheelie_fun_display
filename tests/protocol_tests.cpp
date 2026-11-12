@@ -196,7 +196,7 @@ void battery_estimate_validity_tests() {
       0xc0, 0x00, 0x57, 0x01, 0x00, 0x03, 0x8d, 0x83, 0x00, 0x00, 0xb4, 0xdf, 0x00, 0x4d, 0xc2, 0x8a,
   };
   CHECK(bike::decode_telemetry(captured, 100, sample));
-  CHECK(sample.fresh(100) && !sample.battery_valid);
+  CHECK(sample.fresh(100) && sample.battery_valid);
   CHECK(std::abs(sample.battery_percent - 411.2f) < .001f);
   CHECK(std::abs(sample.voltage - 81.7f) < .001f);
   CHECK(sample.speed_mps == 0 && sample.motor_current == 0 && sample.battery_current == 0);
@@ -208,17 +208,18 @@ void battery_estimate_validity_tests() {
   write32(captured, 19, 2500);
   write32(captured, 5, uint32_t(-1234));
   CHECK(bike::decode_telemetry(captured, 200, sample));
-  CHECK(!sample.battery_valid && sample.speed_mps == 2.5f && sample.motor_current == -12.34f);
+  CHECK(sample.battery_valid && sample.speed_mps == 2.5f && sample.motor_current == -12.34f);
   CHECK(!sample.can_configure(200));
   write32(captured, 19, 0);
   captured[55] = 1;
   CHECK(bike::decode_telemetry(captured, 300, sample));
   CHECK(!sample.can_configure(300)); // A fault still blocks changes, even at zero speed.
-  for (const auto estimate : {-1, 0, 1000, 1001, 32767}) {
+  for (const auto estimate : {-32768, -1, 0, 1000, 1001, 4070, 32767}) {
     auto packet = setup();
     write16(packet, 25, estimate);
     CHECK(bike::decode_telemetry(packet, 400, sample));
-    CHECK(sample.battery_valid == (estimate >= 0 && estimate <= 1000));
+    CHECK(sample.battery_valid == (estimate >= 0));
+    CHECK(std::abs(sample.battery_percent - estimate / 10.f) < .001f);
     CHECK(sample.fresh(400) && sample.speed_mps == 2.5f);
   }
   CHECK(bike::decode_telemetry(setup(), 500, sample));

@@ -87,14 +87,10 @@ def stage_factory(
         command.extend([hex(offset), str(path)])
     subprocess.run(command, check=True)
     compatibility = ""
-    sdk_header = build / "config/sdkconfig.h"
-    if (
-        chip == "esp32p4"
-        and sdk_header.is_file()
-        and "#define CONFIG_ESP32P4_SELECTS_REV_LESS_V3 1"
-        in sdk_header.read_text(encoding="utf-8")
-    ):
-        compatibility = "For ESP32-P4 revisions below 3.0. Check your board revision before installing."
+    if chip == "esp32p4":
+        compatibility = (
+            "For ESP32-P4 revision 3.1 or newer. Incompatible with pre-v3 boards."
+        )
     return {
         "compatibility": compatibility,
         "environment": environment,

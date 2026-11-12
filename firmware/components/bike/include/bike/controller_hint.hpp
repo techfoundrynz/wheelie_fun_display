@@ -11,6 +11,7 @@ namespace bike
 struct ControllerHint {
   int route = -1;
   std::array<uint8_t, 12> uuid{};
+  IntegrationId integration = IntegrationId::Auto; // Auto means a legacy hint without a verified package.
   bool operator==(const ControllerHint &) const = default;
 };
 
@@ -27,7 +28,7 @@ struct HintRecord {
 };
 
 constexpr size_t controller_hint_slots = 8;
-using HintBytes = std::array<uint8_t, 23>;
+using HintBytes = std::array<uint8_t, 24>;
 
 inline bool valid_hint(const HintRecord &record) {
   const auto &context = record.context;
@@ -35,7 +36,11 @@ inline bool valid_hint(const HintRecord &record) {
   if (context.transport > 2 ||
       (context.selection != IntegrationId::Auto && context.selection != IntegrationId::Vesc &&
        context.selection != IntegrationId::Wfb && context.selection != IntegrationId::WheelE) ||
-      hint.route < -1 || hint.route > 254 || (context.transport == 1 && hint.route < 0))
+      hint.route < -1 || hint.route > 254 || (context.transport == 1 && hint.route < 0) ||
+      (hint.integration != IntegrationId::Auto && hint.integration != IntegrationId::Vesc &&
+       hint.integration != IntegrationId::Wfb && hint.integration != IntegrationId::WheelE) ||
+      (context.selection != IntegrationId::Auto && hint.integration != IntegrationId::Auto &&
+       context.selection != hint.integration))
     return false;
   if (context.transport == 0) {
     if (context.peer[0] > 3 ||
@@ -53,17 +58,19 @@ inline HintBytes encode_hint(const HintRecord &record) {
   HintBytes bytes{};
   if (!valid_hint(record))
     return bytes;
-  bytes[0] = 1;
+  bytes[0] = 2;
   bytes[1] = record.context.transport;
   bytes[2] = uint8_t(record.context.selection);
   std::copy(record.context.peer.begin(), record.context.peer.end(), bytes.begin() + 3);
   bytes[10] = uint8_t(record.controller.route + 1);
   std::copy(record.controller.uuid.begin(), record.controller.uuid.end(), bytes.begin() + 11);
+  bytes[23] = uint8_t(record.controller.integration);
   return bytes;
 }
 
 inline std::optional<HintRecord> decode_hint(std::span<const uint8_t> bytes) {
-  if (bytes.size() != HintBytes{}.size() || bytes[0] != 1)
+  const bool legacy = bytes.size() == 23 && bytes[0] == 1;
+  if (!legacy && (bytes.size() != HintBytes{}.size() || bytes[0] != 2))
     return std::nullopt;
   HintRecord record;
   record.context.transport = bytes[1];
@@ -71,6 +78,8 @@ inline std::optional<HintRecord> decode_hint(std::span<const uint8_t> bytes) {
   std::copy_n(bytes.begin() + 3, 7, record.context.peer.begin());
   record.controller.route = int(bytes[10]) - 1;
   std::copy_n(bytes.begin() + 11, 12, record.controller.uuid.begin());
+  if (!legacy)
+    record.controller.integration = static_cast<IntegrationId>(bytes[23]);
   return valid_hint(record) ? std::optional(record) : std::nullopt;
 }
 

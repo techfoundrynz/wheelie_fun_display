@@ -68,7 +68,7 @@ def browser_checks(site, executable, output):
             "environment": "board_p4",
             "label": "GUITION JC4880P443C 4.3",
             "chip_family": "ESP32-P4",
-            "compatibility": "For ESP32-P4 revisions below 3.0.",
+            "compatibility": "For ESP32-P4 revision 3.1 or newer.",
         },
     ]
     for board in boards:

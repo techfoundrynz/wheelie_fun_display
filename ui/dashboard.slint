@@ -16,6 +16,7 @@ import { Keyboard } from "keyboard.slint";
 import { PinPad } from "pin-pad.slint";
 import { Theme } from "theme.slint";
 import { SafeArea } from "safe-area.slint";
+import { HardwareCapabilities } from "hardware.slint";
 import "fonts/Roboto.ttf";
 import { Peer, WifiItem, AboutItem, StatItem, TuneField } from "models.slint";
 export { Peer, WifiItem, AboutItem, StatItem, TuneField } from "models.slint";
@@ -137,6 +138,24 @@ export component Dashboard inherits Window {
     out property <bool> transitioning: pages.animating;
     out property <int> displayed-page: pages.active-page;
     out property <int> outgoing-page: pages.previous-page;
+    out property <bool> page-input-allowed: root.show-page-content && !root.screen-asleep && !root.screen-locked && !root.pin-open && !root.editing && !root.pairing-open && !root.confirming && !root.ota-confirming && !root.tuning-editor-open && !root.update-modal-open;
+    out property <length> page-viewport-x: safe-area.x + safe-area.content-inset-x + body.x + pages.x - pages.horizontal-inset;
+    out property <length> page-viewport-y: safe-area.y + safe-area.content-inset-y + body.y + pages.y;
+    out property <length> page-viewport-width: pages.slide-width;
+    out property <length> page-viewport-height: pages.height;
+    in property <int> native-capture-page: -1;
+    out property <bool> native-page-snapshots: HardwareCapabilities.page-snapshots;
+    out property <bool> native-page-content-active: HardwareCapabilities.page-snapshots && root.show-page-content;
+    out property <bool> native-slides-allowed: HardwareCapabilities.page-snapshots && self.page-input-allowed;
+    out property <bool> native-slide-active: self.native-slides-allowed && (pages.animating || pages.swiping);
+    out property <int> native-slide-incoming: HardwareCapabilities.page-snapshots ? (pages.swiping ? pages.previous-page : pages.active-page) : -1;
+    out property <int> native-slide-outgoing: HardwareCapabilities.page-snapshots ? (pages.swiping ? pages.swipe-origin : pages.previous-page) : -1;
+    out property <float> native-slide-progress: HardwareCapabilities.page-snapshots ? (pages.swiping ? abs(pages.swipe-offset) / max(1px, pages.slide-width) : pages.progress) : 0;
+    out property <int> native-slide-direction: HardwareCapabilities.page-snapshots ? pages.direction : 1;
+    out property <length> native-page-x: HardwareCapabilities.page-snapshots ? self.page-viewport-x : 0px;
+    out property <length> native-page-y: HardwareCapabilities.page-snapshots ? self.page-viewport-y : 0px;
+    out property <length> native-page-width: HardwareCapabilities.page-snapshots ? self.page-viewport-width : 0px;
+    out property <length> native-page-height: HardwareCapabilities.page-snapshots ? self.page-viewport-height : 0px;
     in-out property <int> draft-mode: -1;
     in property <bool> tuning-ready: false;
     in property <[string]> tuning-presets: ["Eco", "Cruise", "Sport"];
@@ -274,14 +293,19 @@ export component Dashboard inherits Window {
     private property <bool> short-landscape: self.width > self.height && self.height < 450px;
     private property <length> gutter: self.width < 380px ? 12px : 20px;
 
-    SafeArea {
+    if HardwareCapabilities.page-snapshots && root.native-capture-page == -2: Rectangle {
+        width: root.width;
+        height: root.height;
+        background: Theme.bg;
+    }
+    safe-area := SafeArea {
         width: root.width;
         height: root.height;
         safe-inset-x: root.display-safe-inset-x;
         safe-inset-y: root.display-safe-inset-y;
         minimum-padding-x: root.gutter;
         minimum-padding-y: 12px;
-        VerticalLayout {
+        body := VerticalLayout {
             padding: 0px;
             spacing: 0px;
             Header {
@@ -301,11 +325,15 @@ export component Dashboard inherits Window {
             }
 
             pages := PageDeck {
+                horizontal-inset: safe-area.content-inset-x;
                 page: root.page;
                 animations-enabled: root.animations-enabled;
                 swipe-enabled: root.page >= 0 && root.page <= 2 && !root.confirming && !root.ota-confirming && !root.editing && !root.pin-open && !root.tuning-editor-open && !root.update-modal-open;
                 page-requested(page) => { root.page = page; }
-                if root.show-page-content && (pages.active-page == 0 || pages.previous-page == 0): RidePage {
+                if root.show-page-content && (HardwareCapabilities.page-snapshots || pages.active-page == 0 || pages.previous-page == 0): RidePage {
+                    selected-page: !HardwareCapabilities.page-snapshots || pages.active-page == 0 || pages.previous-page == 0;
+                    slide-width: pages.slide-width;
+                    capture-page: HardwareCapabilities.page-snapshots ? root.native-capture-page : -1;
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;
@@ -331,7 +359,10 @@ export component Dashboard inherits Window {
                     trip: root.trip;
                     odometer: root.odometer;
                 }
-                if root.show-page-content && (pages.active-page == 1 || pages.previous-page == 1): StatsPage {
+                if root.show-page-content && (HardwareCapabilities.page-snapshots || pages.active-page == 1 || pages.previous-page == 1): StatsPage {
+                    selected-page: !HardwareCapabilities.page-snapshots || pages.active-page == 1 || pages.previous-page == 1;
+                    slide-width: pages.slide-width;
+                    capture-page: HardwareCapabilities.page-snapshots ? root.native-capture-page : -1;
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;
@@ -343,6 +374,9 @@ export component Dashboard inherits Window {
                     fresh: root.fresh;
                     metric: root.metric;
                     drag-delta: pages.vertical-offset;
+                    drag-cancelled: pages.vertical-cancelled;
+                    input-sequence: pages.input-sequence;
+                    input-time: pages.input-time;
                     scroll-active: pages.vertical-dragging;
                     speed: root.speed;
                     power: root.power;
@@ -362,7 +396,10 @@ export component Dashboard inherits Window {
                     trip: root.trip;
                     odometer: root.odometer;
                 }
-                if root.show-page-content && (pages.active-page == 2 || pages.previous-page == 2): TunePage {
+                if root.show-page-content && (HardwareCapabilities.page-snapshots || pages.active-page == 2 || pages.previous-page == 2): TunePage {
+                    selected-page: !HardwareCapabilities.page-snapshots || pages.active-page == 2 || pages.previous-page == 2;
+                    slide-width: pages.slide-width;
+                    capture-page: HardwareCapabilities.page-snapshots ? root.native-capture-page : -1;
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;
@@ -378,6 +415,9 @@ export component Dashboard inherits Window {
                     draft-limit <=> root.draft-limit;
                     draft-mode <=> root.draft-mode;
                     drag-delta: pages.vertical-offset;
+                    drag-cancelled: pages.vertical-cancelled;
+                    input-sequence: pages.input-sequence;
+                    input-time: pages.input-time;
                     feedback: root.feedback;
                     metric: root.metric;
                     scroll-active: pages.vertical-dragging;
@@ -407,7 +447,10 @@ export component Dashboard inherits Window {
                     tuning-reset => { root.tuning-reset(); }
                     tuning-section-requested(section) => { root.tuning-section-requested(section); }
                 }
-                if root.show-page-content && (pages.active-page == 3 || pages.previous-page == 3): TransitionPage {
+                if root.show-page-content && (HardwareCapabilities.page-snapshots || pages.active-page == 3 || pages.previous-page == 3): TransitionPage {
+                    selected-page: !HardwareCapabilities.page-snapshots || pages.active-page == 3 || pages.previous-page == 3;
+                    slide-width: pages.slide-width;
+                    capture-page: HardwareCapabilities.page-snapshots ? root.native-capture-page : -1;
                     page-index: 3;
                     active-page: pages.active-page;
                     animating: pages.animating;
@@ -462,7 +505,10 @@ export component Dashboard inherits Window {
                         about => { root.page = 6; }
                     }
                 }
-                if root.show-page-content && (pages.active-page == 4 || pages.previous-page == 4): WifiPage {
+                if root.show-page-content && (HardwareCapabilities.page-snapshots || pages.active-page == 4 || pages.previous-page == 4): WifiPage {
+                    selected-page: !HardwareCapabilities.page-snapshots || pages.active-page == 4 || pages.previous-page == 4;
+                    slide-width: pages.slide-width;
+                    capture-page: HardwareCapabilities.page-snapshots ? root.native-capture-page : -1;
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;
@@ -480,7 +526,10 @@ export component Dashboard inherits Window {
                     wifi-select(arg0) => { root.wifi-select(arg0); }
                     wifi-status: root.wifi-status;
                 }
-                if root.show-page-content && (pages.active-page == 5 || pages.previous-page == 5): UpdatesPage {
+                if root.show-page-content && (HardwareCapabilities.page-snapshots || pages.active-page == 5 || pages.previous-page == 5): UpdatesPage {
+                    selected-page: !HardwareCapabilities.page-snapshots || pages.active-page == 5 || pages.previous-page == 5;
+                    slide-width: pages.slide-width;
+                    capture-page: HardwareCapabilities.page-snapshots ? root.native-capture-page : -1;
                     vesc-update-mode: root.vesc-update-mode;
                     vesc-update-active: root.vesc-update-active;
                     vesc-update-progress: root.vesc-update-progress;
@@ -511,7 +560,10 @@ export component Dashboard inherits Window {
                     wifi-scan() => { root.wifi-scan(); }
                     wifi-status: root.wifi-status;
                 }
-                if root.show-page-content && (pages.active-page == 6 || pages.previous-page == 6): AboutPage {
+                if root.show-page-content && (HardwareCapabilities.page-snapshots || pages.active-page == 6 || pages.previous-page == 6): AboutPage {
+                    selected-page: !HardwareCapabilities.page-snapshots || pages.active-page == 6 || pages.previous-page == 6;
+                    slide-width: pages.slide-width;
+                    capture-page: HardwareCapabilities.page-snapshots ? root.native-capture-page : -1;
                     active-page: pages.active-page;
                     animating: pages.animating;
                     direction: pages.direction;

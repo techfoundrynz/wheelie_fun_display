@@ -1,4 +1,5 @@
 #include "bike/scanline_chunks.hpp"
+#include "bike/scanline_regions.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -109,8 +110,51 @@ template <size_t W, size_t H, size_t Rows> void exercise(std::mt19937 &random, b
   }
 }
 
+void exercise_native_regions(std::mt19937 &random) {
+  constexpr size_t width = 64, height = 32;
+  for (unsigned trial = 0; trial < 2000; ++trial) {
+    std::vector<bike::ScanlineSpan> spans;
+    for (size_t y = 0; y < height; ++y) {
+      if (trial % 3 == 0) {
+        if (y != 13) // A missing row must stay untouched.
+          spans.push_back({y, 8, 56});
+      }
+      else {
+        for (size_t part = 0; part < 3; ++part) {
+          const size_t x0 = part * 20 + (trial % 3 == 1 ? 4 : random() % 8);
+          spans.push_back({y, x0, x0 + (trial % 3 == 1 ? 12 : 1 + random() % 12)});
+        }
+      }
+    }
+    std::vector<uint16_t> tile(width * height, 0xa55a), expected(width * height, 0xdead), panel = expected;
+    std::vector<unsigned> expected_writes(width * height), actual_writes(width * height);
+    for (const auto &s : spans)
+      for (size_t x = s.x0; x < s.x1; ++x) {
+        tile[s.y * width + x] = expected[s.y * width + x] = uint16_t(s.y * width + x);
+        ++expected_writes[s.y * width + x];
+      }
+    std::vector<bike::ScanlineRegion> regions(spans.size());
+    const auto calls = bike::scanline_regions(spans, regions);
+    for (size_t i = 0; i < calls; ++i) {
+      const auto &region = regions[i];
+      for (size_t y = region.y; y < region.y + region.height; ++y)
+        for (size_t x = region.x0; x < region.x1; ++x) {
+          CHECK(y < height && x < width);
+          panel[y * width + x] = tile[y * width + x];
+          ++actual_writes[y * width + x];
+        }
+    }
+    CHECK(panel == expected && actual_writes == expected_writes);
+    if (trial % 3 == 0)
+      CHECK(calls == 2);
+    if (trial % 3 == 1)
+      CHECK(calls == 3);
+  }
+}
+
 int main() {
   std::mt19937 random(12345);
+  exercise_native_regions(random);
   for (int i = 0; i < 2000; ++i)
     exercise<64, 54, 4>(random);
   for (int i = 0; i < 20; ++i)

@@ -38,9 +38,9 @@ public:
     sent_ = overflow_ = false;
     native_ = native_can;
     integration_ = integration;
-    probe_ = first_probe();
     hint_ = hint;
     trying_hint_ = hint && hint->route >= (native_can ? 0 : -1) && hint->route <= 254;
+    probe_ = first_probe();
     if (trying_hint_) {
       add(hint->route);
       quiet(Stage::Firmware, now);
@@ -191,6 +191,10 @@ public:
     return stage_ == Stage::Scan && sent_;
   }
 
+  bool using_hint() const {
+    return trying_hint_;
+  }
+
   IntegrationId selection() const {
     return integration_;
   }
@@ -267,6 +271,9 @@ private:
   }
 
   IntegrationId first_probe() const {
+    if (integration_ == IntegrationId::Auto && trying_hint_ &&
+        (hint_->integration == IntegrationId::Wfb || hint_->integration == IntegrationId::WheelE))
+      return hint_->integration;
     return integration_ == IntegrationId::Auto ? IntegrationId::Wfb : integration_;
   }
 
@@ -275,6 +282,10 @@ private:
   }
 
   void advance_package(uint64_t now) {
+    if (trying_hint_ && hint_->integration != IntegrationId::Auto) {
+      begin_scan(now);
+      return;
+    }
     if (integration_ == IntegrationId::Auto && probe_ != IntegrationId::Vesc) {
       probe_ = probe_ == IntegrationId::Wfb ? IntegrationId::WheelE : IntegrationId::Vesc;
       begin_package(now);

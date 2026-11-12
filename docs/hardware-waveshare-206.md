@@ -62,4 +62,6 @@ See [troubleshooting](troubleshooting.md), [performance configuration](performan
 
 To build from source, follow [building and installing](building.md) with environment `waveshare_esp32s3_206`. Release application images are `waveshare_esp32s3_206.bin`; full USB images are `waveshare_esp32s3_206-factory.bin`.
 
-The profile uses a 240 MHz CPU, 80 MHz flash/octal PSRAM and 80 MHz panel QSPI. CO5300 uses an SH8601-compatible transport with a 22-pixel column offset; FT3168 uses the compatible FT5x06 driver. Display and touch resets use GPIOs directly. Safe insets are 32 pixels horizontally and 16 vertically. See [performance configuration](performance.md) for rendering details and [platformio.ini](../platformio.ini) for the profile.
+The profile uses a 240 MHz CPU, 80 MHz flash/octal PSRAM and 80 MHz panel QSPI. CO5300 uses an SH8601-compatible transport with a 22-pixel column offset; FT3168 uses the compatible FT5x06 driver. Display and touch resets use GPIOs directly. Safe insets are 38 pixels horizontally and 24 vertically. See [performance configuration](performance.md) for rendering details and [platformio.ini](../platformio.ini) for the profile.
+
+Transitions stream cached page images through internal DMA tiles; scrolling renders dirty spans directly. Rotation repaints the full panel to clear old controls from the margins.

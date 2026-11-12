@@ -3,8 +3,9 @@
 #include "driver/gpio.h"
 #include "driver/i2c_master.h"
 #include "driver/ledc.h"
-#include "driver/ppa.h"
 #include "eh_host_core.h"
+#include "eh_host_mcu_transport.h"
+#include "eh_host_mcu_transport_init_event.h"
 #include "esp_cache.h"
 #include "esp_check.h"
 #include "esp_hosted_bt_host_stack.h"
@@ -12,7 +13,9 @@
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_touch_gt911.h"
 #include "esp_ldo_regulator.h"
+#include "esp_timer.h"
 #include "freertos/task.h"
+#include "render_profile.hpp"
 #include <algorithm>
 #include <atomic>
 #include <cstring>
@@ -27,10 +30,12 @@ esp_lcd_dsi_bus_handle_t dsi;
 esp_lcd_panel_io_handle_t command_io;
 uint16_t *framebuffers[2]{};
 unsigned back = 1;
-ppa_client_handle_t rotator;
-constexpr size_t framebuffer_bytes = size_t(panel_width) * panel_height * sizeof(uint16_t);
 SemaphoreHandle_t refreshed;
 std::atomic<uint32_t> refresh_generation{0};
+uint32_t submitted_refresh = 0;
+bool frame_pending = false;
+bool has_frame = false;
+int display_core = 0;
 
 static_assert(std::atomic<uint32_t>::is_always_lock_free);
 
@@ -75,6 +80,7 @@ void init_brightness() {
 } // namespace
 
 Display init() {
+  display_core = xPortGetCoreID();
   init_brightness();
   Display display;
   refreshed = xSemaphoreCreateBinary();
@@ -88,7 +94,7 @@ Display init() {
   esp_lcd_dsi_bus_config_t bus{};
   bus.bus_id = 0;
   bus.num_data_lanes = DISP_DSI_LANES;
-  bus.phy_clk_src = MIPI_DSI_PHY_CLK_SRC_DEFAULT;
+  bus.phy_clk_src = MIPI_DSI_PHY_PLLREF_CLK_SRC_DEFAULT;
   bus.lane_bit_rate_mbps = DISP_DSI_MBPS;
   ESP_ERROR_CHECK(esp_lcd_new_dsi_bus(&bus, &dsi));
   esp_lcd_dbi_io_config_t control{};
@@ -132,10 +138,6 @@ Display init() {
   callbacks.on_frame_buf_complete = refresh_done;
   ESP_ERROR_CHECK(esp_lcd_dpi_panel_register_event_callbacks(display.panel, &callbacks, nullptr));
   ESP_ERROR_CHECK(esp_lcd_panel_init(display.panel));
-  ppa_client_config_t rotation_config{};
-  rotation_config.oper_type = PPA_OPERATION_SRM;
-  rotation_config.max_pending_trans_num = 1;
-  ESP_ERROR_CHECK(ppa_register_client(&rotation_config, &rotator));
 
   i2c_master_bus_config_t i2c_config{};
   i2c_config.i2c_port = I2C_NUM_0;
@@ -181,57 +183,61 @@ esp_err_t init_radio() {
   ESP_RETURN_ON_ERROR(eh_host_connect_to_slave(), "radio", "C6 transport unavailable");
   esp_hosted_bt_host_stack_cfg_t config{};
   config.stack = ESP_HOSTED_BT_HOST_STACK_NIMBLE;
-  config.bring_up_controller = true;
+  // Before v2.5.2, the companion enables Bluetooth at startup and lacks init/enable RPCs.
+  const auto companion_version = eh_host_mcu_transport_get_fw_version();
+  config.bring_up_controller = !(companion_version >= 0x00000006 && companion_version < 0x00020502);
   config.controller_ready_timeout_ms = EH_BT_CTRL_DEFAULT_READY_TIMEOUT_MS;
   return esp_hosted_bt_host_stack_setup(&config);
 }
 
-esp_err_t present_frame(Display &display, const void *pixels, bike::Orientation orientation) {
+bool radio_tx_ready() {
+  return eh_host_mcu_transport_is_tx_ready() > 0;
+}
+
+esp_err_t wait_frame() {
+  // UI and DMA ISR share a core: the next ISR sees the published buffer index.
+  configASSERT(xPortGetCoreID() == display_core);
+  const TickType_t deadline = xTaskGetTickCount() + pdMS_TO_TICKS(500);
+  while (frame_pending && refresh_generation.load(std::memory_order_acquire) == submitted_refresh) {
+    if (int32_t(deadline - xTaskGetTickCount()) <= 0)
+      return ESP_ERR_TIMEOUT;
+    xSemaphoreTake(refreshed, pdMS_TO_TICKS(50));
+  }
+  frame_pending = false;
+  return ESP_OK;
+}
+
+esp_err_t acquire_frame(uint16_t **pixels) {
   if (!pixels)
     return ESP_ERR_INVALID_ARG;
-  ppa_srm_oper_config_t transform{};
-  transform.in.buffer = pixels;
-  transform.in.pic_w = transform.in.block_w = bike::display_width(orientation);
-  transform.in.pic_h = transform.in.block_h = bike::display_height(orientation);
-  transform.in.srm_cm = PPA_SRM_COLOR_MODE_RGB565;
-  transform.out.buffer = framebuffers[back];
-  transform.out.buffer_size = framebuffer_bytes;
-  transform.out.pic_w = panel_width;
-  transform.out.pic_h = panel_height;
-  transform.out.srm_cm = PPA_SRM_COLOR_MODE_RGB565;
-  // UI angles are clockwise; PPA's hardware angles are counterclockwise.
-  switch (orientation) {
-  case bike::Orientation::Landscape:
-    transform.rotation_angle = PPA_SRM_ROTATION_ANGLE_270;
-    break;
-  case bike::Orientation::PortraitInverted:
-    transform.rotation_angle = PPA_SRM_ROTATION_ANGLE_180;
-    break;
-  case bike::Orientation::LandscapeInverted:
-    transform.rotation_angle = PPA_SRM_ROTATION_ANGLE_90;
-    break;
-  default:
-    transform.rotation_angle = PPA_SRM_ROTATION_ANGLE_0;
-  }
-  transform.scale_x = transform.scale_y = 1.f;
-  transform.mode = PPA_TRANS_MODE_BLOCKING;
-  // PPA writes back its source and invalidates its destination before DMA.
-  // Neither CPU nor DSI accesses the inactive output until the operation ends.
-  ESP_RETURN_ON_ERROR(ppa_do_scale_rotate_mirror(rotator, &transform), "display", "PPA rotation failed");
-  ESP_RETURN_ON_ERROR(esp_cache_msync(framebuffers[back], framebuffer_bytes, ESP_CACHE_MSYNC_FLAG_DIR_M2C), "display",
-                      "PPA output synchronization failed");
-  ESP_RETURN_ON_ERROR(esp_lcd_panel_draw_bitmap(display.panel, 0, 0, panel_width, panel_height, framebuffers[back]),
+#if WFD_RENDER_PROFILE
+  const auto started = esp_timer_get_time();
+#endif
+  ESP_RETURN_ON_ERROR(wait_frame(), "display", "Framebuffer handoff timed out");
+#if WFD_RENDER_PROFILE
+  render_profile::last_refresh_us = esp_timer_get_time() - started;
+#endif
+  *pixels = framebuffers[back];
+  return ESP_OK;
+}
+
+const uint16_t *last_frame() {
+  return has_frame ? framebuffers[back ^ 1] : nullptr;
+}
+
+esp_err_t present_frame(Display &display, FrameRect region) {
+#if WFD_RENDER_PROFILE
+  const auto started = esp_timer_get_time();
+#endif
+  ESP_RETURN_ON_ERROR(esp_lcd_panel_draw_bitmap(display.panel, region.x, region.y, region.x + region.width,
+                                                region.y + region.height, framebuffers[back]),
                       "display", "Framebuffer presentation failed");
-  const uint32_t submitted = refresh_generation.load(std::memory_order_acquire);
-  const TickType_t deadline = xTaskGetTickCount() + pdMS_TO_TICKS(500);
-  // A refresh ISR can already have selected the previous buffer when presentation
-  // changes the driver's index. Two subsequent edges guarantee it is no longer scanned.
-  while (uint32_t(refresh_generation.load(std::memory_order_acquire) - submitted) < 2) {
-    if (int32_t(deadline - xTaskGetTickCount()) <= 0 || xSemaphoreTake(refreshed, pdMS_TO_TICKS(50)) != pdTRUE) {
-      if (int32_t(deadline - xTaskGetTickCount()) <= 0)
-        return ESP_ERR_TIMEOUT;
-    }
-  }
+#if WFD_RENDER_PROFILE
+  render_profile::last_submit_us = esp_timer_get_time() - started;
+#endif
+  submitted_refresh = refresh_generation.load(std::memory_order_acquire);
+  frame_pending = true;
+  has_frame = true;
   back ^= 1;
   return ESP_OK;
 }

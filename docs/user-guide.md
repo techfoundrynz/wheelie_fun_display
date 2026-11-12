@@ -8,6 +8,8 @@ Use the bottom tabs or swipe horizontally to move between **Ride**, **Stats** an
 
 Ride shows speed, battery, power, pitch and connection state. Speed uses your saved km/h or mph preference; temperature units are set separately. Pitch is shown in degrees.
 
+Ride and Stats show the battery percentage reported by the controller, including values above 100%. The Ride battery bar stops at full. Unavailable, negative or stale readings show `--`.
+
 Trip and odometer readings sit above the speedometer in portrait. Larger landscape screens put the speed dial on the left and distance readings above the telemetry cards on the right. The layout adapts to the display and orientation.
 
 **Connected** describes the bike connection. A reading of `--` means data is unavailable or out of date, even if the connection is still present. It never means a measured zero.

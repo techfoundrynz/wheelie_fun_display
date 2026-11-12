@@ -8,7 +8,7 @@ A rear housing and handlebar mount for the GUITION JC4880P443C display, using th
 
 These are shaded CAD views using the source materials and appearances. The blank display, cover glass, cable jacket and handlebar are reference geometry. The handlebar is cropped in the mounted view to keep the case visible.
 
-The source GUITION display component is explicitly named `G02_REF_OEM_display_DEPTH_UNVERIFIED`. Its **5 mm module depth**, including **0.5 mm reference glass**, is an assumption in this CAD, not a verified vendor dimension. Check your actual module thickness, mounting threads, screw engagement, PCB/components, USB access and cable clearance before manufacturing the case. Firmware support for this board is described separately in the hardware guide.
+The source GUITION display component is explicitly named `G02_REF_OEM_display_DEPTH_UNVERIFIED`. Its **5 mm module depth**, **0.5 mm glass** and **5 mm rear mounting-boss projection** are CAD assumptions, not verified vendor dimensions. Check your actual module thickness, mounting threads, screw engagement, PCB/components, USB access and cable clearance before manufacturing the case. Firmware support for this board is described separately in the hardware guide.
 
 ## Before you make parts
 
@@ -34,13 +34,14 @@ The clamp files are machining geometry for the model's aluminium parts. No slice
 
 | Feature | Nominal source dimension |
 |---|---|
-| Housing outside width × height | 95 × 63 mm |
-| Housing overall depth, including rear pad | 11.2 mm |
+| Housing outside width × height | 125.3 × 75.3 mm |
+| Housing overall depth, including rear pad | 13.2 mm |
 | Frame corner radius / wall parameter | 4 / 2.4 mm |
-| Reference display footprint | 94.5 × 62 mm |
+| Reference display footprint | 120 × 70 mm |
 | Reference display depth, unverified | 5 mm, including 0.5 mm glass |
-| Display screw pattern | 84.5 × 52.5 mm |
-| Display screw head recess diameter / retaining web | 6.4 / 2 mm |
+| Rear mounting-boss projection, unverified | 5 mm |
+| Display screw pattern | 110 × 60 mm |
+| Display screw head recess diameter / retaining web | 5.4 / 2 mm |
 | Case-to-saddle mounting pitch | 20 × 20 mm |
 | Handlebar diameter | 22.225 mm (7/8 inch) |
 | Clamp bore / width | 23.225 / 16 mm |
@@ -51,12 +52,13 @@ The clamp files are machining geometry for the model's aluminium parts. No slice
 
 The model contains the following hardware per GUITION assembly:
 
-- Eight M3 × 6 ISO 4762 socket-head screws: four for the case-to-saddle joint and four reference display screws.
+- Four M3 × 6 ISO 4762 socket-head screws for the case-to-saddle joint.
+- Four provisional M2.5 × 6 socket-head screws for the reference display.
 - Four M3 heat-set inserts, nominal 5 mm OD × 4 mm long, for the case-to-saddle joint.
 - Two M4 × 12 DIN 7984 low-head socket screws for the handlebar clamp.
 - One split rubber liner and one one-piece cable grommet.
 
-The four display screws use the model's `GDisplayScrewLength_REF` parameter; their 6 mm length and thread compatibility must be checked against the real display. The upper saddle's 3.3 mm M4 tap-drill holes still require the appropriate tapping operation; STEP geometry does not provide threads or toolpaths.
+The display screws use `GDisplayScrewLength`, currently 6 mm. Verify their M2.5 thread, length and engagement against the real display. The upper saddle's 3.3 mm M4 tap-drill holes still require the appropriate tapping operation; STEP geometry does not provide threads or toolpaths.
 
 ## Housing and wiring
 
@@ -68,7 +70,7 @@ The four display screws use the model's `GDisplayScrewLength_REF` parameter; the
 2. Prepare the case and fit its four M3 heat-set inserts. Test the saddle mounting screws for engagement without contact with the display or wiring.
 3. Thread the cable through the **one-piece, unsplit grommet** before attaching any connector too large for its 5.8 mm bore. The 6 mm cable dimension is the outside jacket diameter, not an individual conductor.
 4. Feed the cable through the case opening and seat the grommet from inside. The **larger 9.4 mm flange remains inside**, the smaller 8.6 mm flange outside, and the 3.8 mm panel stack sits in its retaining groove. Check both lips are seated without folding.
-5. Route the wiring clear of the display, corner seats, insert bosses and mounting screws. Fit the display using its four verified screws from underneath; the source shows M3 × 6 reference screws on the 84.5 × 52.5 mm pattern.
+5. Route the wiring clear of the display, corner seats, insert bosses and mounting screws. Fit the display using its four verified screws from underneath; the source shows provisional M2.5 × 6 screws on the 110 × 60 mm pattern.
 6. Fasten the housing to the upper saddle with four M3 × 6 screws, keeping the cable free of the joint.
 
 The grommet fit has not been qualified for a particular print, cable pull load or water-ingress rating. Check retention and any required sealing on the completed assembly.
@@ -99,6 +101,6 @@ Download the [complete editable Fusion archive](../wheelie-fun-display-mounts.f3
 
 ## Source and updates
 
-Exported from **Wheelie Fun Display - Waveshare 2.06**, saved Fusion version **17**, with no unsaved changes, on **8 November 2026**. Despite its historical document name, this source now contains both display families. STEP exports preserve solid geometry, while the shared F3D retains the editable source design.
+Exported from **Wheelie Fun Display - Waveshare 2.06**, saved Fusion version **19**, with no unsaved changes, on **12 November 2026**. Despite its historical document name, this source now contains both display families. STEP exports preserve solid geometry, while the shared F3D retains the editable source design.
 
 These project CAD exports use the repository's [GPL-3.0 license](../../LICENSE).

@@ -2,11 +2,11 @@
 
 The `guition_jc4880p443c` target is for the GUITION **JC4880P443C_I_W** / enclosed `_Y` board, described as JC4880P433 in the original article. It has a 480 × 800 ST7701S MIPI-DSI panel, GT911 touch, 16 MB flash, 32 MB PSRAM and an ESP32-C6 radio companion.
 
-The supplied profile selects **ESP32-P4 revisions below 3.0**, including the original v1.3 engineering-sample board. ESP-IDF treats those chips and production v3.x chips as incompatible targets. Do not use this profile on a v3.x board; check the boot log or vendor revision before installation.
+The profile requires **production ESP32-P4 revision 3.1 or newer**; pre-v3 engineering samples are incompatible. Check the boot log or run `esptool --port YOUR_PORT chip-id` before installation.
 
 ## Install the firmware
 
-1. Confirm your P4 revision is **below 3.0** using the boot log or vendor information. This profile cannot be used on a v3.x board.
+1. Confirm your P4 revision is **3.1 or newer** using the boot log, esptool or vendor information. Do not install this firmware on pre-v3 silicon.
 2. Check that the C6 has compatible radio firmware; see [ESP32-C6 radio firmware](#esp32-c6-radio-firmware) below.
 3. Open the [browser installer](https://techfoundrynz.github.io/wheelie_fun_display/install/), choose **GUITION JC4880P443C** and connect to the P4 with a USB data cable.
 4. Complete installation, then check the screen and touch before [connecting your bike](../GETTING-STARTED.MD).
@@ -43,6 +43,8 @@ The P4 relies on its separate C6 chip for both Wi-Fi and Bluetooth. A working ve
 
 Before replacing C6 firmware, check whether the existing image supports **ESP-Hosted over SDIO, Wi-Fi and Bluetooth controller HCI**. A compatible existing image may work. The profile pins ESP-Hosted 3.1.0 and esp_wifi_remote 1.6.5; a matching 3.1.0 companion is recommended.
 
+For companions before 2.5.2, the driver skips controller-init RPCs because Bluetooth is already enabled at startup. Vendor companion 2.3.2 passed HCI binding and a user-confirmed Wi-Fi connection with DHCP on P4 v3.2, with the host's major-version warning. Wi-Fi required the PSRAM-first allocation policy to preserve radio DMA headroom; see [the diagnostic capture](performance.md#guition-wi-fi-configuration-and-dma-headroom). Bike pairing, phone interoperability, OTA and sustained radio-load acceptance remain unvalidated.
+
 If provisioning is needed:
 
 1. Use Espressif’s matching [ESP-Hosted coexistence companion project](https://github.com/espressif/esp-hosted-mcu/tree/v3.1.0/examples/bluetooth/esp_hosted_nimble/bleprph_wifi_coex/cp).
@@ -75,7 +77,7 @@ pio run -e guition_jc4880p443c
 
 The pinned Slint release supplies matching compiler and MCU runtime assets for ESP32-S3 and ESP32-P4. Firmware builds download and verify those assets; a local Rust runtime bootstrap is not required.
 
-Both profiles use the common PlatformIO Espressif32 8.0.0 and ESP-IDF 6.1 pins. The P4 profile selects pre-v3 silicon and its qualified 360 MHz CPU setting. Shared settings live in `sdkconfig.defaults`; architecture-specific values live in `config/`. Managed component versions are pinned once in `firmware/main/idf_component.yml`; each chip has its own generated dependency lock.
+Both profiles use the common PlatformIO Espressif32 8.0.0 and ESP-IDF 6.1 pins. The P4 profile selects production silicon and its 400 MHz CPU setting. Shared settings live in `sdkconfig.defaults`; architecture-specific values live in `config/`. Managed component versions are pinned once in `firmware/main/idf_component.yml`; each chip has its own generated dependency lock.
 
 For a published release, the [browser installer](https://techfoundrynz.github.io/wheelie_fun_display/install/) flashes the complete P4 image. It does not replace the C6 companion firmware; prepare that separately as described in [ESP32-C6 radio firmware](#esp32-c6-radio-firmware).
 
@@ -94,7 +96,9 @@ For a published release, the [browser installer](https://techfoundrynz.github.io
 | Touch reset | GPIO3 |
 | Touch addressing | Probe 0x5D, then 0x14; polling without an interrupt pin |
 
-Slint renders into a persistent, full-screen RGB565 canvas in PSRAM. The P4 pixel processing accelerator (PPA) rotates each completed frame into the inactive native DSI framebuffer; two native framebuffers keep scanout separate from rendering. Presentation waits for refresh completion before reusing the old front buffer. This uses three full-screen allocations (2.30 MB total), with no internal-RAM scanline buffers. All four display orientations use PPA rotation and the matching native-coordinate touch transforms. PSRAM runs at 200 MHz. The supplied profile starts at 90° (800 × 480 landscape). `DISPLAY_ROTATION` sets the initial angle in the hardware profile; runtime selection is saved in NVS.
+Slint renders rotated dirty spans into internal tiles. PPA copies them into the inactive DSI framebuffer and composes page snapshots for transitions. Refresh completion gates buffer reuse, and touch coordinates follow the selected rotation. PSRAM runs at 250 MHz. See [rendering and measurements](performance.md#esp32-p4-rendering).
+
+Both corner-safe insets are 0 px; normal layout padding remains. Page slides include the side margins while the header and navigation stay fixed. The supplied profile starts at 90° (800 × 480 landscape). `DISPLAY_ROTATION` sets the initial angle in the hardware profile; runtime selection is saved in NVS.
 
 ### P4-to-C6 wiring
 

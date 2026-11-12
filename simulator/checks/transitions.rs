@@ -8,6 +8,7 @@ use std::io::Write;
 use std::rc::Rc;
 use std::time::Duration;
 thread_local! { static SCROLL_TIME: Cell<u64> = const { Cell::new(0) }; }
+thread_local! { static PIXEL_WORK: Cell<u64> = const { Cell::new(0) }; }
 slint::include_modules!();
 #[path = "../stats_fixture.rs"]
 mod stats_fixture;
@@ -26,6 +27,7 @@ impl LineBufferProvider for Lines<'_> {
         range: std::ops::Range<usize>,
         render: impl FnOnce(&mut [Rgb8Pixel]),
     ) {
+        PIXEL_WORK.set(PIXEL_WORK.get() + range.len() as u64);
         render(&mut self.pixels[line * self.stride + range.start..line * self.stride + range.end]);
     }
 }
@@ -235,6 +237,594 @@ fn main() {
     window.set_size(PhysicalSize::new(width as u32, height as u32));
     ui.show().unwrap();
     let mut pixels = vec![Rgb8Pixel::default(); width * height];
+    if args.iter().any(|arg| arg == "--gesture-snapshot-fixtures") {
+        if !ui.get_native_page_snapshots() {
+            return;
+        }
+        ui.set_animations_enabled(false);
+        ui.set_page(1);
+        frame(&window, &clock, 0, &mut pixels, width);
+        ui.set_animations_enabled(true);
+        frame(&window, &clock, 10, &mut pixels, width);
+        let x = width as f32 * 0.5;
+        let y = ui.get_native_page_y() + ui.get_native_page_height() * 0.5;
+        pointer(&window, "down", x, y);
+        frame(&window, &clock, 20, &mut pixels, width);
+        pointer(&window, "move", x - width as f32 * 0.25, y);
+        frame(&window, &clock, 60, &mut pixels, width);
+        assert!(ui.get_native_slide_active());
+        assert_eq!(ui.get_native_slide_incoming(), 2);
+        assert_eq!(ui.get_native_slide_outgoing(), 1);
+        assert!((ui.get_native_slide_progress() - 0.25).abs() < 0.01);
+        ui.set_native_capture_page(2);
+        frame(&window, &clock, 60, &mut pixels, width);
+        // Reversing across the origin selects a different neighbor but must
+        // retain the same outgoing page image throughout the contact.
+        pointer(&window, "move", x + width as f32 * 0.25, y);
+        frame(&window, &clock, 100, &mut pixels, width);
+        assert_eq!(ui.get_native_slide_incoming(), 0);
+        assert_eq!(ui.get_native_slide_outgoing(), 1);
+        assert_eq!(ui.get_native_slide_direction(), -1);
+        ui.set_native_capture_page(0);
+        frame(&window, &clock, 100, &mut pixels, width);
+        pointer(&window, "up", x + width as f32 * 0.25, y);
+        window.dispatch_event(WindowEvent::PointerExited);
+        frame(&window, &clock, 200, &mut pixels, width);
+        assert!(ui.get_native_slide_active());
+        assert!(ui.get_native_slide_progress() > 0.25);
+        frame(&window, &clock, 400, &mut pixels, width);
+        assert!(!ui.get_native_slide_active());
+        assert_eq!(ui.get_displayed_page(), 0);
+        // A reversal that remains on the same side cancels the gesture. The
+        // settled page is the outgoing snapshot, rather than the neighbor.
+        ui.set_native_capture_page(-1);
+        pointer(&window, "down", x, y);
+        frame(&window, &clock, 500, &mut pixels, width);
+        pointer(&window, "move", x - width as f32 * 0.25, y);
+        frame(&window, &clock, 530, &mut pixels, width);
+        assert_eq!(ui.get_native_slide_incoming(), 1);
+        assert_eq!(ui.get_native_slide_outgoing(), 0);
+        ui.set_native_capture_page(1);
+        frame(&window, &clock, 530, &mut pixels, width);
+        pointer(&window, "move", x - width as f32 * 0.1, y);
+        frame(&window, &clock, 560, &mut pixels, width);
+        pointer(&window, "up", x - width as f32 * 0.1, y);
+        window.dispatch_event(WindowEvent::PointerExited);
+        frame(&window, &clock, 700, &mut pixels, width);
+        assert!(!ui.get_native_slide_active());
+        assert_eq!(ui.get_displayed_page(), 0);
+        ui.set_native_capture_page(0);
+        frame(&window, &clock, 700, &mut pixels, width);
+        let incremental = pixels.clone();
+        window.request_redraw();
+        window.draw_if_needed(|renderer| {
+            renderer.set_repaint_buffer_type(RepaintBufferType::NewBuffer);
+            renderer.render(&mut pixels, width);
+        });
+        assert!(
+            incremental == pixels,
+            "cancelled swipe retained stale pixels"
+        );
+        return;
+    }
+    if args.iter().any(|arg| arg == "--momentum-fixtures") {
+        ui.set_animations_enabled(false);
+        ui.set_connected(true);
+        stats_fixture::project(&ui, true);
+        ui.set_page(1);
+        frame(&window, &clock, 0, &mut pixels, width);
+        let content = element(&ui, "StatsPage::stats-content");
+        let initial_top = content.absolute_position().y;
+        let deck = element(&ui, "Dashboard::pages");
+        let x = deck.absolute_position().x + deck.size().width * 0.5;
+        let y = deck.absolute_position().y + deck.size().height * 0.75;
+        let mut fling = |at: u64| {
+            frame(&window, &clock, at, &mut pixels, width);
+            pointer(&window, "down", x, y);
+            frame(&window, &clock, at + 10, &mut pixels, width);
+            for (dt, dy) in [(30, 25.), (50, 65.), (70, 105.)] {
+                pointer(&window, "move", x, y - dy);
+                frame(&window, &clock, at + dt, &mut pixels, width);
+            }
+            pointer(&window, "up", x, y - 105.);
+            window.dispatch_event(WindowEvent::PointerExited);
+            frame(&window, &clock, at + 80, &mut pixels, width);
+        };
+        fling(0);
+        let released = content.absolute_position().y;
+        frame(&window, &clock, 200, &mut pixels, width);
+        let coasted = content.absolute_position().y;
+        assert!(
+            coasted < released - 5.,
+            "Stats lost release momentum: {released} -> {coasted}"
+        );
+        let before_update = pixels.clone();
+        ui.set_speed("32.4".into());
+        ui.set_power("875 W".into());
+        ui.set_battery_current("18.5 A".into());
+        ui.set_motor_current("29.7 A".into());
+        ui.set_mosfet("47 C".into());
+        ui.set_motor("52 C".into());
+        for model in [ui.get_vesc_stats(), ui.get_bms_stats()] {
+            for index in 0..model.row_count() {
+                let mut item = model.row_data(index).unwrap();
+                item.value = "Updated".into();
+                model.set_row_data(index, item);
+            }
+        }
+        frame(&window, &clock, 200, &mut pixels, width);
+        assert!(before_update != pixels, "Stats froze during momentum");
+        assert!(
+            (content.absolute_position().y - coasted).abs() < 0.5,
+            "Live values reset the scroll position"
+        );
+        frame(&window, &clock, 250, &mut pixels, width);
+        assert!(
+            content.absolute_position().y < coasted - 1.,
+            "Live values stopped the coast"
+        );
+        frame(&window, &clock, 1800, &mut pixels, width);
+        let stopped = content.absolute_position().y;
+        frame(&window, &clock, 2100, &mut pixels, width);
+        assert!(
+            (content.absolute_position().y - stopped).abs() < 0.5,
+            "Momentum did not settle"
+        );
+        // An identical subsequent touch location must still stop the coast.
+        pointer(&window, "down", x, y);
+        frame(&window, &clock, 2120, &mut pixels, width);
+        pointer(&window, "move", x, y - 20.);
+        frame(&window, &clock, 2140, &mut pixels, width);
+        pointer(&window, "move", x, y - 60.);
+        frame(&window, &clock, 2160, &mut pixels, width);
+        pointer(&window, "up", x, y - 60.);
+        window.dispatch_event(WindowEvent::PointerExited);
+        frame(&window, &clock, 2180, &mut pixels, width);
+        pointer(&window, "down", x, y);
+        frame(&window, &clock, 2200, &mut pixels, width);
+        let touched = content.absolute_position().y;
+        frame(&window, &clock, 2350, &mut pixels, width);
+        assert!(
+            (content.absolute_position().y - touched).abs() < 0.5,
+            "A new contact failed to stop momentum"
+        );
+        pointer(&window, "up", x, y);
+        window.dispatch_event(WindowEvent::PointerExited);
+        frame(&window, &clock, 2400, &mut pixels, width);
+        // Cancellation never turns the last movement into a fling.
+        pointer(&window, "down", x, y);
+        frame(&window, &clock, 2410, &mut pixels, width);
+        pointer(&window, "move", x, y - 40.);
+        frame(&window, &clock, 2430, &mut pixels, width);
+        window.dispatch_event(WindowEvent::PointerExited);
+        frame(&window, &clock, 2450, &mut pixels, width);
+        let cancelled = content.absolute_position().y;
+        frame(&window, &clock, 2700, &mut pixels, width);
+        assert!(
+            (content.absolute_position().y - cancelled).abs() < 0.5,
+            "Cancelled drag started momentum"
+        );
+        pointer(&window, "down", x, y);
+        frame(&window, &clock, 2720, &mut pixels, width);
+        pointer(&window, "move", x, y + 40.);
+        frame(&window, &clock, 2740, &mut pixels, width);
+        pointer(&window, "move", x, y + 80.);
+        frame(&window, &clock, 2760, &mut pixels, width);
+        frame(&window, &clock, 3000, &mut pixels, width);
+        pointer(&window, "up", x, y + 80.);
+        window.dispatch_event(WindowEvent::PointerExited);
+        frame(&window, &clock, 3020, &mut pixels, width);
+        let paused = content.absolute_position().y;
+        frame(&window, &clock, 3300, &mut pixels, width);
+        assert!(
+            (content.absolute_position().y - paused).abs() < 0.5,
+            "Paused release reused stale drag velocity"
+        );
+        // Profiling must position using contacts inside the viewport; an
+        // off-window jump may cancel before applying its requested offset.
+        let reset_start = deck.absolute_position().y + deck.size().height * 0.2;
+        let reset_end = deck.absolute_position().y + deck.size().height * 0.8;
+        for index in 0..12 {
+            let at = 3400 + index * 60;
+            pointer(&window, "down", x, reset_end);
+            frame(&window, &clock, at, &mut pixels, width);
+            pointer(&window, "move", x, reset_start);
+            frame(&window, &clock, at + 20, &mut pixels, width);
+            window.dispatch_event(WindowEvent::PointerExited);
+            pointer(&window, "up", -1., -1.);
+            frame(&window, &clock, at + 40, &mut pixels, width);
+        }
+        assert!(
+            content.absolute_position().y < initial_top - 20.,
+            "In-bounds setup did not scroll away from the top"
+        );
+        for index in 0..64 {
+            let at = 4200 + index * 60;
+            pointer(&window, "down", x, reset_start);
+            frame(&window, &clock, at, &mut pixels, width);
+            pointer(&window, "move", x, reset_end);
+            frame(&window, &clock, at + 20, &mut pixels, width);
+            window.dispatch_event(WindowEvent::PointerExited);
+            pointer(&window, "up", -1., -1.);
+            frame(&window, &clock, at + 40, &mut pixels, width);
+        }
+        assert!(
+            (content.absolute_position().y - initial_top).abs() < 0.5,
+            "In-bounds drags failed to restore the top scroll position"
+        );
+        frame(&window, &clock, 8400, &mut pixels, width);
+        assert!(
+            (content.absolute_position().y - initial_top).abs() < 0.5,
+            "Momentum escaped the top scroll bound"
+        );
+        assert_eq!(ui.get_page(), 1, "Vertical flick changed tabs");
+        return;
+    }
+    if args.iter().any(|arg| arg == "--page-preparation-fixtures") {
+        if !ui.get_native_page_snapshots() {
+            return;
+        }
+        ui.set_animations_enabled(false);
+        frame(&window, &clock, 0, &mut pixels, width);
+        let original = pixels.clone();
+        for page in 0..7 {
+            ui.set_native_capture_page(page);
+            frame(&window, &clock, 10 + page as u64, &mut pixels, width);
+            assert_eq!(ui.get_page(), 0, "preparation must not navigate");
+        }
+        ui.set_native_capture_page(-1);
+        frame(&window, &clock, 30, &mut pixels, width);
+        assert!(pixels == original, "preparation changed the visible page");
+        // Hidden retained pages must not intercept pointer input.
+        click_control(&window, &ui, &clock, &mut pixels, "Stats");
+        frame(&window, &clock, 400, &mut pixels, width);
+        assert_eq!(ui.get_page(), 1);
+        return;
+    }
+    if args
+        .iter()
+        .any(|arg| arg == "--double-buffer-snapshot-fixtures")
+    {
+        if !ui.get_native_page_snapshots() {
+            return;
+        }
+        let mut buffers = [pixels.clone(), pixels.clone()];
+        ui.set_animations_enabled(false);
+        frame(&window, &clock, 0, &mut buffers[0], width);
+        buffers[1] = buffers[0].clone();
+        frame(&window, &clock, 16, &mut buffers[1], width);
+        let x = ui.get_native_page_x().round() as usize;
+        let y = ui.get_native_page_y().round() as usize;
+        let w = ui.get_native_page_width().round() as usize;
+        let h = ui.get_native_page_height().round() as usize;
+        let copy_viewport = |source: &[Rgb8Pixel], destination: &mut [Rgb8Pixel]| {
+            for row in y..y + h {
+                let range = row * width + x..row * width + x + w;
+                destination[range.clone()].copy_from_slice(&source[range]);
+            }
+        };
+        ui.set_animations_enabled(true);
+        ui.set_page(1);
+        ui.set_native_capture_page(1);
+        // Initial capture clears the entire viewport, including static gutters.
+        for row in y..y + h {
+            buffers[0][row * width + x..row * width + x + w].fill(Rgb8Pixel::default());
+        }
+        frame(&window, &clock, 32, &mut buffers[0], width);
+        let incoming = buffers[0].clone();
+        // The native backend repairs unchanged chrome from the latest front.
+        buffers[1].copy_from_slice(&incoming);
+        frame(&window, &clock, 48, &mut buffers[1], width);
+        // Both scanout buffers now contain translated pixels unknown to Slint.
+        for buffer in &mut buffers {
+            for row in y..y + h {
+                buffer[row * width + x..row * width + x + w].fill(Rgb8Pixel {
+                    r: 255,
+                    g: 0,
+                    b: 255,
+                });
+            }
+        }
+        ui.set_native_capture_page(-1);
+        copy_viewport(&incoming, &mut buffers[0]);
+        frame(&window, &clock, 400, &mut buffers[0], width);
+        // The second retired buffer needs restoration too, before a later scroll.
+        copy_viewport(&incoming, &mut buffers[1]);
+        frame(&window, &clock, 416, &mut buffers[1], width);
+        window.request_redraw();
+        window.draw_if_needed(|renderer| {
+            renderer.set_repaint_buffer_type(RepaintBufferType::NewBuffer);
+            renderer.render(&mut pixels, width);
+        });
+        for (index, buffer) in buffers.iter().enumerate() {
+            let differences = buffer.iter().zip(&pixels).filter(|(a, b)| a != b).count();
+            assert_eq!(
+                differences, 0,
+                "scanout buffer {index} retained stale slide pixels"
+            );
+        }
+        return;
+    }
+    if args.iter().any(|arg| arg == "--fullwidth-slide-fixtures") {
+        ui.set_animations_enabled(false);
+        frame(&window, &clock, 0, &mut pixels, width);
+        let viewport = element(&ui, "PageDeck::viewport");
+        assert_eq!(viewport.absolute_position().x, 0.);
+        assert_eq!(viewport.size().width, width as f32);
+        let left = element(&ui, "SafeArea::content")
+            .absolute_position()
+            .x
+            .round() as usize;
+        let top = viewport.absolute_position().y.round() as usize;
+        let bottom = top + viewport.size().height.round() as usize;
+        ui.set_animations_enabled(true);
+        frame(&window, &clock, 10, &mut pixels, width);
+        ui.set_page(1);
+        frame(&window, &clock, 20, &mut pixels, width);
+        frame(&window, &clock, 120, &mut pixels, width);
+        assert!(
+            (top..bottom).any(|y| pixels[y * width..y * width + left]
+                .iter()
+                .any(|p| p.r != 0 || p.g != 0 || p.b != 0)),
+            "moving page content must reach the side margin instead of clipping at the safe area"
+        );
+        capture("fullwidth-page-slide", &pixels, width, height);
+        return;
+    }
+    if args.iter().any(|arg| arg == "--live-snapshot-fixtures") {
+        if !ui.get_native_page_snapshots() {
+            return;
+        }
+        ui.set_connected(true);
+        stats_fixture::project(&ui, false);
+        ui.set_animations_enabled(false);
+        frame(&window, &clock, 0, &mut pixels, width);
+        ui.set_animations_enabled(true);
+        frame(&window, &clock, 10, &mut pixels, width);
+        ui.set_page(1);
+        frame(&window, &clock, 20, &mut pixels, width);
+        ui.set_native_capture_page(1);
+        frame(&window, &clock, 20, &mut pixels, width);
+        let before = pixels.clone();
+        stats_fixture::project(&ui, true);
+        ui.set_speed("32.4".into());
+        ui.set_battery_current("18.5 A".into());
+        frame(&window, &clock, 100, &mut pixels, width);
+        assert!(
+            before != pixels,
+            "incoming snapshot must retain live telemetry"
+        );
+        let incoming = pixels.clone();
+        let x = ui.get_native_page_x().round() as usize;
+        let y = ui.get_native_page_y().round() as usize;
+        let w = ui.get_native_page_width().round() as usize;
+        let h = ui.get_native_page_height().round() as usize;
+        // A composed framebuffer no longer matches Slint's stationary scene.
+        // Restore its snapshot before normal incremental rendering resumes.
+        for row in y..y + h {
+            pixels[row * width + x..row * width + x + w].fill(Rgb8Pixel {
+                r: 255,
+                g: 0,
+                b: 255,
+            });
+        }
+        for row in y..y + h {
+            pixels[row * width + x..row * width + x + w]
+                .copy_from_slice(&incoming[row * width + x..row * width + x + w]);
+        }
+        ui.set_native_capture_page(-1);
+        frame(&window, &clock, 400, &mut pixels, width);
+        let incremental = pixels.clone();
+        capture("live-handoff-incremental", &pixels, width, height);
+        window.request_redraw();
+        window.draw_if_needed(|renderer| {
+            renderer.set_repaint_buffer_type(RepaintBufferType::NewBuffer);
+            renderer.render(&mut pixels, width);
+        });
+        capture("live-handoff-oracle", &pixels, width, height);
+        let differences: Vec<_> = incremental
+            .iter()
+            .zip(&pixels)
+            .enumerate()
+            .filter(|(_, (a, b))| a != b)
+            .map(|(i, _)| (i % width, i / width))
+            .collect();
+        assert!(
+            differences.is_empty(),
+            "snapshot handoff differs at {} pixels, first {:?}",
+            differences.len(),
+            differences.first()
+        );
+        return;
+    }
+    if args.iter().any(|arg| arg == "--snapshot-fixtures") {
+        if !ui.get_native_page_snapshots() {
+            assert_eq!(ui.get_native_page_width(), 0.);
+            assert_eq!(ui.get_native_page_height(), 0.);
+            return;
+        }
+        ui.set_animations_enabled(false);
+        frame(&window, &clock, 0, &mut pixels, width);
+        let x = ui.get_native_page_x().round() as usize;
+        let y = ui.get_native_page_y().round() as usize;
+        let w = ui.get_native_page_width().round() as usize;
+        let h = ui.get_native_page_height().round() as usize;
+        assert!(w > 0 && h > 0 && x + w <= width && y + h <= height);
+        let content = |pixels: &[Rgb8Pixel]| -> Vec<Rgb8Pixel> {
+            (y..y + h)
+                .flat_map(|row| pixels[row * width + x..row * width + x + w].iter().copied())
+                .collect()
+        };
+        let ride = content(&pixels);
+        ui.set_animations_enabled(true);
+        frame(&window, &clock, 10, &mut pixels, width);
+        ui.set_page(1);
+        frame(&window, &clock, 20, &mut pixels, width);
+        frame(&window, &clock, 120, &mut pixels, width);
+        assert!(ui.get_native_slide_active());
+        ui.set_native_capture_page(0);
+        frame(&window, &clock, 120, &mut pixels, width);
+        assert_eq!(
+            content(&pixels),
+            ride,
+            "outgoing snapshot must be the stationary page"
+        );
+        ui.set_native_capture_page(1);
+        frame(&window, &clock, 120, &mut pixels, width);
+        let stats = content(&pixels);
+        ui.set_native_capture_page(-2);
+        frame(&window, &clock, 120, &mut pixels, width);
+        let hidden = content(&pixels);
+        assert!(
+            hidden.iter().all(|p| *p == hidden[0]),
+            "chrome capture must hide both pages"
+        );
+        // A pairing prompt can arrive asynchronously during the slide.
+        ui.set_pairing_open(true);
+        assert!(!ui.get_native_slide_active());
+        ui.set_native_capture_page(-1);
+        frame(&window, &clock, 120, &mut pixels, width);
+        let pairing = pixels.clone();
+        window.request_redraw();
+        window.draw_if_needed(|renderer| {
+            renderer.set_repaint_buffer_type(RepaintBufferType::NewBuffer);
+            renderer.render(&mut pixels, width);
+            renderer.set_repaint_buffer_type(RepaintBufferType::ReusedBuffer);
+        });
+        assert_eq!(
+            pairing, pixels,
+            "pairing during a slide must match a full repaint"
+        );
+        ui.set_pairing_open(false);
+        ui.set_native_capture_page(-2);
+        frame(&window, &clock, 120, &mut pixels, width);
+        // Simulate DMA changing pixels outside the renderer's damage tracking.
+        for row in y..y + h {
+            pixels[row * width + x..row * width + x + w].fill(Rgb8Pixel {
+                r: 255,
+                g: 0,
+                b: 255,
+            });
+        }
+        ui.set_native_capture_page(-1);
+        frame(&window, &clock, 400, &mut pixels, width);
+        assert_eq!(
+            content(&pixels),
+            stats,
+            "leaving capture mode must repaint the entire page"
+        );
+        capture("native-page-snapshot-restored", &pixels, width, height);
+        ui.set_native_capture_page(-2);
+        frame(&window, &clock, 500, &mut pixels, width);
+        for row in y..y + h {
+            pixels[row * width + x..row * width + x + w].fill(Rgb8Pixel {
+                r: 255,
+                g: 0,
+                b: 255,
+            });
+        }
+        ui.set_screen_locked(true);
+        ui.set_pin_open(true);
+        ui.set_native_capture_page(-1);
+        frame(&window, &clock, 510, &mut pixels, width);
+        let incremental = pixels.clone();
+        window.request_redraw();
+        window.draw_if_needed(|renderer| {
+            renderer.set_repaint_buffer_type(RepaintBufferType::NewBuffer);
+            renderer.render(&mut pixels, width);
+        });
+        assert_eq!(
+            incremental, pixels,
+            "locking during capture must match a full repaint, without stale page pixels"
+        );
+        return;
+    }
+    if args.iter().any(|arg| arg == "--keyboard-fixtures") {
+        ui.set_animations_enabled(false);
+        ui.set_page(4);
+        ui.set_wifi_networks(
+            std::rc::Rc::new(slint::VecModel::from(vec![WifiItem {
+                ssid: "Test network".into(),
+                detail: "Secured".into(),
+            }]))
+            .into(),
+        );
+        let resets = Rc::new(Cell::new(0));
+        let reset_count = resets.clone();
+        let manual_count = resets.clone();
+        ui.on_wifi_manual(move || manual_count.set(manual_count.get() + 1));
+        let weak = ui.as_weak();
+        ui.on_wifi_select(move |_| {
+            reset_count.set(reset_count.get() + 1);
+            weak.unwrap().set_editor_value("".into());
+        });
+        let weak = ui.as_weak();
+        ui.on_editor_type(move |text| {
+            let ui = weak.unwrap();
+            let value = format!("{}{text}", ui.get_editor_value());
+            ui.set_editor_masked("*".repeat(value.len()).into());
+            ui.set_editor_value(value.into());
+        });
+        ui.set_editor_secret(true);
+        ui.set_editor_heading("Wi-Fi password".into());
+        frame(&window, &clock, 0, &mut pixels, width);
+        click_control(&window, &ui, &clock, &mut pixels, "Test network / Secured");
+        assert_eq!(resets.get(), 1);
+        resets.set(0);
+        ui.set_editing(true);
+        frame(&window, &clock, 0, &mut pixels, width);
+        let keys: Vec<_> =
+            i_slint_backend_testing::ElementHandle::find_by_element_id(&ui, "Key::touch").collect();
+        assert_eq!(keys.len(), 47);
+        let tap_key = |index: usize| {
+            let position = keys[index].absolute_position();
+            let size = keys[index].size();
+            click(
+                &window,
+                position.x + size.width / 2.,
+                position.y + size.height / 2.,
+            );
+        };
+        tap_key(45); // Show
+        for index in 10..20 {
+            if index == 15 {
+                capture("keyboard-revealed", &pixels, width, height);
+                tap_key(45); // Hide; changing visibility must preserve the draft.
+            }
+            tap_key(index);
+            window.dispatch_event(WindowEvent::PointerExited);
+            frame(
+                &window,
+                &clock,
+                (index as u64 - 9) * 2000,
+                &mut pixels,
+                width,
+            );
+        }
+        assert_eq!(ui.get_editor_value().as_str(), "qwertyuiop");
+        capture("keyboard-hidden", &pixels, width, height);
+        // Include key gaps, the value field and safe margins. None may reach
+        // the network list underneath and reopen an empty password editor.
+        let network = control(&ui, "Test network / Secured");
+        let network_top = network.absolute_position().y as usize;
+        let network_bottom = network_top + network.size().height as usize;
+        for y in (network_top..network_bottom)
+            .step_by(2)
+            .chain((2..height).step_by(5))
+        {
+            for x in (2..width).step_by(5) {
+                ui.set_editor_value("test".into());
+                click(&window, x as f32, y as f32);
+                window.dispatch_event(WindowEvent::PointerExited);
+                assert_eq!(resets.get(), 0, "Keyboard leaked a tap at {x},{y}");
+                assert_eq!(ui.get_page(), 4, "Keyboard leaked navigation at {x},{y}");
+            }
+        }
+        frame(&window, &clock, 21000, &mut pixels, width);
+        capture("keyboard", &pixels, width, height);
+        println!("{width}x{height}: keyboard typing and modal touch isolation passed");
+        return;
+    }
     if args.iter().any(|arg| arg == "--safe-area-fixtures") {
         ui.set_animations_enabled(false);
         frame(&window, &clock, 0, &mut pixels, width);
@@ -388,6 +978,20 @@ fn main() {
         println!(
             "{width}x{height}: single-line marquee, both pauses, return, reset and cog touch passed"
         );
+        return;
+    }
+    if args.iter().any(|arg| arg == "--battery-fixtures") {
+        ui.set_animations_enabled(false);
+        ui.set_connected(true);
+        ui.set_battery("407%".into());
+        ui.set_battery_level(407.);
+        ui.set_voltage("81.7 V".into());
+        frame(&window, &clock, 0, &mut pixels, width);
+        capture("battery-reported-ride", &pixels, width, height);
+        ui.set_page(1);
+        frame(&window, &clock, 100, &mut pixels, width);
+        capture("battery-reported-stats", &pixels, width, height);
+        println!("{width}x{height}: reported battery percentage rendered on Ride and Stats");
         return;
     }
     if args.iter().any(|arg| arg == "--ride-fixtures") {
@@ -2047,6 +2651,96 @@ fn main() {
         );
         return;
     }
+    if args
+        .get(2)
+        .is_some_and(|arg| arg == "--rotation-repaint-fixtures")
+    {
+        ui.set_animations_enabled(false);
+        ui.set_page(3);
+        // Keep the same native panel memory across rotations, including old
+        // button pixels. Expand the first frame's damage to the entire native
+        // panel, then restore small dirty regions for incremental updates.
+        for degrees in [0, 90, 180, 270, 0, 270, 180, 90] {
+            let landscape = degrees == 90 || degrees == 270;
+            let (logical_width, logical_height) = if landscape {
+                (height, width)
+            } else {
+                (width, height)
+            };
+            let rotation = match degrees {
+                90 => RenderingRotation::Rotate90,
+                180 => RenderingRotation::Rotate180,
+                270 => RenderingRotation::Rotate270,
+                _ => RenderingRotation::NoRotation,
+            };
+            ui.set_rotation(degrees);
+            ui.set_initial_width(logical_width as f32);
+            ui.set_initial_height(logical_height as f32);
+            window.set_size(PhysicalSize::new(
+                logical_width as u32,
+                logical_height as u32,
+            ));
+            slint::platform::update_timers_and_animations();
+            PIXEL_WORK.with(|work| work.set(0));
+            window.request_redraw();
+            window.draw_if_needed(|renderer| {
+                renderer.set_rendering_rotation(rotation);
+                renderer.set_repaint_buffer_type(RepaintBufferType::ReusedBuffer);
+                renderer.set_dirty_region_alignment(
+                    slint::platform::software_renderer::DirtyRegionAlignment::new(
+                        width as u16,
+                        height as u16,
+                    ),
+                );
+                renderer.render_by_line(Lines {
+                    pixels: &mut pixels,
+                    stride: width,
+                });
+                renderer.set_dirty_region_alignment(
+                    slint::platform::software_renderer::DirtyRegionAlignment::new(2, 2),
+                );
+            });
+            assert_eq!(
+                PIXEL_WORK.with(Cell::get),
+                (width * height) as u64,
+                "Rotation must replace every native panel pixel"
+            );
+            for update in 0..2 {
+                if update == 1 {
+                    ui.set_connection(format!("Orientation {degrees}").into());
+                    window.request_redraw();
+                    window.draw_if_needed(|renderer| {
+                        renderer.render_by_line(Lines {
+                            pixels: &mut pixels,
+                            stride: width,
+                        });
+                    });
+                }
+                let mut oracle = vec![
+                    Rgb8Pixel {
+                        r: 255,
+                        g: 0,
+                        b: 255
+                    };
+                    pixels.len()
+                ];
+                window.request_redraw();
+                window.draw_if_needed(|renderer| {
+                    renderer.set_repaint_buffer_type(RepaintBufferType::NewBuffer);
+                    renderer.render_by_line(Lines {
+                        pixels: &mut oracle,
+                        stride: width,
+                    });
+                    renderer.set_repaint_buffer_type(RepaintBufferType::ReusedBuffer);
+                });
+                assert_eq!(
+                    pixels, oracle,
+                    "Rotation {degrees}, update {update} left stale pixels"
+                );
+            }
+        }
+        return;
+    }
     if args.get(2).is_some_and(|arg| arg == "--rotation-fixtures") {
         ui.set_animations_enabled(false);
         let weak = ui.as_weak();
@@ -2288,6 +2982,7 @@ fn main() {
     swipe(-100., 0., 1);
     swipe(-25., 0., 1); // Short horizontal gestures snap back, without a click.
     swipe(5., -100., 1); // Vertical movement stays on the scrollable Stats page.
+    swipe(-60., 100., 1); // Scroll back from the bound while preserving axis arbitration.
     swipe(-100., 0., 2);
     swipe(0., -80., 2); // Tune still scrolls without applying a change.
     swipe(-100., 0., 2); // The rightmost Tune tab is bounded.

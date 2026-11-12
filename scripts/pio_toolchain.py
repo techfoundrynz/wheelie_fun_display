@@ -11,6 +11,10 @@ if prefix:
     build_program = env.BuildProgram
 
     def build_with_board_toolchain(build_env, *args, **kwargs):
+        # The platform initializes ELF2BINFLAGS after `pre:` scripts. Add these
+        # here, before ESP-IDF clones its bootloader environment.
+        if build_env.BoardConfig().get("build.mcu") == "esp32p4":
+            build_env.Append(ELF2BINFLAGS=["$WFD_IMAGE_REVISION_FLAGS"])
         build_env.Replace(
             AR=prefix + "-elf-gcc-ar",
             AS=prefix + "-elf-as",

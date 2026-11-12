@@ -6,8 +6,10 @@
 #include "esp_app_desc.h"
 #include "esp_crt_bundle.h"
 #include "esp_event.h"
+#include "esp_heap_caps.h"
 #include "esp_http_client.h"
 #include "esp_image_format.h"
+#include "esp_log.h"
 #include "esp_netif.h"
 #include "esp_netif_sntp.h"
 #include "esp_ota_ops.h"
@@ -359,8 +361,14 @@ void connect_wifi(const Request &request, bool saved) {
     std::memcpy(config.sta.ssid, request.ssid, std::strlen(request.ssid));
     std::memcpy(config.sta.password, request.password, std::strlen(request.password));
     config.sta.pmf_cfg.capable = true;
-    if (esp_wifi_set_config(WIFI_IF_STA, &config) != ESP_OK) {
-      status("Wi-Fi configuration rejected");
+    const auto error = esp_wifi_set_config(WIFI_IF_STA, &config);
+    if (error != ESP_OK) {
+      ESP_LOGW("network", "esp_wifi_set_config failed: %s (0x%x), radio_tx_ready=%d dma_free=%u dma_largest=%u",
+               esp_err_to_name(error), unsigned(error), board::radio_tx_ready(),
+               unsigned(heap_caps_get_free_size(MALLOC_CAP_DMA)),
+               unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_DMA)));
+      status(std::string("Wi-Fi configuration rejected: ") + esp_err_to_name(error));
+      std::memset(config.sta.password, 0, sizeof(config.sta.password));
       return;
     }
   }
