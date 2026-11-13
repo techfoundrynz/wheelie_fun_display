@@ -86,7 +86,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             simulator/target
-          key: ui-${{ runner.os }}-${{ hashFiles('simulator/Cargo.lock', 'simulator/Cargo.toml') }}
+          key: ui-${{ runner.os }}-${{ hashFiles('simulator/Cargo.lock', 'simulator/Cargo.toml', 'simulator/web/Cargo.lock', 'simulator/web/Cargo.toml') }}
           restore-keys: ui-${{ runner.os }}-
       - name: Install native renderer dependencies
         run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev libxkbcommon-dev libwayland-dev libudev-dev
@@ -96,6 +96,8 @@ jobs:
           cargo fmt --check --manifest-path simulator/web/Cargo.toml
       - name: Discover native simulator tests
         run: cargo test --locked --manifest-path simulator/Cargo.toml
+      - name: Verify browser simulator credential handling
+        run: cargo test --locked --manifest-path simulator/web/Cargo.toml --lib --target-dir simulator/target
       - name: Verify all four touch transforms against rendered pixels
         run: |
           cmake -S tests -B .cache/host-tests -G Ninja -DBIKE_SANITIZERS=ON -DBIKE_RENDERER_FIXTURES=${{ github.workspace }}/.cache/transition-checks

@@ -237,6 +237,419 @@ fn main() {
     window.set_size(PhysicalSize::new(width as u32, height as u32));
     ui.show().unwrap();
     let mut pixels = vec![Rgb8Pixel::default(); width * height];
+    if args.iter().any(|arg| arg == "--settings-return-fixtures") {
+        ui.set_animations_enabled(false);
+        if width.min(height) == 480 && width.max(height) == 800 {
+            ui.set_display_safe_inset_x(0.);
+            ui.set_display_safe_inset_y(0.);
+        }
+        let mut at = 0;
+        frame(&window, &clock, at, &mut pixels, width);
+        for (page, label) in [(0, "Ride"), (1, "Stats"), (2, "Tune")] {
+            for visibility in [FooterVisibility::Show, FooterVisibility::Hide] {
+                ui.set_footer_visibility(FooterVisibility::Show);
+                at += 10;
+                frame(&window, &clock, at, &mut pixels, width);
+                click_control(&window, &ui, &clock, &mut pixels, label);
+                at += 10;
+                frame(&window, &clock, at, &mut pixels, width);
+                assert_eq!(ui.get_page(), page);
+                ui.set_footer_visibility(visibility);
+                at += 10;
+                frame(&window, &clock, at, &mut pixels, width);
+                assert_eq!(ui.get_footer_hidden(), visibility == FooterVisibility::Hide);
+                click_control(&window, &ui, &clock, &mut pixels, "Settings");
+                at += 10;
+                frame(&window, &clock, at, &mut pixels, width);
+                assert_eq!(ui.get_page(), 3);
+                click_control(&window, &ui, &clock, &mut pixels, "Settings");
+                at += 10;
+                frame(&window, &clock, at, &mut pixels, width);
+                assert_eq!(ui.get_page(), page, "cog forgot the last main page");
+                for subpage in [4, 5, 6] {
+                    ui.set_page(subpage);
+                    at += 10;
+                    frame(&window, &clock, at, &mut pixels, width);
+                    click_control(&window, &ui, &clock, &mut pixels, "Settings");
+                    at += 10;
+                    frame(&window, &clock, at, &mut pixels, width);
+                    assert_eq!(ui.get_page(), 3, "subpage cog must open root Settings");
+                    click_control(&window, &ui, &clock, &mut pixels, "Settings");
+                    at += 10;
+                    frame(&window, &clock, at, &mut pixels, width);
+                    assert_eq!(ui.get_page(), page, "subpage overwrote the last main page");
+                }
+            }
+        }
+        println!("Settings cog return passed {width}x{height}");
+        return;
+    }
+    if args.iter().any(|arg| arg == "--footer-fixtures") {
+        if width.min(height) == 480 && width.max(height) == 800 {
+            ui.set_display_safe_inset_x(0.);
+            ui.set_display_safe_inset_y(0.);
+        }
+        ui.set_animations_enabled(true);
+        frame(&window, &clock, 0, &mut pixels, width);
+        let normal_height = ui.get_page_viewport_height();
+        frame(&window, &clock, 6000, &mut pixels, width);
+        assert!(
+            !ui.get_footer_hidden(),
+            "footer must stay visible by default"
+        );
+        ui.set_footer_visibility(FooterVisibility::Auto);
+        // Native renderers retain the settled page capture after a slide until
+        // the next pointer input. It is a live stationary scene, not a reason
+        // to wait for another touch before starting the footer idle countdown.
+        ui.set_native_capture_page(ui.get_page());
+        assert!(!ui.get_transitioning());
+        frame(&window, &clock, 6010, &mut pixels, width);
+        frame(&window, &clock, 11009, &mut pixels, width);
+        assert!(!ui.get_footer_hidden(), "footer hid before five seconds");
+        capture("footer-visible", &pixels, width, height);
+        frame(&window, &clock, 11011, &mut pixels, width);
+        assert!(ui.get_footer_hidden());
+        frame(&window, &clock, 11136, &mut pixels, width);
+        let sliding_height = ui.get_page_viewport_height();
+        assert!(sliding_height > normal_height);
+        capture("footer-sliding", &pixels, width, height);
+        frame(&window, &clock, 11270, &mut pixels, width);
+        let expanded_height = ui.get_page_viewport_height();
+        assert!(
+            expanded_height > sliding_height,
+            "footer must slide rather than jump"
+        );
+        assert!(
+            expanded_height >= normal_height + 50.,
+            "hidden footer did not free layout space"
+        );
+        capture("footer-hidden", &pixels, width, height);
+        assert_eq!(ui.get_native_capture_page(), ui.get_page());
+        ui.set_native_capture_page(-1);
+        frame(&window, &clock, 11275, &mut pixels, width);
+        let (x, y) = control_center(&ui, "Settings");
+        // Observation must not consume the first press or move its target.
+        ui.invoke_screen_contact(true);
+        pointer(&window, "down", x, y);
+        frame(&window, &clock, 11280, &mut pixels, width);
+        assert!(ui.get_footer_hidden());
+        assert_eq!(ui.get_page_viewport_height(), expanded_height);
+        ui.invoke_screen_contact(false);
+        assert_eq!(ui.get_page_viewport_height(), expanded_height);
+        pointer(&window, "up", x, y);
+        assert_eq!(ui.get_page(), 3, "first touch must open Settings normally");
+        // A page slide triggered by release finishes before footer reveal starts.
+        frame(&window, &clock, 11281, &mut pixels, width);
+        assert!(ui.get_footer_hidden());
+        frame(&window, &clock, 11540, &mut pixels, width);
+        frame(&window, &clock, 11542, &mut pixels, width);
+        assert!(!ui.get_footer_hidden());
+        frame(&window, &clock, 11800, &mut pixels, width);
+        assert_eq!(ui.get_page_viewport_height(), normal_height);
+        ui.set_animations_enabled(false);
+        frame(&window, &clock, 11810, &mut pixels, width);
+        // A stationary held finger must prevent hiding, even without move events.
+        ui.invoke_screen_contact(true);
+        pointer(&window, "down", width as f32 / 2., 4.);
+        frame(&window, &clock, 18000, &mut pixels, width);
+        assert!(!ui.get_footer_hidden());
+        ui.invoke_screen_contact(false);
+        pointer(&window, "up", width as f32 / 2., 4.);
+        frame(&window, &clock, 22999, &mut pixels, width);
+        assert!(!ui.get_footer_hidden());
+        frame(&window, &clock, 23001, &mut pixels, width);
+        assert!(ui.get_footer_hidden());
+        assert_eq!(ui.get_page_viewport_height(), expanded_height);
+        // A modal can open independently while the footer is hidden. Its first
+        // control touch must work, without needing a separate footer-reveal tap.
+        let digits = Rc::new(Cell::new(0));
+        let called = digits.clone();
+        ui.on_pin_digit(move |digit| called.set(digit));
+        ui.set_pin_open(true);
+        frame(&window, &clock, 23005, &mut pixels, width);
+        let (pin_x, pin_y) = control_center(&ui, "1");
+        ui.invoke_screen_contact(true);
+        pointer(&window, "down", pin_x, pin_y);
+        ui.invoke_screen_contact(false);
+        pointer(&window, "up", pin_x, pin_y);
+        assert_eq!(digits.get(), 1, "footer swallowed the first PIN digit");
+        assert!(
+            ui.get_footer_hidden(),
+            "modal contact changed covered layout"
+        );
+        ui.set_pin_open(false);
+        ui.set_footer_visibility(FooterVisibility::Show);
+        frame(&window, &clock, 23010, &mut pixels, width);
+        assert!(!ui.get_footer_hidden());
+        assert_eq!(ui.get_page_viewport_height(), normal_height);
+        ui.set_pin_open(true);
+        ui.set_footer_visibility(FooterVisibility::Auto);
+        frame(&window, &clock, 23020, &mut pixels, width);
+        frame(&window, &clock, 30000, &mut pixels, width);
+        assert!(!ui.get_footer_hidden(), "footer hid during PIN entry");
+        ui.set_pin_open(false);
+        ui.set_footer_visibility(FooterVisibility::Show);
+        frame(&window, &clock, 30010, &mut pixels, width);
+        let preferences = Rc::new(Cell::new(0));
+        let called = preferences.clone();
+        ui.on_preferences_changed(move || called.set(called.get() + 1));
+        click_control(&window, &ui, &clock, &mut pixels, "Footer visibility");
+        assert_eq!(ui.get_footer_visibility(), FooterVisibility::Hide);
+        assert_eq!(
+            preferences.get(),
+            1,
+            "setting must invoke preference persistence"
+        );
+        let mode_base = clock.get().as_millis() as u64 - SCROLL_TIME.get();
+        frame(&window, &clock, mode_base + 1, &mut pixels, width);
+        assert!(ui.get_footer_hidden());
+        assert_eq!(ui.get_page_viewport_height(), expanded_height);
+        capture("footer-settings-hide", &pixels, width, height);
+        ui.invoke_screen_contact(true);
+        pointer(&window, "down", width as f32 / 2., 4.);
+        ui.invoke_screen_contact(false);
+        pointer(&window, "up", width as f32 / 2., 4.);
+        frame(&window, &clock, mode_base + 10, &mut pixels, width);
+        assert!(
+            ui.get_footer_hidden(),
+            "Hide mode must not reveal on contact"
+        );
+        click_control(&window, &ui, &clock, &mut pixels, "Footer visibility");
+        assert_eq!(ui.get_footer_visibility(), FooterVisibility::Auto);
+        let mode_base = clock.get().as_millis() as u64 - SCROLL_TIME.get();
+        frame(&window, &clock, mode_base + 1, &mut pixels, width);
+        assert!(
+            !ui.get_footer_hidden(),
+            "Hide to Auto should reveal navigation"
+        );
+        capture("footer-settings-auto", &pixels, width, height);
+        click_control(&window, &ui, &clock, &mut pixels, "Footer visibility");
+        assert_eq!(ui.get_footer_visibility(), FooterVisibility::Show);
+        assert_eq!(
+            preferences.get(),
+            3,
+            "every mode change must save preferences"
+        );
+        let mode_base = clock.get().as_millis() as u64 - SCROLL_TIME.get();
+        frame(&window, &clock, mode_base + 1, &mut pixels, width);
+        frame(&window, &clock, mode_base + 6000, &mut pixels, width);
+        assert!(!ui.get_footer_hidden(), "Show mode must stay visible");
+        capture("footer-settings-show", &pixels, width, height);
+        ui.set_footer_visibility(FooterVisibility::Auto);
+        // A press partway through hiding freezes the layout until release.
+        ui.set_animations_enabled(true);
+        let base = clock.get().as_millis() as u64 - SCROLL_TIME.get();
+        frame(&window, &clock, base, &mut pixels, width);
+        frame(&window, &clock, base + 5001, &mut pixels, width);
+        frame(&window, &clock, base + 5126, &mut pixels, width);
+        let midway_height = ui.get_page_viewport_height();
+        assert!(midway_height > normal_height && midway_height < expanded_height);
+        ui.invoke_screen_contact(true);
+        pointer(&window, "down", width as f32 / 2., 4.);
+        frame(&window, &clock, base + 5500, &mut pixels, width);
+        assert_eq!(ui.get_page_viewport_height(), midway_height);
+        ui.invoke_screen_contact(false);
+        assert_eq!(ui.get_page_viewport_height(), midway_height);
+        pointer(&window, "up", width as f32 / 2., 4.);
+        frame(&window, &clock, base + 5502, &mut pixels, width);
+        frame(&window, &clock, base + 5760, &mut pixels, width);
+        assert_eq!(ui.get_page_viewport_height(), normal_height);
+        // Reduced-motion mode still defers layout until after release dispatch.
+        ui.set_animations_enabled(false);
+        frame(&window, &clock, base + 11000, &mut pixels, width);
+        assert!(ui.get_footer_hidden());
+        ui.invoke_screen_contact(true);
+        pointer(&window, "down", width as f32 / 2., 4.);
+        assert_eq!(ui.get_page_viewport_height(), expanded_height);
+        ui.invoke_screen_contact(false);
+        assert_eq!(ui.get_page_viewport_height(), expanded_height);
+        pointer(&window, "up", width as f32 / 2., 4.);
+        frame(&window, &clock, base + 11002, &mut pixels, width);
+        assert!(!ui.get_footer_hidden());
+        assert_eq!(ui.get_page_viewport_height(), normal_height);
+        println!("Footer visibility passed {width}x{height}");
+        return;
+    }
+    if args.iter().any(|arg| arg == "--header-lock-fixtures") {
+        ui.set_animations_enabled(false);
+        if width.min(height) == 480 && width.max(height) == 800 {
+            ui.set_display_safe_inset_x(0.);
+            ui.set_display_safe_inset_y(0.);
+        }
+        let bike_calls = Rc::new(Cell::new(0));
+        let called = bike_calls.clone();
+        ui.on_bike_lock(move || called.set(called.get() + 1));
+        let screen_calls = Rc::new(Cell::new(0));
+        let called = screen_calls.clone();
+        ui.on_screen_lock(move || called.set(called.get() + 1));
+        let label = "Lock bike and screen now";
+        let absent = || {
+            assert!(
+                i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui, label)
+                    .next()
+                    .is_none()
+            );
+        };
+        ui.set_page(3);
+        ui.set_pin_configured(false);
+        frame(&window, &clock, 0, &mut pixels, width);
+        absent();
+        ui.set_pin_configured(true);
+        ui.set_supports_lock(false);
+        frame(&window, &clock, 10, &mut pixels, width);
+        absent();
+        ui.set_supports_lock(true);
+        for page in 0..3 {
+            ui.set_page(page);
+            frame(&window, &clock, 20 + page as u64 * 10, &mut pixels, width);
+            absent();
+        }
+        ui.set_page(3);
+        ui.set_connected(true);
+        ui.set_can_configure(true);
+        ui.set_phone_connected(true);
+        ui.set_bike_ble_signal(3);
+        ui.set_bike_ble_rssi(-62);
+        frame(&window, &clock, 60, &mut pixels, width);
+        let lock = control(&ui, label);
+        let settings = control(&ui, "Settings");
+        let signal = i_slint_backend_testing::ElementHandle::find_by_accessible_label(
+            &ui,
+            "Bike BLE signal -62 dBm",
+        )
+        .next()
+        .unwrap();
+        let position = lock.absolute_position();
+        let size = lock.size();
+        assert_eq!(position.y, settings.absolute_position().y);
+        assert_eq!(size, settings.size());
+        assert!(signal.absolute_position().x + signal.size().width <= position.x);
+        assert!(position.x + size.width <= settings.absolute_position().x);
+        assert!(position.x >= 0. && position.y >= 0.);
+        assert!(position.y + size.height <= height as f32);
+        assert!(settings.absolute_position().x + settings.size().width <= width as f32);
+        capture("settings-header-lock", &pixels, width, height);
+        let (x, y) = control_center(&ui, label);
+        click(&window, x, y);
+        assert_eq!(bike_calls.get(), 1);
+        assert_eq!(screen_calls.get(), 0);
+        for (connected, can_configure) in [(false, true), (true, false)] {
+            ui.set_connected(connected);
+            ui.set_can_configure(can_configure);
+            frame(&window, &clock, 70, &mut pixels, width);
+            click(&window, x, y);
+            assert_eq!(bike_calls.get(), 1, "disabled shortcut sent a lock request");
+        }
+        ui.set_connected(true);
+        ui.set_can_configure(true);
+        ui.set_screen_locked(true);
+        ui.set_pin_open(true);
+        frame(&window, &clock, 80, &mut pixels, width);
+        absent();
+        click(&window, x, y);
+        assert_eq!(bike_calls.get(), 1, "locked overlay leaked a tap");
+        ui.set_screen_locked(false);
+        ui.set_pin_open(false);
+        ui.set_page(4);
+        frame(&window, &clock, 90, &mut pixels, width);
+        let (x, y) = control_center(&ui, label);
+        click(&window, x, y);
+        assert_eq!(bike_calls.get(), 2);
+        println!("Settings header bike lock passed {width}x{height}");
+        return;
+    }
+    if args.iter().any(|arg| arg == "--lock-removal-fixtures") {
+        ui.set_animations_enabled(false);
+        if width.min(height) == 480 && width.max(height) == 800 {
+            ui.set_display_safe_inset_x(0.);
+            ui.set_display_safe_inset_y(0.);
+        }
+        ui.set_page(3);
+        ui.set_connected(false);
+        ui.set_can_configure(false);
+        ui.set_supports_lock(false);
+        ui.set_pin_configured(false);
+        frame(&window, &clock, 0, &mut pixels, width);
+        assert!(
+            i_slint_backend_testing::ElementHandle::find_by_accessible_label(
+                &ui,
+                "Remove screen lock"
+            )
+            .next()
+            .is_none()
+        );
+        let calls = Rc::new(Cell::new(0));
+        let called = calls.clone();
+        let weak = ui.as_weak();
+        ui.on_pin_remove(move || {
+            called.set(called.get() + 1);
+            let ui = weak.unwrap();
+            ui.set_pin_pattern(ui.get_unlock_method() == 1);
+            ui.set_pin_heading("REMOVE LOCK".into());
+            ui.set_pin_message(
+                if ui.get_unlock_method() == 1 {
+                    "Draw your current pattern to remove the screen lock."
+                } else {
+                    "Enter your current PIN to remove the screen lock."
+                }
+                .into(),
+            );
+            ui.set_pin_open(true);
+        });
+        let weak = ui.as_weak();
+        ui.on_pin_cancel(move || weak.unwrap().set_pin_open(false));
+        for method in [0, 1] {
+            ui.set_pin_configured(true);
+            ui.set_bike_lock_status("Screen lock configured.".into());
+            ui.set_unlock_method(method);
+            frame(&window, &clock, SCROLL_TIME.get() + 10, &mut pixels, width);
+            click_control(&window, &ui, &clock, &mut pixels, "Remove screen lock");
+            frame(&window, &clock, SCROLL_TIME.get() + 20, &mut pixels, width);
+            assert!(ui.get_pin_open() && ui.get_pin_configured());
+            assert_eq!(ui.get_pin_pattern(), method == 1);
+            assert_eq!(calls.get(), method + 1);
+            capture(
+                if method == 1 {
+                    "remove-lock-pattern"
+                } else {
+                    "remove-lock-pin"
+                },
+                &pixels,
+                width,
+                height,
+            );
+            click_control(&window, &ui, &clock, &mut pixels, "Cancel");
+            assert!(!ui.get_pin_open() && ui.get_pin_configured());
+            if method == 0 {
+                frame(&window, &clock, SCROLL_TIME.get() + 25, &mut pixels, width);
+                capture("screen-lock-actions", &pixels, width, height);
+            }
+            let change = control(&ui, "Change screen lock");
+            let remove = control(&ui, "Remove screen lock");
+            click_control(&window, &ui, &clock, &mut pixels, "Locked screen timeout");
+            let timeout = control(&ui, "Locked screen timeout");
+            assert!(change.absolute_position().y < remove.absolute_position().y);
+            assert!(remove.absolute_position().y < timeout.absolute_position().y);
+            ui.set_pin_configured(false);
+            ui.set_bike_lock_status("Screen lock removed.".into());
+            frame(&window, &clock, SCROLL_TIME.get() + 30, &mut pixels, width);
+            assert!(
+                i_slint_backend_testing::ElementHandle::find_by_accessible_label(
+                    &ui,
+                    "Remove screen lock"
+                )
+                .next()
+                .is_none()
+            );
+            click_control(&window, &ui, &clock, &mut pixels, "Set screen lock");
+        }
+        frame(&window, &clock, SCROLL_TIME.get() + 40, &mut pixels, width);
+        capture("lock-removed", &pixels, width, height);
+        println!(
+            "{width}x{height}: PIN/pattern removal is reachable without a controller; cancellation preserves configuration"
+        );
+        return;
+    }
     if args.iter().any(|arg| arg == "--gesture-snapshot-fixtures") {
         if !ui.get_native_page_snapshots() {
             return;

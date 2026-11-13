@@ -4,6 +4,7 @@ export component IconAction inherits Rectangle {
     in property <image> icon;
     in property <string> label;
     in property <bool> selected;
+    in property <bool> enabled: true;
     callback activated();
     width: 48px;
     height: 48px;
@@ -17,10 +18,11 @@ export component IconAction inherits Rectangle {
         width: 24px;
         height: 24px;
         source: root.icon;
-        colorize: root.selected ? Theme.accent : Theme.dim;
+        colorize: root.enabled && root.selected ? Theme.accent : Theme.dim;
     }
 
     touch := TouchArea {
+        enabled: root.enabled;
         clicked => { root.activated(); }
     }
 }

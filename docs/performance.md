@@ -190,25 +190,6 @@ The shared policy in `bike/polling.hpp` now targets 10 Hz per telemetry family: 
 
 The capture also exposed a reported battery charge of 411.2%. The display now preserves nonnegative controller-reported percentages, including values above 100%, on Ride and Stats. The Ride battery fill stops at full while its numeric label retains the reported value. Negative battery estimates and negative optional Wh values remain unavailable without discarding the whole reply.
 
-### Connection interval audit
-
-The central currently passes default connection parameters to NimBLE. In the installed ESP-IDF 6.1 host, `BLE_GAP_INITIAL_CONN_ITVL_MIN/MAX` are 30/50 ms; the measured initial 50 ms interval therefore follows those defaults. The later 31.25 ms peer update is accepted without an application override.
-
-A best-effort 7.5–15 ms request is technically possible with `ble_gap_update_params`: interval units are 1.25 ms (values 6–12), with zero latency and an unchanged valid supervision timeout. Whether this module accepts it, and whether delivered throughput improves with both BLE roles active, require separate hardware measurement. The current firmware retains its existing negotiation and 10 Hz telemetry target while the byte pipeline and handoff are validated at the measured 31.25 ms interval.
-
-[VESC Tool's 7.5 ms update example](https://github.com/vedderb/vesc_tool/blob/master/bleuart.cpp#L324-L335) is commented out; it is not an active recommendation. [Current VESC Express](https://github.com/vedderb/vesc_express/blob/main/main/comm_ble.c#L109-L127) sets advertising intervals there, not connected intervals, and does not request a connection update in that file. Any later faster-interval experiment should make one request per physical session, log the actual result, tolerate refusal and accept later peer overrides without a negotiation loop.
-
-### Reproduce the diagnostic
-
-The CMake option `WFD_BLE_BENCHMARK` is off in the common PlatformIO configuration. For a local diagnostic build only, change that option to `ON`, keeping all other common CMake arguments, then build and upload the exact target:
-
-```sh
-pio run -e waveshare_esp32s3_206 -t upload
-pio device monitor -e waveshare_esp32s3_206
-```
-
-Connect the vehicle, leave the phone disconnected for the solo profile and capture the six completed `ble_benchmark: RESULT` records. Record the module, MTU, connection interval, firmware and active UI workload. Share redacted summaries without raw BLE addresses or PINs. Restore `WFD_BLE_BENCHMARK=OFF`, rebuild and reflash normal firmware after testing; do not publish diagnostic images. The local evidence file is `.cache/ble-benchmark-shared-device.log`, which is not a distributed artifact.
-
 ## Locked pattern diagnostic memory
 
 The later locked-pattern diagnostic capture reached UI readiness at 11,469 ms with **44,423 bytes internal free**, a **31,744-byte largest internal block** and **17,328 bytes free of the 32 KiB UI stack**. This sample preceded local unlock at 161,832 ms; it is not an after-unlock measurement. The earlier locked capture retained only 1,447 bytes internal free with a 448-byte largest block.

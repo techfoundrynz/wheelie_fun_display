@@ -1,5 +1,5 @@
 import { Header } from "header.slint";
-import { Navigation } from "navigation.slint";
+import { AutoHideFooter } from "navigation.slint";
 import { UpdateConfirmation } from "dialogs/update-confirmation.slint";
 import { UpdateProgress } from "dialogs/update-progress.slint";
 import { ApplyConfirmation } from "dialogs/apply-confirmation.slint";
@@ -18,8 +18,8 @@ import { Theme } from "theme.slint";
 import { SafeArea } from "safe-area.slint";
 import { HardwareCapabilities } from "hardware.slint";
 import "fonts/Roboto.ttf";
-import { Peer, WifiItem, AboutItem, StatItem, TuneField } from "models.slint";
-export { Peer, WifiItem, AboutItem, StatItem, TuneField } from "models.slint";
+import { Peer, WifiItem, AboutItem, StatItem, TuneField, FooterVisibility } from "models.slint";
+export { Peer, WifiItem, AboutItem, StatItem, TuneField, FooterVisibility } from "models.slint";
 
 export component Dashboard inherits Window {
     title: root.vehicle-brand;
@@ -98,6 +98,10 @@ export component Dashboard inherits Window {
     callback pairing-cancel();
     callback pairing-retry();
     in-out property <int> brightness: 70;
+    in-out property <FooterVisibility> footer-visibility: FooterVisibility.show;
+    out property <bool> footer-hidden: footer.hidden;
+    // Observe contacts before pointer dispatch; reveal only after release dispatch.
+    public function screen-contact(down: bool) { footer.contact(down); }
     in property <int> active-integration: 1;
     in property <string> vehicle-brand: "Wheelie Fun Bike";
     in property <bool> supports-presets: true;
@@ -134,6 +138,7 @@ export component Dashboard inherits Window {
     callback lock-retry();
     callback lock-timeout-changed(int);
     in-out property <int> page: 0;
+    private property <int> last-main-page: 0;
     in property <bool> animations-enabled: true;
     out property <bool> transitioning: pages.animating;
     out property <int> displayed-page: pages.active-page;
@@ -281,7 +286,10 @@ export component Dashboard inherits Window {
     callback update-reboot();
 
     changed rotation => { root.tuning-editor-index = -1; pages.snap(); }
-    changed page => { root.tuning-editor-index = -1; }
+    changed page => {
+        root.tuning-editor-index = -1;
+        if root.page >= 0 && root.page <= 2 { root.last-main-page = root.page; }
+    }
     changed tuning-ready => { if !self.tuning-ready { self.tuning-editor-index = -1; } }
     changed editing => { if self.editing { pages.snap(); } }
     changed pin-open => { if self.pin-open { root.tuning-editor-index = -1; pages.snap(); } }
@@ -316,8 +324,18 @@ export component Dashboard inherits Window {
                 bike-ble-signal: root.bike-ble-signal;
                 bike-ble-rssi: root.bike-ble-rssi;
                 settings-selected: root.page >= 3;
+                show-lock: root.page >= 3 && root.pin-configured && root.supports-lock && root.page-input-allowed;
+                lock-enabled: root.connected && root.can-configure;
                 animate-status: root.animations-enabled && !root.screen-asleep && !root.pin-open && !root.editing && !root.confirming && !root.ota-confirming && !root.update-modal-open;
-                open-settings => { root.page = 3; }
+                open-settings => {
+                    if root.page == 3 {
+                        root.page = root.last-main-page;
+                    } else {
+                        if root.page >= 0 && root.page <= 2 { root.last-main-page = root.page; }
+                        root.page = 3;
+                    }
+                }
+                lock-bike => { root.bike-lock(); }
             }
 
             Rectangle {
@@ -484,6 +502,12 @@ export component Dashboard inherits Window {
                         celsius: root.celsius;
                         rotation: root.rotation;
                         brightness: root.brightness;
+                        footer-visibility: root.footer-visibility;
+                        cycle-footer-visibility => {
+                            root.footer-visibility = root.footer-visibility == FooterVisibility.show ? FooterVisibility.hide :
+                                root.footer-visibility == FooterVisibility.hide ? FooterVisibility.auto : FooterVisibility.show;
+                            root.preferences-changed();
+                        }
                         transport-kind: root.transport-kind;
                         can-available: root.can-available;
                         uart-available: root.uart-available;
@@ -581,11 +605,11 @@ export component Dashboard inherits Window {
                 }
             }
 
-            Rectangle {
-                height: root.landscape ? 16px : root.compact ? 8px : 12px;
-            }
-
-            Navigation {
+            footer := AutoHideFooter {
+                visibility-mode: root.footer-visibility;
+                idle-allowed: root.page-input-allowed && !root.transitioning;
+                animations-enabled: root.animations-enabled;
+                gap: root.landscape ? 16px : root.compact ? 8px : 12px;
                 page: root.page;
                 page-requested(page) => { root.page = page; }
             }

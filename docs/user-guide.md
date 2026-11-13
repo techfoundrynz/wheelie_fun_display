@@ -1,6 +1,6 @@
 # Using the display
 
-Use the bottom tabs or swipe horizontally to move between **Ride**, **Stats** and **Tune**. Tap the cog in the upper-right corner for Settings. Scroll vertically on longer pages.
+Use the bottom tabs or swipe horizontally to move between **Ride**, **Stats** and **Tune**. Tap the cog in the upper-right corner for Settings. On the root Settings page, tap it again to return to your last Ride, Stats or Tune page. From a Settings subpage, the cog returns to root Settings. Scroll vertically on longer pages.
 
 ![Landscape ride dashboard](images/ride-landscape.png)
 
@@ -130,3 +130,7 @@ Bars beside the phone indicator show the bike's Bluetooth signal. Fewer bars mea
 A green phone icon beside the cog indicates an authorized phone connection. Ride readings normally continue, though busy phone traffic or firmware transfers can temporarily pause them.
 
 Disconnect the phone before reading or saving tuning, requesting a bike lock, or updating display firmware. The phone selects its own CAN controller. See [connections](connections.md) for pairing and proxy behavior.
+
+## Footer visibility
+
+**Settings > Display > Footer visibility** cycles through **Show**, **Hide**, and **Auto**. Show keeps the Ride/Stats/Tune footer visible; Hide keeps it hidden. Auto slides it down after five seconds without touching the screen. The page expands into the freed space. In Auto, your first touch works normally. The footer returns after you lift your finger, so controls stay in place throughout a tap or drag. Show is the default, and the selected mode is saved across display restarts. The layout stays fixed during a held touch, and Auto does not start hiding during a dialog or page transition.

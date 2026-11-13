@@ -101,6 +101,7 @@ fn pin_open(ui: &Dashboard, state: &mut Demo, mode: u8) {
     ui.set_pin_pattern(pattern);
     ui.set_pin_heading(
         match (mode, pattern) {
+            (5, _) => "REMOVE LOCK",
             (1, true) => "CREATE PATTERN",
             (2, true) => "CONFIRM PATTERN",
             (_, true) => "ENTER PATTERN",
@@ -111,7 +112,13 @@ fn pin_open(ui: &Dashboard, state: &mut Demo, mode: u8) {
         .into(),
     );
     ui.set_pin_message(
-        if pattern {
+        if mode == 5 {
+            if pattern {
+                "Draw your current pattern to remove the screen lock."
+            } else {
+                "Enter your current PIN to remove the screen lock."
+            }
+        } else if pattern {
             "Connect six dots, then lift your finger."
         } else if state.documentation_fixture {
             "Choose a six-digit PIN to secure your display."
@@ -499,7 +506,12 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
     });
     let weak = ui.as_weak();
     let demo = state.clone();
-    ui.on_pin_remove(move || pin_open(&weak.unwrap(), &mut demo.borrow_mut(), 5));
+    ui.on_pin_remove(move || {
+        let ui = weak.unwrap();
+        if !ui.get_screen_locked() && ui.get_pin_configured() && !ui.get_pin_open() {
+            pin_open(&ui, &mut demo.borrow_mut(), 5);
+        }
+    });
     let weak = ui.as_weak();
     let demo = state.clone();
     ui.on_pin_digit(move |digit| {
@@ -523,7 +535,18 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
         weak.unwrap().set_pin_value(state.digits.clone().into());
     });
     let weak = ui.as_weak();
-    ui.on_pin_cancel(move || weak.unwrap().set_pin_open(false));
+    let demo = state.clone();
+    ui.on_pin_cancel(move || {
+        let ui = weak.unwrap();
+        if !ui.get_screen_locked() {
+            let mut state = demo.borrow_mut();
+            state.digits.clear();
+            state.candidate.clear();
+            state.pin_mode = 0;
+            ui.set_pin_value("".into());
+            ui.set_pin_open(false);
+        }
+    });
     let weak = ui.as_weak();
     let demo = state.clone();
     ui.on_pin_submit(move || {
@@ -571,9 +594,15 @@ fn configure(ui: &Dashboard, state: &Rc<RefCell<Demo>>) {
                         ui.set_unlock_method(i32::from(state.entry_pattern));
                         ui.set_proxy_pairing_code("".into());
                         ui.set_pin_configured(false);
+                        ui.set_lock_timeout(30);
+                        state.candidate.clear();
+                        ui.set_bike_lock_status("Screen lock removed.".into());
                     } else {
                         ui.set_proxy_pairing_code(entered.into());
                     }
+                    state.digits.clear();
+                    state.pin_mode = 0;
+                    ui.set_pin_value("".into());
                     ui.set_screen_locked(false);
                     ui.set_pin_open(false);
                 }
@@ -808,6 +837,9 @@ impl WebSimulator {
         }
         if kind == "up" || kind == "cancel" {
             self.pressed = false;
+        }
+        if self.pressed || kind == "up" || kind == "cancel" {
+            self.ui.invoke_screen_contact(self.pressed);
         }
         if self.ui.get_screen_asleep() {
             self.ui.set_screen_asleep(false);
@@ -1076,6 +1108,84 @@ impl WebSimulator {
             "transport-kind" => self.ui.get_transport_kind().into(),
             "brand" => self.ui.get_vehicle_brand().as_str().into(),
             _ => JsValue::NULL,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn removing_pin_and_pattern_requires_current_code_and_resets_timeout() {
+        let window = MinimalSoftwareWindow::new(RepaintBufferType::ReusedBuffer);
+        slint::platform::set_platform(Box::new(BrowserPlatform {
+            window,
+            clock: Rc::new(Cell::new(Duration::ZERO)),
+        }))
+        .unwrap();
+        let ui = Dashboard::new().unwrap();
+        let enter = |value: &str| {
+            for digit in value.bytes() {
+                ui.invoke_pin_digit(i32::from(digit - b'0'));
+            }
+            ui.invoke_pin_submit();
+        };
+        for pattern in [false, true] {
+            let state = Rc::new(RefCell::new(Demo {
+                pin: "123456".into(),
+                candidate: "654321".into(),
+                entry_pattern: pattern,
+                ..Demo::default()
+            }));
+            configure(&ui, &state);
+            ui.set_pin_configured(true);
+            ui.set_unlock_method(i32::from(pattern));
+            ui.set_pin_open(false);
+            ui.set_screen_locked(false);
+            ui.set_lock_timeout(120);
+            ui.set_proxy_pairing_code("123456".into());
+
+            ui.invoke_pin_remove();
+            assert_eq!(ui.get_pin_heading(), "REMOVE LOCK");
+            assert_eq!(ui.get_pin_pattern(), pattern);
+            assert!(ui.get_pin_message().contains(if pattern {
+                "current pattern"
+            } else {
+                "current PIN"
+            }));
+            assert!(ui.get_pin_configured());
+            ui.invoke_pin_cancel();
+            assert!(!ui.get_pin_open());
+            assert!(ui.get_pin_configured());
+            assert_eq!(state.borrow().pin, "123456");
+            assert_eq!(ui.get_lock_timeout(), 120);
+
+            ui.invoke_pin_remove();
+            enter("654321");
+            assert!(ui.get_pin_open() && ui.get_pin_configured());
+            assert_eq!(state.borrow().pin, "123456");
+            assert_eq!(ui.get_lock_timeout(), 120);
+            assert!(ui.get_pin_value().is_empty());
+            enter("123456");
+            assert!(!ui.get_pin_open() && !ui.get_screen_locked() && !ui.get_pin_configured());
+            assert!(state.borrow().pin.is_empty());
+            assert!(state.borrow().candidate.is_empty());
+            assert!(state.borrow().digits.is_empty());
+            assert_eq!(state.borrow().pin_mode, 0);
+            assert!(ui.get_pin_value().is_empty() && ui.get_proxy_pairing_code().is_empty());
+            assert_eq!(ui.get_lock_timeout(), 30);
+            assert!(
+                ui.get_bike_lock_status()
+                    .starts_with("Screen lock removed.")
+            );
+
+            // Re-enabling starts at the same default timeout as a fresh firmware record.
+            ui.invoke_pin_setup();
+            enter("123654");
+            enter("123654");
+            assert!(ui.get_pin_configured());
+            assert_eq!(ui.get_lock_timeout(), 30);
         }
     }
 }

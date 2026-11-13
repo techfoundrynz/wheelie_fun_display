@@ -8,9 +8,6 @@
 #include "bike/telemetry.hpp"
 #include "bike/units.hpp"
 #include "ble_proxy.hpp"
-#ifdef WFD_BLE_BENCHMARK
-  #include "ble_benchmark.hpp"
-#endif
 #include "ble_security.hpp"
 #include "board.hpp"
 #include "dashboard.h"
@@ -101,18 +98,28 @@ bike::Orientation load_preferences(Dashboard &ui) {
   nvs_handle_t h;
   if (nvs_open("display", NVS_READONLY, &h) != ESP_OK)
     return orientation;
-  uint8_t metric = 1, celsius = 1, light = 70, proxy = 0;
+  uint8_t metric = 1, celsius = 1, light = 70, proxy = 0, footer_mode = 0;
   uint16_t rotation = static_cast<int>(orientation);
   nvs_get_u8(h, "metric", &metric);
   nvs_get_u8(h, "celsius", &celsius);
   nvs_get_u8(h, "light", &light);
   nvs_get_u16(h, "rotation", &rotation);
   nvs_get_u8(h, "ble_proxy", &proxy);
+  const auto footer_result = nvs_get_u8(h, "footer_mode", &footer_mode);
+  if (footer_result == ESP_ERR_NVS_NOT_FOUND) {
+    uint8_t legacy_auto_hide = 0;
+    if (nvs_get_u8(h, "hide_footer", &legacy_auto_hide) == ESP_OK && legacy_auto_hide != 0)
+      footer_mode = static_cast<uint8_t>(FooterVisibility::Auto);
+  }
+  else if (footer_result != ESP_OK || footer_mode > static_cast<uint8_t>(FooterVisibility::Auto)) {
+    footer_mode = static_cast<uint8_t>(FooterVisibility::Show);
+  }
   nvs_close(h);
   ui.set_metric(metric != 0);
   ui.set_celsius(celsius != 0);
   ui.set_brightness(std::clamp<int>(light, 10, 100));
   ui.set_ble_proxy_enabled(proxy != 0);
+  ui.set_footer_visibility(static_cast<FooterVisibility>(footer_mode));
   return bike::valid_rotation(rotation) ? bike::orientation_from_degrees(rotation) : orientation;
 }
 
@@ -386,6 +393,7 @@ extern "C" void app_main() {
       nvs_set_u8(h, "metric", ui->get_metric());
       nvs_set_u8(h, "celsius", ui->get_celsius());
       nvs_set_u8(h, "light", ui->get_brightness());
+      nvs_set_u8(h, "footer_mode", static_cast<uint8_t>(ui->get_footer_visibility()));
       nvs_commit(h);
       nvs_close(h);
     }
@@ -402,9 +410,6 @@ extern "C" void app_main() {
     }
   });
   tuning::init(*ui, telemetry);
-#ifdef WFD_BLE_BENCHMARK
-  BleBenchmark benchmark;
-#endif
   uint32_t session = 0;
   uint32_t setup_received = 0, setup_rejected = 0, bike_received = 0;
   uint64_t next_telemetry_log = 0;
@@ -418,6 +423,7 @@ extern "C" void app_main() {
   ESP_LOGI("display", "UI initialized: stack_free=%u, internal_free=%u, reset_reason=%u",
            unsigned(uxTaskGetStackHighWaterMark(nullptr)), unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
            unsigned(esp_reset_reason()));
+  set_slint_contact_observer([ui](bool down) { ui->invoke_screen_contact(down); });
   ui->show();
   configASSERT(heap_caps_check_integrity_all(true));
   ESP_LOGI("display", "UI shown: stack_free=%u", unsigned(uxTaskGetStackHighWaterMark(nullptr)));
@@ -474,12 +480,7 @@ extern "C" void app_main() {
         }
         else if (!payload.empty() && payload[0] == 36 && decoded)
           ++bike_received;
-#ifdef WFD_BLE_BENCHMARK
-        if (!received.passive_proxy)
-          benchmark.receive(payload, now, decoded);
-#else
         (void)decoded;
-#endif
       }
     }
     security::tick(now);
@@ -498,13 +499,6 @@ extern "C" void app_main() {
     ui->set_pairing_failed(pairing.failed);
     ui->set_pairing_ready(pairing.waiting || pairing.failed);
     ui->set_pairing_permitted(security::pairing_permitted());
-#ifdef WFD_BLE_BENCHMARK
-    const auto benchmark_proxy = ble_proxy::snapshot();
-    benchmark.tick(now,
-                   ready && transport::selected() == transport::Kind::Ble && !security::blocked() &&
-                       (!benchmark_proxy.connected || benchmark_proxy.authorized),
-                   vehicle->poll(), transport::poll, ble_proxy::phone_owns_link());
-#else
     if (ready && now >= next_setup_poll) {
       const uint8_t setup[] = {47};
       if (transport::poll(setup))
@@ -520,7 +514,6 @@ extern "C" void app_main() {
       if (transport::poll(bms_values))
         next_bms_poll = now + bike::bms_poll_interval_ms;
     }
-#endif
     if (now >= next_ui) {
       const bool fresh = ready && telemetry.fresh(now);
       const bool bike_fresh = telemetry.bike_valid && now - telemetry.bike_ms < 1500;

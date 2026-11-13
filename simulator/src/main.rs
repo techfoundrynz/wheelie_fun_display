@@ -33,6 +33,41 @@ fn project_proxy_name(ui: &Dashboard, preference: &str) {
 fn main() -> Result<(), slint::PlatformError> {
     let ui = Dashboard::new()?;
     ui.set_device_label("Desktop simulator".into());
+    {
+        use slint::winit_030::{EventResult, WinitWindowAccessor, winit};
+        let weak = ui.as_weak();
+        let mut down = false;
+        ui.window().on_winit_window_event(move |_, event| {
+            let contact = match event {
+                winit::event::WindowEvent::MouseInput {
+                    state,
+                    button: winit::event::MouseButton::Left,
+                    ..
+                } => {
+                    down = *state == winit::event::ElementState::Pressed;
+                    true
+                }
+                winit::event::WindowEvent::CursorMoved { .. } if down => true,
+                winit::event::WindowEvent::Touch(touch) => {
+                    down = matches!(
+                        touch.phase,
+                        winit::event::TouchPhase::Started | winit::event::TouchPhase::Moved
+                    );
+                    true
+                }
+                winit::event::WindowEvent::Focused(false) if down => {
+                    down = false;
+                    weak.unwrap().invoke_screen_contact(false);
+                    return EventResult::Propagate;
+                }
+                _ => false,
+            };
+            if contact {
+                weak.unwrap().invoke_screen_contact(down);
+            }
+            EventResult::Propagate
+        });
+    }
     let smoke = std::env::args().any(|arg| arg == "--smoke-test");
     let dimensions: Vec<_> = std::env::args()
         .skip(1)

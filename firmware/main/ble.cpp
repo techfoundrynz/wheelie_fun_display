@@ -1,4 +1,5 @@
 #include "ble.hpp"
+#include "bike/ble_link_parameters.hpp"
 #include "bike/ble_name.hpp"
 #include "bike/proxy_lease.hpp"
 #include "bike/proxy_tx_drain.hpp"
@@ -48,8 +49,11 @@ struct Request {
   std::array<uint8_t, 1030> bytes{};
 };
 
+static_assert(CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU - 3 <= Received{}.bytes.size());
+
 Snapshot state;
 bike::BleLifecycle lifecycle;
+bike::BleLinkParameters link_parameters;
 SemaphoreHandle_t mutex;
 QueueHandle_t requests, received;
 std::array<ble_addr_t, 6> addresses{};
@@ -291,7 +295,7 @@ void discover_service(uint16_t handle, void *arg) {
     discovery_failed(handle, rc);
 }
 
-int mtu_exchanged(uint16_t handle, const ble_gatt_error *, uint16_t, void *arg) {
+int mtu_exchanged(uint16_t handle, const ble_gatt_error *error, uint16_t mtu, void *arg) {
   // Even peers that refuse a larger MTU can use the default 20-byte chunks.
   // Complete the exchange before starting the next ATT discovery procedure.
   lock();
@@ -300,7 +304,8 @@ int mtu_exchanged(uint16_t handle, const ble_gatt_error *, uint16_t, void *arg) 
                        lifecycle.status == Status::Discovering;
   unlock();
   if (current) {
-    ESP_LOGI("ble", "VESC ATT MTU: %u bytes", unsigned(ble_att_mtu(handle)));
+    ESP_LOGI("ble", "VESC ATT MTU: %u bytes (exchange_status=%d result=%u)", unsigned(ble_att_mtu(handle)),
+             error ? error->status : -1, unsigned(mtu));
     discover_service(handle, arg);
   }
   return 0;
@@ -402,8 +407,10 @@ int gap_event(ble_gap_event *event, void *arg) {
                unsigned(description.conn_latency), unsigned(description.supervision_timeout) * 10);
     ble_security::upstream_connected(event->connect.conn_handle,
                                      static_cast<uint32_t>(reinterpret_cast<uintptr_t>(arg)));
-    if (ble_gattc_exchange_mtu(event->connect.conn_handle, mtu_exchanged, arg))
+    if (const int rc = ble_gattc_exchange_mtu(event->connect.conn_handle, mtu_exchanged, arg)) {
+      ESP_LOGW("ble", "VESC MTU exchange not started: %d", rc);
       discover_service(event->connect.conn_handle, arg);
+    }
     break;
   }
   case BLE_GAP_EVENT_DISCONNECT:
@@ -419,11 +426,17 @@ int gap_event(ble_gap_event *event, void *arg) {
     }
     break;
   case BLE_GAP_EVENT_CONN_UPDATE:
-    if (current_callback(event->conn_update.conn_handle, arg) && !event->conn_update.status) {
+    if (current_callback(event->conn_update.conn_handle, arg)) {
+      lock();
+      if (connection == event->conn_update.conn_handle &&
+          lifecycle.current(static_cast<uint32_t>(reinterpret_cast<uintptr_t>(arg))))
+        link_parameters.completed(lifecycle.session, esp_timer_get_time() / 1000, event->conn_update.status == 0);
+      unlock();
       ble_gap_conn_desc description{};
       if (!ble_gap_conn_find(event->conn_update.conn_handle, &description))
-        ESP_LOGI("ble", "VESC link updated: interval=%.2f ms latency=%u timeout=%u ms", description.conn_itvl * 1.25,
-                 unsigned(description.conn_latency), unsigned(description.supervision_timeout) * 10);
+        ESP_LOGI("ble", "VESC link updated: status=%d interval=%.2f ms latency=%u timeout=%u ms",
+                 event->conn_update.status, description.conn_itvl * 1.25, unsigned(description.conn_latency),
+                 unsigned(description.supervision_timeout) * 10);
     }
     break;
   case BLE_GAP_EVENT_NOTIFY_RX: {
@@ -679,6 +692,32 @@ void worker(void *) {
       rssi_error = 0;
     }
     unlock();
+    // The worker owns submissions; GAP completions update the same bounded
+    // session policy under mutex. Never block GATT discovery or force reconnects.
+    const bool parameters_permitted = !proxy_requested.load() && !ble_proxy::update_mode();
+    ble_gap_conn_desc parameters_desc{};
+    if (rssi_ready && !ble_gap_conn_find(rssi_handle, &parameters_desc)) {
+      lock();
+      const bool current =
+          connection == rssi_handle && lifecycle.session == current_session && lifecycle.status == Status::Ready;
+      const auto action = link_parameters.next(now, lifecycle.session, current, parameters_desc.conn_itvl,
+                                               parameters_desc.conn_latency, parameters_permitted);
+      unlock();
+      if (action.timed_out)
+        ESP_LOGW("ble", "VESC interval negotiation timed out; retaining current link parameters");
+      if (action.interval) {
+        ble_gap_upd_params params{};
+        params.itvl_min = params.itvl_max = action.interval;
+        params.latency = 0;
+        params.supervision_timeout = 400; // 4 s, valid for every candidate.
+        const int rc = ble_gap_update_params(rssi_handle, &params);
+        lock();
+        link_parameters.submitted(current_session, now, rc == 0,
+                                  rc == BLE_HS_EBUSY || rc == BLE_HS_EALREADY || rc == BLE_HS_ENOMEM);
+        unlock();
+        ESP_LOGI("ble", "VESC interval request: target=%.2f ms latency=0 result=%d", action.interval * 1.25, rc);
+      }
+    }
     if (rssi_ready && now >= next_rssi) {
       // HCI access belongs to the BLE worker, outside application mutexes and
       // between complete queued writes. Never sample the phone's handle.
@@ -726,8 +765,7 @@ void worker(void *) {
 } // namespace
 
 void start() {
-  // Keep normal operation comparable with throughput measurements; retain
-  // warnings/errors and the concise link/MTU diagnostics emitted by this file.
+  // Retain warnings/errors and concise connection-parameter diagnostics.
   esp_log_level_set("NimBLE", ESP_LOG_WARN);
   mutex = xSemaphoreCreateMutex();
   static StaticQueue_t request_control, receive_control;
@@ -764,7 +802,8 @@ void start() {
   ble_proxy::init();
   ble_hs_cfg.sync_cb = sync;
   ble_hs_cfg.reset_cb = reset;
-  ble_att_set_preferred_mtu(185);
+  const int mtu_result = ble_att_set_preferred_mtu(CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU);
+  ESP_LOGI("ble", "Preferred ATT MTU=%u result=%d", unsigned(CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU), mtu_result);
   nimble_port_freertos_init(host);
   configASSERT(xTaskCreate(worker, "vesc_ble_tx", 6144, nullptr, 5, nullptr) == pdPASS);
 }

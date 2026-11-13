@@ -131,15 +131,18 @@ void open(Mode next) {
   ui->set_pin_open(true);
   const bool pattern = entry_pattern();
   ui->set_pin_pattern(pattern);
-  ui->set_pin_heading(pattern ? (next == Mode::New       ? "CREATE PATTERN"
-                                 : next == Mode::Confirm ? "CONFIRM PATTERN"
-                                                         : "ENTER PATTERN")
-                              : (next == Mode::New       ? "CREATE PIN"
-                                 : next == Mode::Confirm ? "CONFIRM PIN"
-                                                         : "ENTER PIN"));
+  ui->set_pin_heading(next == Mode::Remove ? "REMOVE LOCK"
+                      : pattern            ? (next == Mode::New       ? "CREATE PATTERN"
+                                              : next == Mode::Confirm ? "CONFIRM PATTERN"
+                                                                      : "ENTER PATTERN")
+                                           : (next == Mode::New       ? "CREATE PIN"
+                                              : next == Mode::Confirm ? "CONFIRM PIN"
+                                                                      : "ENTER PIN"));
   if (next == Mode::Unlock)
     ui->set_proxy_pairing_code("");
-  message(pattern                 ? "Connect six dots, then lift your finger."
+  message(next == Mode::Remove    ? (pattern ? "Draw your current pattern to remove the screen lock."
+                                             : "Enter your current PIN to remove the screen lock.")
+          : pattern               ? "Connect six dots, then lift your finger."
           : next == Mode::New     ? "Choose a six-digit PIN"
           : next == Mode::Confirm ? "Enter the new PIN again"
                                   : "Enter your six-digit PIN");
@@ -327,11 +330,14 @@ void submit() {
     }
     record = {};
     configured = false;
+    local_authenticated = false;
+    bike_confirmed = false;
+    ui->set_lock_timeout(record.timeout);
     ble_security::set_bike_pin(false, true, 0, {});
     ui->set_pin_configured(false);
     ui->set_proxy_pairing_code("");
     ui->set_unlock_method(input_pattern);
-    ui->set_bike_lock_status("Screen lock removed");
+    ui->set_bike_lock_status("Screen lock removed.");
     close();
   }
   else if (mode == Mode::Unlock) {

@@ -118,6 +118,16 @@ fn safe_area_axes() {
 }
 
 #[test]
+fn screen_lock_removal_controls() {
+    check_layouts(Some("--lock-removal-fixtures"), LAYOUTS);
+}
+
+#[test]
+fn settings_header_bike_lock() {
+    check_layouts(Some("--header-lock-fixtures"), LAYOUTS);
+}
+
+#[test]
 fn pattern_unlock() {
     check_layouts(Some("--pattern-fixtures"), LAYOUTS);
 }
@@ -135,4 +145,14 @@ fn wfb_configuration_drafts() {
 #[test]
 fn vesc_update_controls() {
     check_layouts(Some("--update-fixtures"), LAYOUTS);
+}
+
+#[test]
+fn footer_hides_after_idle_and_preserves_first_interaction() {
+    check_layouts(Some("--footer-fixtures"), LAYOUTS);
+}
+
+#[test]
+fn settings_cog_returns_to_last_main_page() {
+    check_layouts(Some("--settings-return-fixtures"), LAYOUTS);
 }

@@ -75,3 +75,5 @@ Changing or removing the screen-lock credential disconnects phone sessions and c
 Changing only the entry mode between PIN and pattern preserves pairings for the same credential. The bike's own Bluetooth pairing remains separate.
 
 Phone pairing and wired operation still need validation with your exact hardware and app. [Troubleshooting](troubleshooting.md) covers common connection problems; [Bluetooth internals](bluetooth.md) and [transport internals](transports.md) explain implementation details.
+
+BLE automatically exchanges MTU and requests a faster connection interval after subscription. It prefers MTU 247 and a 7.5 ms interval, with bounded 15/30 ms fallbacks if rejected. The bike module can negotiate a smaller MTU or a slower interval. No manual setting is required; see [automatic link parameters](bluetooth.md#automatic-link-parameters).

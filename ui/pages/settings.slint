@@ -1,6 +1,6 @@
 import { VehicleSettings } from "../sections/vehicle-settings.slint";
 import { LockSettings } from "../sections/lock-settings.slint";
-import { Peer } from "../models.slint";
+import { Peer, FooterVisibility } from "../models.slint";
 import { Theme } from "../theme.slint";
 import { Page } from "../page.slint";
 import { SectionTitle, SettingsRow, Stepper } from "../settings.slint";
@@ -10,6 +10,8 @@ export component SettingsPage inherits Page {
     in property <bool> celsius;
     in property <int> rotation;
     in property <int> brightness;
+    in property <FooterVisibility> footer-visibility;
+    callback cycle-footer-visibility();
     in property <int> transport-kind;
     in property <bool> can-available;
     in property <bool> uart-available;
@@ -68,6 +70,12 @@ export component SettingsPage inherits Page {
         can-increase: root.brightness < 100;
         decrease => { root.dim(); }
         increase => { root.brighten(); }
+    }
+
+    SettingsRow {
+        label: "Footer visibility";
+        detail: root.footer-visibility == FooterVisibility.show ? "Show" : root.footer-visibility == FooterVisibility.hide ? "Hide" : "Auto";
+        activated => { root.cycle-footer-visibility(); }
     }
 
     SectionTitle {

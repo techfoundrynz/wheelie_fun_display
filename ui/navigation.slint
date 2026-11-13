@@ -1,4 +1,5 @@
 import { Action } from "controls.slint";
+import { FooterVisibility } from "models.slint";
 
 export component Navigation inherits HorizontalLayout {
     in property <int> page;
@@ -10,5 +11,73 @@ export component Navigation inherits HorizontalLayout {
         label: label;
         selected: root.page == i;
         activated => { root.page-requested(i); }
+    }
+}
+
+// The layout slot collapses while its clipped contents travel below the page.
+export component AutoHideFooter inherits Rectangle {
+    in property <FooterVisibility> visibility-mode: FooterVisibility.show;
+    in property <bool> idle-allowed;
+    in property <bool> animations-enabled: true;
+    in property <length> gap;
+    in property <int> page;
+    out property <bool> hidden: false;
+    private property <bool> contact-down: false;
+    private property <bool> reveal-pending: false;
+    private property <float> reveal: 1;
+    callback page-requested(int);
+    height: (50px + root.gap) * root.reveal;
+    clip: true;
+    animate reveal {
+        duration: root.animations-enabled && !root.contact-down ? 250ms : 0ms;
+        easing: ease-out;
+    }
+    public function contact(down: bool) {
+        if down {
+            if !root.contact-down {
+                // Read the animated position before stopping it: a press during
+                // the slide must not move a target underneath the held finger.
+                let current = root.reveal;
+                root.contact-down = true;
+                if root.idle-allowed { root.reveal = current; }
+                root.reveal-pending = false;
+            }
+            return;
+        }
+        root.contact-down = false;
+        root.reveal-pending = root.visibility-mode == FooterVisibility.hide ? root.reveal > 0 : root.hidden || root.reveal < 1;
+        if root.visibility-mode == FooterVisibility.auto && root.idle-allowed && !root.hidden { idle.restart(); }
+    }
+    changed visibility-mode => {
+        root.hidden = root.visibility-mode == FooterVisibility.hide;
+        root.reveal = root.hidden ? 0 : 1;
+        root.reveal-pending = false;
+    }
+    // Contacts are observed before pointer dispatch. Wait until its release has
+    // reached the actual control before changing the page's layout.
+    Timer {
+        interval: 1ms;
+        running: root.reveal-pending && !root.contact-down && root.idle-allowed;
+        triggered => {
+            root.reveal-pending = false;
+            root.hidden = root.visibility-mode == FooterVisibility.hide;
+            root.reveal = root.hidden ? 0 : 1;
+        }
+    }
+    idle := Timer {
+        interval: 5s;
+        running: root.visibility-mode == FooterVisibility.auto && root.idle-allowed && !root.contact-down && !root.hidden;
+        triggered => {
+            if root.visibility-mode == FooterVisibility.auto && root.idle-allowed && !root.contact-down {
+                root.hidden = true;
+                root.reveal = 0;
+            }
+        }
+    }
+    Navigation {
+        y: root.gap;
+        width: parent.width;
+        page: root.page;
+        page-requested(page) => { root.page-requested(page); }
     }
 }

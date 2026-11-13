@@ -10,8 +10,11 @@ export component Header inherits HorizontalLayout {
     in property <int> bike-ble-rssi;
     in property <string> status;
     in property <bool> settings-selected;
+    in property <bool> show-lock;
+    in property <bool> lock-enabled;
     in property <bool> animate-status: true;
     callback open-settings();
+    callback lock-bike();
 
     height: 48px;
     spacing: 12px;
@@ -98,6 +101,14 @@ export component Header inherits HorizontalLayout {
             colorize: Theme.success;
             accessible-label: "Phone connected to BLE proxy";
         }
+    }
+
+    if root.show-lock: IconAction {
+        icon: @image-url("assets/lock.svg");
+        label: "Lock bike and screen now";
+        selected: true;
+        enabled: root.lock-enabled;
+        activated => { root.lock-bike(); }
     }
 
     IconAction {

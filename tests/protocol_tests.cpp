@@ -1,3 +1,4 @@
+#include "bike/ble_link_parameters.hpp"
 #include "bike/ble_name.hpp"
 #include "bike/integration.hpp"
 #include "bike/lock_policy.hpp"
@@ -380,7 +381,62 @@ void bms_telemetry_tests() {
   }
 }
 
+void ble_link_parameters_tests() {
+  bike::BleLinkParameters parameters;
+  CHECK(!parameters.next(0, 1, false, 40, 0).interval);
+  CHECK(!parameters.next(100, 1, true, 40, 0).interval);
+  CHECK(!parameters.next(2099, 1, true, 40, 0).interval);
+  CHECK(!parameters.next(2100, 1, true, 40, 0, false).interval); // Phone/update defers submission.
+  CHECK(parameters.next(2200, 1, true, 40, 0).interval == 6);
+  parameters.submitted(1, 2200, true, false);
+  CHECK(!parameters.next(3000, 1, true, 40, 0).interval); // No overlapping procedures.
+  parameters.completed(99, 3000, false);                  // An old session cannot advance a new negotiation.
+  CHECK(!parameters.next(3001, 1, true, 40, 0).interval);
+  parameters.completed(1, 3002, false);
+  CHECK(!parameters.next(3501, 1, true, 40, 0).interval);
+  CHECK(parameters.next(3502, 1, true, 40, 0).interval == 12);
+  parameters.submitted(1, 3502, true, false);
+  parameters.completed(1, 3600, true);
+  CHECK(!parameters.next(20000, 1, true, 25, 0).interval); // Respect later peer overrides.
+  CHECK(!parameters.next(20001, 2, true, 40, 0).interval); // Reconnect starts a fresh bounded attempt.
+  CHECK(parameters.next(22001, 2, true, 40, 0).interval == 6);
+  CHECK(parameters.next(30001, 2, true, 40, 0).timed_out);
+  parameters.completed(2, 30002, false); // Late completion cannot restart a timed-out procedure.
+  CHECK(!parameters.next(50000, 2, true, 40, 0).interval);
+
+  bike::BleLinkParameters busy;
+  busy.next(0, 1, true, 40, 0);
+  for (unsigned retry = 0; retry < 4; ++retry) {
+    const auto now = 2000 + retry * 500;
+    CHECK(busy.next(now, 1, true, 40, 0).interval == 6);
+    busy.submitted(1, now, false, true);
+  }
+  CHECK(!busy.next(10000, 1, true, 40, 0).interval); // A permanently busy host cannot spin.
+
+  bike::BleLinkParameters rejected;
+  rejected.next(0, 1, true, 40, 0);
+  for (auto [now, target] : {std::pair{2000u, 6u}, {2500u, 12u}, {3000u, 24u}}) {
+    CHECK(rejected.next(now, 1, true, 40, 0).interval == target);
+    rejected.submitted(1, now, false, false);
+  }
+  CHECK(!rejected.next(10000, 1, true, 40, 0).interval);
+
+  bike::BleLinkParameters fast;
+  fast.next(0, 1, true, 6, 0);
+  CHECK(!fast.next(2000, 1, true, 6, 0).interval);
+  CHECK(!fast.next(3000, 1, true, 40, 0).interval);
+  bike::BleLinkParameters intermediate;
+  intermediate.next(0, 1, true, 8, 0);
+  CHECK(intermediate.next(2000, 1, true, 8, 0).interval == 6);
+  intermediate.completed(1, 2001, false);
+  CHECK(!intermediate.next(2501, 1, true, 8, 0).interval); // Preserve 10 ms instead of slowing to 15.
+  bike::BleLinkParameters latency;
+  latency.next(0, 1, true, 6, 4);
+  CHECK(latency.next(2000, 1, true, 6, 4).interval == 6); // Request zero slave latency too.
+}
+
 int main() {
+  ble_link_parameters_tests();
   distance_reporting_tests();
   expanded_setup_tests();
   battery_estimate_validity_tests();

@@ -106,14 +106,7 @@ struct OwnedReceive {
                           if (family >= 0)
                             ++telemetry_counters.owned[family];
                           xSemaphoreGive(mutex);
-#ifdef WFD_BLE_BENCHMARK
-                          static unsigned logged = 0;
-                          if (logged++ < 8)
-                            ESP_LOGI("ble_proxy", "Owned reply command=%u bytes=%u token=%u queued=%d", payload[0],
-                                     unsigned(payload.size()), unsigned(self.reply.token), queued);
-#else
                           (void)queued;
-#endif
                         },
                         this};
 };
@@ -372,10 +365,6 @@ void worker(void *) {
   bool have_poll = false;
   uint32_t arbiter_epoch = 0;
   uint64_t next_telemetry_log = 0;
-#ifdef WFD_BLE_BENCHMARK
-  uint64_t debug_at = 0;
-  unsigned injected_logged = 0;
-#endif
   for (;;) {
     bool worked = false;
     const auto now = uint64_t(esp_timer_get_time() / 1000);
@@ -580,18 +569,7 @@ void worker(void *) {
       const bool fair_turn = valid && arbiter.yield_phone_for_poll(true);
       const bool phone_waiting = relay->ingress.size() != 0;
       const bool upstream_waiting = relay->upstream.size() != 0;
-#ifdef WFD_BLE_BENCHMARK
-      const auto owed = arbiter.phone_replies(poll.key);
-      const bool broker_pending = arbiter.pending();
-#endif
       unlock();
-#ifdef WFD_BLE_BENCHMARK
-      if (valid && !available && now >= debug_at) {
-        ESP_LOGI("ble_proxy", "Deferred display poll: command=%u token=%u phone_replies=%u broker_pending=%d",
-                 unsigned(poll.key.bytes[0]), unsigned(poll.token), unsigned(owed), broker_pending);
-        debug_at = now + 1000;
-      }
-#endif
       if (!valid) {
         have_poll = false;
       }
@@ -602,11 +580,6 @@ void worker(void *) {
             poll.key, now, (!arbiter.yield_phone_for_poll(true) && relay->ingress.size()) || relay->upstream.size());
         unlock();
         if (committed) {
-#ifdef WFD_BLE_BENCHMARK
-          if (injected_logged++ < 8)
-            ESP_LOGI("ble_proxy", "Inject display poll: command=%u token=%u lease=%u", unsigned(poll.key.bytes[0]),
-                     unsigned(poll.token), unsigned(poll.epoch));
-#endif
           display_input->reply.token = poll.token;
           display_input->key = poll.key;
           display_input->epoch = poll.epoch;

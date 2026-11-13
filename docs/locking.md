@@ -1,6 +1,12 @@
 # Bike and display locking
 
-The **Settings > Screen lock** section provides six-digit PIN or six-dot pattern setup, change, removal, local screen locking, bike locking where supported, and a locked-screen timeout of 15/30/60/120 seconds (30 by default). New credentials require confirmation; changing or removing one requires the existing code. There is no default PIN. Keep the chosen code available: no PIN recovery or bypass UI is implemented.
+The **Settings > Screen lock** section provides six-digit PIN or six-dot pattern setup, change, removal, local screen locking, bike locking where supported, and a locked-screen timeout of 15/30/60/120 seconds (30 by default).
+
+With a screen lock configured and a bike-lock-capable integration selected, Settings also shows a lock icon beside the header cog. It runs **Lock bike and screen**, with the same connection and stationary-bike checks as the button in Screen lock settings.
+
+To remove a lock, unlock the display, open **Settings > Screen lock > Remove screen lock** directly below **Change screen lock**, and enter the current PIN or pattern. Cancelling or entering the wrong code keeps the lock. Successful removal returns to **Set screen lock**, resets its timeout to 30 seconds, and does not send a bike lock/unlock command.
+
+New credentials require confirmation; changing or removing one requires the existing code. There is no default PIN. Keep the chosen code available: no PIN recovery or bypass UI is implemented.
 
 The `security` NVS namespace holds a versioned record containing a random 16-byte salt, SHA-256 credential digest, creation-mode metadata, lock intent, timeout and failed-attempt count. Plaintext PINs and patterns are not stored or logged. Existing version-1 six-digit PIN records are accepted as numeric credentials. The numeric BLE proxy passkey is held in RAM after PIN setup or a successful local unlock; boot with a configured code requires local unlock before the secured proxy is available. Five incorrect entries impose a 30-second cooldown; reboot preserves the failure threshold and starts a fresh cooldown. Read errors or malformed records fail closed. Storage operations must succeed before PIN changes or an explicit bike-lock request can proceed.
 

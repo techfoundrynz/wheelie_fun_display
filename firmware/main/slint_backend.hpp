@@ -1,10 +1,14 @@
 #pragma once
 #include "board.hpp"
 #include <cstdint>
+#include <functional>
 
 void init_slint_backend(board::Display display);
 
 void render_slint_frame();
+
+// UI task only. Observe valid touch contacts before normal pointer dispatch.
+void set_slint_contact_observer(std::function<void(bool)> observer);
 
 void set_slint_orientation(bike::Orientation orientation); // UI task, between frames
 

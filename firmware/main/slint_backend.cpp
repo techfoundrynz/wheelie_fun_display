@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cstring>
 #include <memory>
+#include <utility>
 #if DISPLAY_NATIVE_RGB565
   #include "esp_freertos_hooks.h"
   #include <atomic>
@@ -16,6 +17,8 @@ namespace
 {
 
 bike::Orientation orientation = board::orientation;
+std::function<void(bool)> contact_observer;
+bool observed_contact_down = false;
 #if DISPLAY_NATIVE_RGB565
 std::atomic<uint32_t> idle_generation{0};
 
@@ -99,6 +102,10 @@ void init_slint_backend(board::Display display) {
   slint::platform::set_platform(std::make_unique<Platform>());
 }
 
+void set_slint_contact_observer(std::function<void(bool)> observer) {
+  contact_observer = std::move(observer);
+}
+
 void render_slint_frame() {
 #if DISPLAY_NATIVE_RGB565
   idle_before_render = idle_generation.load(std::memory_order_relaxed);
@@ -129,6 +136,10 @@ void render_slint_frame() {
   render_profile::last_touch_us = esp_timer_get_time() - touch_started;
 #endif
   const bool down = count != 0;
+  if (valid && contact_observer && (down || observed_contact_down)) {
+    contact_observer(down);
+    observed_contact_down = down;
+  }
   if (valid && down)
     last_activity = esp_timer_get_time() / 1000;
 #if WFD_RENDER_PROFILE

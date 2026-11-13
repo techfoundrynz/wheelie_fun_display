@@ -31,6 +31,11 @@ export component LockSettings inherits Rectangle {
             activated => { root.pin-setup(); }
         }
 
+        if root.pin-configured: SettingsRow {
+            label: "Remove screen lock";
+            activated => { root.pin-remove(); }
+        }
+
         if root.pin-configured && root.supports-lock: Action {
             label: "Lock bike and screen";
             enabled: root.connected && root.can-configure;
@@ -40,10 +45,6 @@ export component LockSettings inherits Rectangle {
             label: "Locked screen timeout";
             detail: root.lock-timeout + " s";
             activated => { root.lock-timeout-changed(root.lock-timeout == 15 ? 30 : root.lock-timeout == 30 ? 60 : root.lock-timeout == 60 ? 120 : 15); }
-        }
-        if root.pin-configured: SettingsRow {
-            label: "Remove screen lock";
-            activated => { root.pin-remove(); }
         }
         Text {
             text: root.bike-lock-status;

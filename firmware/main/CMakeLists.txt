@@ -78,11 +78,6 @@ if(GIT_FOUND)
 endif()
 set_property(SOURCE wired_transport.cpp vesc_update.cpp APPEND PROPERTY COMPILE_DEFINITIONS
     "WFD_SOURCE_REVISION=\"${wfd_source_revision}\"")
-option(WFD_BLE_BENCHMARK "Run bounded, read-only BLE telemetry throughput diagnostics" OFF)
-if(WFD_BLE_BENCHMARK)
-    set_property(SOURCE main.cpp ble_proxy.cpp APPEND PROPERTY COMPILE_DEFINITIONS WFD_BLE_BENCHMARK=1)
-endif()
-
 set(ui "${CMAKE_SOURCE_DIR}/ui/dashboard.slint")
 file(GLOB_RECURSE ui_inputs CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/ui/*.slint" "${CMAKE_SOURCE_DIR}/ui/fonts/*" "${CMAKE_SOURCE_DIR}/ui/assets/*")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${ui_inputs})

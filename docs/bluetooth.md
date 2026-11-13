@@ -10,6 +10,16 @@ Asynchronous scan, connect, MTU, GATT discovery and subscription callbacks carry
 
 The portable lifecycle tests cover fresh repeated scans, first-connect/discovery failures, successful subscription, restoration, disconnect/retry, late callbacks, pause/resume, unsupported authentication and Forget. Hardware testing with actual VESC controllers remains necessary for advertising variants, connection loss, MTU negotiation and security requirements. Controllers using rotating private addresses require identity resolution beyond a saved over-the-air address.
 
+## Automatic link parameters
+
+Every upstream connection exchanges ATT MTU before GATT discovery. The preferred MTU is **247**, with the actual value limited by both peers. Older modules can remain at MTU 23. Central writes and proxy notifications use the negotiated `MTU - 3` value capacity rather than assuming the preferred size. The SDK audit checks the shared MTU preference; existing packet queues and NimBLE buffers accommodate it without larger pool counts.
+
+After the UART notification subscription is ready and has settled for two seconds, the BLE worker requests a **7.5 ms** connection interval and zero peripheral latency. If rejected, it tries **15 ms**, then **30 ms**, with a short delay between attempts. It preserves a link already faster than a fallback. This is a best-effort sequence of common intervals, not an exhaustive search over every 1.25 ms interval value, and a peripheral may impose a slower interval.
+
+Submissions and completions are session-bound. Transient busy/allocation failures get at most three retries; permanent failures advance the bounded fallback list. A procedure without a completion stops after eight seconds without submitting overlapping updates. Rejection never disconnects an otherwise healthy link. Successful later peer updates are logged and respected rather than repeatedly countered. New negotiations wait while the phone owns the link or proxy firmware-update mode is active. A reconnect starts a fresh negotiation. Startup and update logs report the preferred/negotiated MTU, requested interval, submission result, completion status and actual interval/latency.
+
+Production polling rates and reply ownership rules are unchanged by link negotiation.
+
 ## Optional VESC BLE proxy
 
 The BLE proxy setting is off by default. The display uses the standard Nordic UART Service. Its name never mirrors the upstream BLE device or discovered main controller. Active WFB advertises as **WFB** and hides the editor; wheel-e and generic VESC use the editable saved name, initially **WB Disp**. BLE and UART provide an ordinary VESC byte stream. CAN exposes a generic adapter with firmware discovery, CAN ping and explicit CAN forwarding; the phone supplies its own controller IDs. The proxy does not consult or rewrite the display client's main-controller route.
