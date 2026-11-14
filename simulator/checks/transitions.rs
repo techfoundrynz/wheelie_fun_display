@@ -2029,6 +2029,22 @@ fn main() {
         assert_eq!(ui.get_bms_stats().row_count(), 25);
         assert_eq!(ui.get_bms_cells().row_count(), 13);
         assert_eq!(ui.get_bms_temperatures().row_count(), 3);
+        assert!(
+            i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui, "Cell 13")
+                .next()
+                .is_none(),
+            "Off-screen Stats rows must not instantiate text/layout delegates"
+        );
+        let original_cell = ui.get_bms_cells().row_data(12).unwrap();
+        let mut changed_cell = original_cell.clone();
+        changed_cell.value = "4.111 V".into();
+        ui.get_bms_cells().set_row_data(12, changed_cell);
+        let unchanged_top = pixels.clone();
+        frame(&window, &clock, 0, &mut pixels, width);
+        assert_eq!(
+            pixels, unchanged_top,
+            "Hidden cell update changed the viewport"
+        );
         for label in [
             "Duty cycle",
             "Electrical RPM",
@@ -2162,6 +2178,18 @@ fn main() {
             ("Sensor 3", "stats-bms-temperatures"),
         ] {
             show(label, &ui, &mut pixels);
+            if label == "Cell 13" {
+                assert!(
+                    i_slint_backend_testing::ElementHandle::find_by_accessible_label(
+                        &ui, "4.111 V"
+                    )
+                    .next()
+                    .is_some(),
+                    "A newly visible Stats delegate must show the latest model value"
+                );
+                ui.get_bms_cells().set_row_data(12, original_cell.clone());
+                frame(&window, &clock, at.get(), &mut pixels, width);
+            }
             assert!(
                 pixels[..header_end] == header_pixels,
                 "Scrolling to {label} repainted over the fixed header"

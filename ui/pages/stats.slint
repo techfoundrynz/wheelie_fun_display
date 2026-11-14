@@ -24,14 +24,21 @@ component StatRow inherits HorizontalLayout {
     }
 }
 
-component StatList inherits VerticalLayout {
+component StatList inherits Rectangle {
     in property <[StatItem]> items;
-    spacing: 6px;
-    for item in root.items: Rectangle {
+    in property <length> viewport-start;
+    in property <length> viewport-height;
+    // Keep the full scroll extent, but only instantiate text/layout delegates
+    // inside the viewport. Hidden rows retain their latest values in the model.
+    height: max(0px, self.items.length * 58px - 6px);
+    min-width: 0px;
+    for item[index] in root.items: Rectangle {
+        y: index * 58px;
+        width: root.width;
         height: 52px;
         background: Theme.surface;
         border-radius: 10px;
-        HorizontalLayout {
+        if index * 58px + 52px >= root.viewport-start && index * 58px <= root.viewport-start + root.viewport-height: HorizontalLayout {
             padding: 12px;
             spacing: 8px;
             Text {
@@ -84,7 +91,7 @@ export component StatsPage inherits TransitionPage {
     in property <string> motor;
     in property <string> trip;
     in property <string> odometer;
-    SwipeScroll {
+    stats-scroll := SwipeScroll {
         drag-cancelled: root.drag-cancelled;
         input-sequence: root.input-sequence;
         input-time: root.input-time;
@@ -192,6 +199,8 @@ export component StatsPage inherits TransitionPage {
 
             StatList {
                 items: root.vesc-stats;
+                viewport-start: -stats-scroll.content-y - self.y;
+                viewport-height: stats-scroll.height;
             }
 
             SectionTitle {
@@ -207,6 +216,8 @@ export component StatsPage inherits TransitionPage {
 
             StatList {
                 items: root.bms-stats;
+                viewport-start: -stats-scroll.content-y - self.y;
+                viewport-height: stats-scroll.height;
             }
 
             if root.bms-cells.length > 0: SectionTitle {
@@ -214,6 +225,8 @@ export component StatsPage inherits TransitionPage {
             }
             StatList {
                 items: root.bms-cells;
+                viewport-start: -stats-scroll.content-y - self.y;
+                viewport-height: stats-scroll.height;
             }
 
             if root.bms-temperatures.length > 0: SectionTitle {
@@ -221,6 +234,8 @@ export component StatsPage inherits TransitionPage {
             }
             StatList {
                 items: root.bms-temperatures;
+                viewport-start: -stats-scroll.content-y - self.y;
+                viewport-height: stats-scroll.height;
             }
         }
     }

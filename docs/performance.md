@@ -147,6 +147,42 @@ Physical checks covered display/touch at all four angles, stale-edge removal, re
 
 Local logs: `.cache/p4-fps-final-full-validation.log`, `.cache/p4-fps-final-repeat-validation.log`, `.cache/p4-fps-stats-positioned-validation.log` and `.cache/p4-production-boot.log`.
 
+## Simulated telemetry load
+
+Set `WFD_TELEMETRY_TEST` to `1` in `firmware/main/config.h` and build the desired target normally to exercise live values without a controller. Set it back to `0` for normal firmware. No PlatformIO configuration changes are needed.
+
+This diagnostic mode targets 60 UI projections per second, updating speed, battery, power, temperatures, angles, distances and controller/BMS Stats rows. Stats details update only while Stats is open. The header reads **TEST | simulated 60 Hz**, and vehicle controls are disabled. Generated samples are local to UI projection; transports, security and tuning retain actual controller telemetry. Networking and touch continue to run.
+
+Samples follow absolute 60 Hz time slots. Slow rendering skips missed slots instead of replaying them; the serial log reports cumulative `updates`, `skipped` slots and `elapsed_ms` every five seconds. These counters measure projection cadence, not delivered FPS. Use frame diagnostics and physical display inspection to assess rendering. This mode can be combined with the render profiler below. Do not distribute diagnostic images as normal releases.
+
+A short GUITION P4 revision 3.2 capture with local firmware 0.1.6 recorded 566 projections over 25.125 seconds (22.53 updates/s), with individual five-second intervals between 18.83 and 26.18 updates/s. The device reported UI ready without a panic during the capture. This is a startup diagnostic sample, not a controlled orientation-specific FPS benchmark or physical display/touch acceptance check. Local log: `.cache/guition-telemetry-test-boot.log`.
+
+### Stats off-screen layout work
+
+The original Stats details used repeated horizontal text layouts inside vertical layouts. Stable model updates avoided recreating rows, but changing values below the viewport still triggered text measurement and scene preparation. A native probe changing only those hidden values spent 32.44 ms per frame preparing the scene while rasterizing zero pixels. Formatting/model mutation itself took about 0.18 ms, so the main cost was downstream UI work.
+
+Stats now keeps the same 52 px rows and 6 px gaps with an explicit scroll extent, and creates text/layout delegates only for rows intersecting the viewport. All model values still update at the requested rate; newly visible rows read their current values. This avoids reducing the telemetry test rate. Static Stats fixtures for both GUITION orientations remained pixel-identical, and regression checks cover hidden updates, fresh values after scrolling, and disconnected clearing at all four supported viewports.
+
+Native Windows debug software-renderer samples at 800 × 480, using 180 measured frames after 30 warm-up frames:
+
+| Synthetic updates | Before, mean render work | After, mean render work |
+| --- | --- | --- |
+| Overview only | 11.15 ms | 10.67 ms |
+| Hidden detail rows only | 32.44 ms | 0.51 ms |
+| Overview and detail rows | 42.00 ms | 10.48 ms |
+
+These are desktop workload comparisons, not GUITION frame rates. The probe uses changing synthetic strings and twenty cell rows to isolate layout cost; it does not decode controller traffic or reproduce every firmware projection operation. `scene_us` is work before the first rasterized span, including layout and dirty-region preparation. `render_us` includes that work; `dirty_pixels` counts rasterized pixels.
+
+```powershell
+cargo run --locked --manifest-path simulator/Cargo.toml --bin telemetry-load-check -- 1 rows 800 480
+cargo run --locked --manifest-path simulator/Cargo.toml --bin telemetry-load-check -- 1 all 800 480
+cargo run --locked --manifest-path simulator/Cargo.toml --bin telemetry-load-check -- 0 all 800 480
+```
+
+Page 0 is Ride and page 1 is Stats. Update modes are `overview`, `rows` and `all`. Simulated time advances at 60 Hz without sleeping; the reported work timings do not establish delivered FPS. Firmware test logs also include the current page, frame-work EMA and rendered-frame counter so physical captures can be attributed to the visible page.
+
+The optimized test image was flashed to the GUITION P4 revision 3.2 and reported UI ready. An interactive capture with `page=1` at four successive log points recorded 414 projections over 15.045 seconds (27.52 updates/s), with individual intervals between 26.39 and 29.28 updates/s. Page selection and scrolling were user-operated, and orientation/scroll position were not recorded; this is not a matched before/after hardware benchmark. The capture contains no panic. Local log: `.cache/guition-stats-optimized-boot.log`.
+
 ## Reproduce FPS measurements
 
 1. Set `WFD_RENDER_PROFILE=1` and `WFD_RENDER_PROFILE_SECONDS=30`, then build and upload the matching board environment. Profiling is disabled by default.

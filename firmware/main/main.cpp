@@ -28,6 +28,7 @@
 #include "security.hpp"
 #include "slint_backend.hpp"
 #include "slint_rendering.hpp"
+#include "telemetry_test.hpp"
 #include "transport.hpp"
 #include "tuning.hpp"
 #include "vesc_update.hpp"
@@ -414,10 +415,18 @@ extern "C" void app_main() {
   uint32_t setup_received = 0, setup_rejected = 0, bike_received = 0;
   uint64_t next_telemetry_log = 0;
   bool logged_setup_stale = false, logged_bike_stale = false;
-  uint64_t next_setup_poll = 0, next_vehicle_poll = 0, next_bms_poll = 0, next_stats = 0, next_ui = 0, ready_since = 0;
+  uint64_t next_setup_poll = 0, next_vehicle_poll = 0, next_bms_poll = 0, next_stats = 0, ready_since = 0;
+#if !WFD_TELEMETRY_TEST
+  uint64_t next_ui = 0;
+#endif
   int old_count = -1;
   std::array<transport::Device, 6> old_peers{};
   const auto ui_started = now_ms();
+#if WFD_TELEMETRY_TEST
+  telemetry_test::Clock test_clock;
+  uint64_t next_test_log = 0;
+  ESP_LOGW("telemetry_test", "SIMULATED UI telemetry enabled: target=60 Hz; vehicle controls disabled");
+#endif
   security::init(*ui, telemetry);
   configASSERT(heap_caps_check_integrity_all(true));
   ESP_LOGI("display", "UI initialized: stack_free=%u, internal_free=%u, reset_reason=%u",
@@ -514,9 +523,20 @@ extern "C" void app_main() {
       if (transport::poll(bms_values))
         next_bms_poll = now + bike::bms_poll_interval_ms;
     }
-    if (now >= next_ui) {
+#if WFD_TELEMETRY_TEST
+    const bool project_ui = test_clock.poll(esp_timer_get_time());
+#else
+    const bool project_ui = now >= next_ui;
+#endif
+    if (project_ui) {
+#if WFD_TELEMETRY_TEST
+      // UI projection only. Security, tuning and transports retain real telemetry.
+      const auto telemetry = telemetry_test::sample(now * 1000);
+      const bool fresh = true, bike_fresh = true;
+#else
       const bool fresh = ready && telemetry.fresh(now);
       const bool bike_fresh = telemetry.bike_valid && now - telemetry.bike_ms < 1500;
+#endif
       ui->set_connected(ready);
       ui->set_connection_pending(link.status != transport::Status::Disconnected &&
                                  link.status != transport::Status::Error && !ready);
@@ -655,6 +675,17 @@ extern "C" void app_main() {
                          : fresh                             ? "Connected"
                          : ready && now - ready_since > 1500 ? "Connected | telemetry stale"
                                                              : status_text(link.status));
+#if WFD_TELEMETRY_TEST
+      ui->set_connected(true);
+      ui->set_connection_pending(false);
+      ui->set_data_stale(false);
+      ui->set_connection("TEST | simulated 60 Hz");
+      ui->set_can_configure(false);
+      ui->set_supports_tuning(false);
+      ui->set_supports_presets(false);
+      ui->set_supports_limit(false);
+      ui->set_supports_lock(false);
+#endif
       ui->set_speed(fresh ? value(std::abs(telemetry.speed_mps) * (ui->get_metric() ? 3.6f : 2.2369363f), "", 1)
                           : "--");
       ui->set_speed_progress(fresh ? std::abs(telemetry.speed_mps) / 15.6464f : 0);
@@ -679,7 +710,7 @@ extern "C" void app_main() {
                           : "--");
       ui->set_pitch(bike_fresh ? value(telemetry.pitch_deg, "\u00B0", 1) : "--");
       if (ui->get_page() == 1 && now >= next_stats) {
-        next_stats = now + 500;
+        next_stats = now + (WFD_TELEMETRY_TEST ? 0 : 500);
         StatRows controller(*vesc_stats), pack(*bms_stats), cells(*bms_cells), temperatures(*bms_temperatures);
         const auto live = [&](double number, const char *suffix, int precision = 1) {
           return fresh ? value(number, suffix, precision) : slint::SharedString("--");
@@ -708,8 +739,10 @@ extern "C" void app_main() {
                        fresh && telemetry.uptime_valid ? value(telemetry.uptime_ms / 1000., " s", 0) : "--");
         controller.add("Fault code", live(telemetry.fault, "", 0));
         const auto &bms = telemetry.bms;
-        const bool bms_fresh = ready && bms.available && bms.fresh(now);
-        ui->set_bms_state(bms_fresh ? "Recent controller reply | cached BMS values" : "No recent VESC BMS data.");
+        const bool bms_fresh = (WFD_TELEMETRY_TEST || ready) && bms.available && bms.fresh(now);
+        ui->set_bms_state(WFD_TELEMETRY_TEST ? "TEST | simulated BMS values"
+                          : bms_fresh        ? "Recent controller reply | cached BMS values"
+                                             : "No recent VESC BMS data.");
         if (bms_fresh) {
           pack.add("Cells", value(bms.cell_count, ""));
           pack.add("Temperature sensors", value(bms.temp_count, ""));
@@ -783,8 +816,20 @@ extern "C" void app_main() {
         old_count = link.count;
         old_peers = link.devices;
       }
+#if !WFD_TELEMETRY_TEST
       next_ui = now + 100;
+#endif
     }
+#if WFD_TELEMETRY_TEST
+    if (now >= next_test_log) {
+      const auto rendering = slint_render_stats();
+      ESP_LOGI("telemetry_test", "updates=%llu skipped=%llu elapsed_ms=%llu page=%d work_ema_us=%u frames=%llu",
+               static_cast<unsigned long long>(test_clock.updates), static_cast<unsigned long long>(test_clock.skipped),
+               static_cast<unsigned long long>(now), ui->get_page(), unsigned(rendering.frame_us),
+               static_cast<unsigned long long>(rendering.frames));
+      next_test_log = now + 5000;
+    }
+#endif
     render_slint_frame();
     // Only accept a pending OTA image after initialization and ten seconds
     // of a functioning UI loop. Early reset/panic leaves rollback available.
@@ -802,6 +847,11 @@ extern "C" void app_main() {
                static_cast<unsigned long long>(rendering.frames), unsigned(rendering.frame_us),
                unsigned(rendering.wait_us), unsigned(uxTaskGetStackHighWaterMark(nullptr)));
     }
-    vTaskDelay(pdMS_TO_TICKS(slint_loop_delay_ms(esp_timer_get_time() - iteration_started)));
+    auto delay_ms = slint_loop_delay_ms(esp_timer_get_time() - iteration_started);
+#if WFD_TELEMETRY_TEST
+    const auto remaining_us = int64_t(test_clock.next_us()) - esp_timer_get_time();
+    delay_ms = std::min(delay_ms, uint32_t(std::max<int64_t>(1, remaining_us / 1000)));
+#endif
+    vTaskDelay(pdMS_TO_TICKS(delay_ms));
   }
 }

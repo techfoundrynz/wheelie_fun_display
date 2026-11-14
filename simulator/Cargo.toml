@@ -9,6 +9,10 @@ default-run = "wheelie-fun-display-simulator"
 name = "transition-checks"
 path = "checks/transitions.rs"
 
+[[bin]]
+name = "telemetry-load-check"
+path = "checks/telemetry_load.rs"
+
 [dependencies]
 slint = { git = "https://github.com/techfoundrynz/slint", tag = "mcu-v1.19.5", default-features = false, features = ["std", "backend-winit", "renderer-software", "compat-1-2", "unstable-winit-030"] }
 
